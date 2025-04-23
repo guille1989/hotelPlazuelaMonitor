@@ -50,7 +50,7 @@ function App() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axios.get("http://localhost:5002/api/reservas");
+        const response = await axios.get(`http://${process.env.REACT_APP_URL_PRODUCCION}/api/reservas`);
         console.log(response.data);
         console.log(response.data.length);
         setActualizacionreserva(response.data);

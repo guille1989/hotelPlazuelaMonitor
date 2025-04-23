@@ -24,7 +24,7 @@ export default function OcupacionChart({ valorIntervalo }) {
     const fetchData = async () => {
       try {
         const response = await axios.get(
-          "http://localhost:5002/api/reservasfuturas"
+          `http://${process.env.REACT_APP_URL_PRODUCCION}/api/reservasfuturas`
         );
         console.log("OcupacionChart: ", response.data);
         //Guardamos los datos teniendo en cuenta el intervalo
