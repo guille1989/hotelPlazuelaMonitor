@@ -90,14 +90,13 @@ function App() {
             parseInt(stat.canuti_reh) > 0
         )
         .reduce((acc, stat) => acc + stat.valor_habitacion, 0);
-      console.log("RevPAR:", revPAR);
 
       setOccupancyRate(parseFloat(((occupancyRate * 100) / 29).toFixed(2)));
       setOccupancyWithCheckIn(occupancyRate);
-      setProjectedOccupancy(
-        parseFloat(((projectedOcupacionCheckIn * 100) / 29).toFixed(2))
-      );
       setProjectedOcupacionCheckIn(ocupacionConCheckIn + occupancyRate);
+      setProjectedOccupancy(
+        parseFloat((((ocupacionConCheckIn + occupancyRate) * 100) / 29).toFixed(2))
+      );
       setRevPAR(revPAR / 29);
       setIngreso(revPAR);
     }
