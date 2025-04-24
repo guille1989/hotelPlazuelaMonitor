@@ -16,7 +16,7 @@ router.get("/", async (req, res) => {
     hoy.setDate(hoy.getDate() - 1); // Asegura que hoy sea el día siguiente
     hoy.setUTCHours(23, 59, 59, 999); // Final del día anterior en UTC
     const inicioRango = new Date(hoy);
-    inicioRango.setDate(hoy.getDate() - 30); // Hace 30 días
+    inicioRango.setDate(inicioRango.getDate() - 30); // Hace 30 días
     inicioRango.setUTCHours(0, 0, 0, 0); // Inicio del rango en UTC
 
     // Reservas cuya estancia se traslape con algún día del rango
