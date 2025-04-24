@@ -14,8 +14,7 @@ import {
 
 export default function OcupacionPasadoChart({ valorIntervalo }) {
   const [data, setData] = useState({
-    conteoPorDia: [],
-    conteoPorDiaConCheckIn: [],
+    conteoPorDia: []
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -26,15 +25,12 @@ export default function OcupacionPasadoChart({ valorIntervalo }) {
         const response = await axios.get(
           `http://${process.env.REACT_APP_URL_PRODUCCION}/api/reservaspasadas`
         ); //Guardamos los datos teniendo en cuenta el intervalo
+        console.log(response.data)
         const filteredData = {
-            conteoPorDia: response.data.conteoPorDia.slice(0, valorIntervalo),
-            conteoPorDiaConCheckIn: response.data.conteoPorDiaConCheckIn.slice(
-              0,
-              valorIntervalo
-            ),
+            conteoPorDia: response.data.slice(0, valorIntervalo),
           };
   
-          setData(filteredData);
+        setData(filteredData);
         setLoading(false);
       } catch (err) {
         setError("Error al cargar los datos");
@@ -178,14 +174,6 @@ export default function OcupacionPasadoChart({ valorIntervalo }) {
             marginTop: "0px", // Agrega un margen superior
             marginBottom: "-5px", // Opcional: margen inferior
           }}
-        />
-        <Line
-          type="monotone"
-          dataKey="ocupacionConCheckIn"
-          stroke="#22C55E"
-          strokeWidth={2}
-          dot={{ r: 3 }}
-          label={<CustomizedLabelAux />}
         />
         <Line
           type="monotone"

@@ -12,70 +12,55 @@ router.get("/", async (req, res) => {
     const database = client.db("hotellpmonitor");
     const collection = database.collection("reservas");
 
-    const hoy = new Date();
-    hoy.setDate(hoy.getDate() - 1); // Asegura que hoy sea el día siguiente
-    hoy.setUTCHours(23, 59, 59, 999); // Final del día anterior en UTC
-    const inicioRango = new Date(hoy);
-    inicioRango.setDate(inicioRango.getDate() - 30); // Hace 30 días
-    inicioRango.setUTCHours(0, 0, 0, 0); // Inicio del rango en UTC
+    // Calcular fechas dinámicamente
+    const today = new Date();
+    const endDate = new Date(today);
+    endDate.setDate(today.getDate() - 1); // Día anterior (23 de abril)
+    endDate.setHours(23, 59, 59, 999); // Fin del día anterior
+
+    const startDate = new Date(today);
+    startDate.setDate(today.getDate() - 30); // 30 días atrás (25 de marzo)
+    startDate.setHours(0, 0, 0, 0); // Inicio del día
 
     // Reservas cuya estancia se traslape con algún día del rango
     const reservas = await collection
       .find({
+        fecha_llegada: {
+          $gte: startDate,
+          $lte: endDate,
+        },
         fecha_cancelacion: new Date("1900-01-01T00:00:00.000Z"),
-        fecha_liquidacion: { $ne: new Date("1900-01-01T00:00:00.000Z") },
-        fecha_llegada: { $gte: inicioRango }, // Llegada dentro de los últimos 30 días
-        fecha_salida: { $lte: hoy }, // Salida hasta hoy
       })
       .toArray();
+
     const conteoPorDia = [];
-    const conteoPorDiaConCheckIn = [];
 
-    console.log("Inicio del rango:", inicioRango);
-    console.log("Fin del rango (hoy):", hoy);
-    reservas.forEach((reserva) => {
-      console.log("Reserva:", {
-        llegada: reserva.fecha_llegada,
-        salida: reserva.fecha_salida,
-      });
-    });
-
-    for (let i = 0; i <= 30; i++) {
-      const dia = new Date(hoy);
-      dia.setDate(hoy.getDate() - i); // Retrocede `i` días desde hoy
+    for (let i = 1; i <= 31; i++) {
+      const dia = new Date(today);
+      dia.setDate(today.getDate() - i);
       dia.setHours(0, 0, 0, 0);
-      const diaStr = dia.toISOString().split("T")[0]; // Formato yyyy-mm-dd
-
+      const diaStr = dia.toISOString().split("T")[0]; // yyyy-mm-dd
       // Inicializar cada día con ocupación 0
-      conteoPorDia.push({ dia: diaStr, ocupacion: 0, ocupacionConCheckIn: 0 });
-      conteoPorDiaConCheckIn.push({
-        dia: diaStr,
-        ocupacion: 0,
-      });
+      conteoPorDia.push({ dia: diaStr, ocupacion: 0 });     
     }
 
     reservas.forEach((reserva) => {
       const llegada = new Date(reserva.fecha_llegada);
       const salida = new Date(reserva.fecha_salida);
 
-      for (let i = 0; i <= 30; i++) {
-        const dia = new Date(hoy);
-        dia.setDate(hoy.getDate() - i); // Retrocede `i` días desde hoy
+      for (let i = 1; i <= 31; i++) {
+        const dia = new Date(today);
+        dia.setDate(today.getDate() - i);
         dia.setHours(0, 0, 0, 0);
 
         // Solo contar días entre llegada y salida (sin incluir salida)
         if (dia >= llegada && dia < salida) {
-          const diaStr = dia.toISOString().split("T")[0];
-          const diaObj = conteoPorDia.find((d) => d.dia === diaStr);
-          const diaObjConCheckIn = conteoPorDiaConCheckIn.find(
-            (d) => d.dia === diaStr
-          );
+          const diaStr = dia.toISOString().split('T')[0];
+          const diaObj = conteoPorDia.find((d) => d.dia === diaStr);          
 
           if (diaObj) {
             if (reserva.canuti_reh > 0) {
-              diaObj.ocupacion += reserva.canuti_reh;
-              diaObj.ocupacionConCheckIn += reserva.canuti_reh;
-              diaObjConCheckIn.ocupacion += reserva.canuti_reh;
+              diaObj.ocupacion += reserva.canuti_reh;             
             } else {
               diaObj.ocupacion++;
             }
@@ -83,8 +68,7 @@ router.get("/", async (req, res) => {
         }
       }
     });
-
-    res.json({ conteoPorDia, conteoPorDiaConCheckIn });
+    res.json(conteoPorDia);
   } catch (error) {
     console.error("Error fetching reservas:", error);
     res.status(500).json({ error: "Internal Server Error" });
