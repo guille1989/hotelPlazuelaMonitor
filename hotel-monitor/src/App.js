@@ -1,47 +1,44 @@
 import "./App.css";
 import React, { useState, useEffect } from "react";
 import Divider from "@mui/material/Divider";
-import Box from '@mui/material/Box';
-import InputLabel from '@mui/material/InputLabel';
-import MenuItem from '@mui/material/MenuItem';
-import FormControl from '@mui/material/FormControl';
-import Select from '@mui/material/Select';
+import Box from "@mui/material/Box";
+import InputLabel from "@mui/material/InputLabel";
+import MenuItem from "@mui/material/MenuItem";
+import FormControl from "@mui/material/FormControl";
+import Select from "@mui/material/Select";
 import axios from "axios";
 
 import TopBar from "./components/top/TopBar";
 import StatCard from "./components/statcard/StatCard";
 import OccupancyForecast from "./components/statcard/OccupancyForecast";
 import OcupacionChart from "./components/linechart/OcupacionChart";
-
-// Datos de ejemplo para actualizacionreserva
-const actualizacionreserva = [
-  {
-    _id: "1",
-    fecha: "2025-04-22T10:00:00",
-    estado: "éxito",
-    descripcion: "Actualización exitosa",
-  },
-  {
-    _id: "2",
-    fecha: "2025-04-21T15:30:00",
-    estado: "error",
-    descripcion: "Error en la actualización",
-  },
-];
+import OcupacionPasadoChart from "./components/linechart/OcupacionPasadoChart";
 
 function App() {
   const [actualizacionreserva, setActualizacionreserva] = useState([]);
+  const [
+    actualizacionreservacancelaciones,
+    setActualizacionreservacancelaciones,
+  ] = useState([]);
+
   const [occupancyRate, setOccupancyRate] = useState(0);
   const [occupancyWithCheckIn, setOccupancyWithCheckIn] = useState(0);
   const [projectedOccupancy, setProjectedOccupancy] = useState(0);
   const [projectedOcupacionCheckIn, setProjectedOcupacionCheckIn] = useState(0);
   const [revPAR, setRevPAR] = useState(0);
   const [ingreso, setIngreso] = useState(0);
+  const [personasEnHotel, setPersonasEnHotel] = useState(0);
+  const [cancelacionReservas, setCancelacionReservas] = useState(0);
 
-  const [fechas, setFechas] = React.useState('30');
+  const [fechas, setFechas] = React.useState("10");
 
   const handleChange = (event) => {
     setFechas(event.target.value);
+  };
+
+  const [fechasPasado, setFechasPasado] = React.useState("10");
+  const handleChangeFechaPasado = (event) => {
+    setFechasPasado(event.target.value);
   };
 
   const [loading, setLoading] = useState(true);
@@ -50,9 +47,9 @@ function App() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axios.get(`http://${process.env.REACT_APP_URL_PRODUCCION}/api/reservas`);
-        console.log(response.data);
-        console.log(response.data.length);
+        const response = await axios.get(
+          `http://${process.env.REACT_APP_URL_PRODUCCION}/api/reservas`
+        );
         setActualizacionreserva(response.data);
         setLoading(false);
       } catch (err) {
@@ -61,6 +58,20 @@ function App() {
       }
     };
 
+    const fetchDataCancelaciones = async () => {
+      try {
+        const response = await axios.get(
+          `http://${process.env.REACT_APP_URL_PRODUCCION}/api/reservascanceladas`
+        );
+        setActualizacionreservacancelaciones(response.data);
+        setLoading(false);
+      } catch (err) {
+        setError("Error al cargar los datos");
+        setLoading(false);
+      }
+    };
+
+    fetchDataCancelaciones();
     fetchData();
   }, []);
 
@@ -75,13 +86,21 @@ function App() {
             parseInt(stat.estado_habitacion) === 31
         )
         .reduce((acc, stat) => acc + parseInt(stat.canuti_reh, 10), 0);
-      //console.log("Occupancy Rate:", occupancyRate);
       //projectedOccupancy is length of stats * 100 / 30 with two decimal points
       //30 is the number of rooms
       const ocupacionConCheckIn = actualizacionreserva
         .filter((stat) => parseInt(stat.canuti_reh) === 0)
         .reduce((acc) => acc + 1, 0);
-      const projectedOccupancy = ((actualizacionreserva.length - 1) * 100) / 29;
+      setOccupancyRate(parseFloat(((occupancyRate * 100) / 29).toFixed(2)));
+      setOccupancyWithCheckIn(occupancyRate);
+
+      setProjectedOcupacionCheckIn(ocupacionConCheckIn + occupancyRate);
+      setProjectedOccupancy(
+        parseFloat(
+          (((ocupacionConCheckIn + occupancyRate) * 100) / 29).toFixed(2)
+        )
+      );
+
       //revPAR is the sum of valor_habitacion for all elements with estado_habitacion = 31 and canuti_reh > 0
       const revPAR = actualizacionreserva
         .filter(
@@ -90,16 +109,38 @@ function App() {
             parseInt(stat.canuti_reh) > 0
         )
         .reduce((acc, stat) => acc + stat.valor_habitacion, 0);
-
-      setOccupancyRate(parseFloat(((occupancyRate * 100) / 29).toFixed(2)));
-      setOccupancyWithCheckIn(occupancyRate);
-      setProjectedOcupacionCheckIn(ocupacionConCheckIn + occupancyRate);
-      setProjectedOccupancy(
-        parseFloat((((ocupacionConCheckIn + occupancyRate) * 100) / 29).toFixed(2))
-      );
       setRevPAR(revPAR / 29);
-      setIngreso(revPAR);
+
+      //Ingresos
+      const ingresoPorReservaConchecking = actualizacionreserva
+        .filter(
+          (stat) =>
+            parseInt(stat.estado_habitacion) === 31 &&
+            parseInt(stat.canuti_reh) > 0
+        )
+        .reduce(
+          (acc, stat) => acc + stat.valor_habitacion * stat.canuti_reh,
+          0
+        );
+      setIngreso(ingresoPorReservaConchecking);
     }
+
+    //Calculo de total personas en el hotel
+    const totalPersonasHotel = actualizacionreserva
+      .filter(
+        (stat) =>
+          parseInt(stat.canuti_reh) > 0 &&
+          parseInt(stat.estado_habitacion) === 31
+      )
+      .reduce((acc, stat) => acc + (stat.adultos + stat.ninos), 0);
+    setPersonasEnHotel(totalPersonasHotel);
+
+    //Calculo de total de cancelacion en el hotel
+    const totalCancelacionesReservas = actualizacionreservacancelaciones.filter(
+      (stat) => stat.fecha_cancelacion !== "1900-01-01T00:00:00.000Z"
+    ); // Cuenta el número de cancelaciones
+
+    setCancelacionReservas(totalCancelacionesReservas.length);
   }, [actualizacionreserva]);
 
   return (
@@ -121,26 +162,35 @@ function App() {
           <StatCard
             value={occupancyRate}
             valueCheckIn={occupancyWithCheckIn}
-            label="Ocupación actual"
+            label="🛏️ Ocupación actual"
             unit=""
             maxvalue={100}
-            flag={"occ"}
+            flag={"%"}
           />
 
           <StatCard
             value={projectedOccupancy}
             valueCheckIn={projectedOcupacionCheckIn}
-            label="Ocupación proyectada"
+            label="📅 Ocupación proyectada"
             unit=""
             maxvalue={100}
-            flag={"ocp"}
+            flag={"%"}
           />
+          {/*
+          <StatCard
+            value={personasEnHotel}
+            label="👥 Total de Huéspedes"
+            unit="UNI"
+            maxvalue={100}
+            flag={"n"}
+          />
+          */}
         </div>
 
         <div style={{ width: "48%" }}>
           <StatCard
             value={revPAR}
-            label="RevPAR"
+            label="💸 RevPAR"
             unit="COP"
             maxvalue={500000}
             flag={"ocrev"}
@@ -148,17 +198,40 @@ function App() {
 
           <StatCard
             value={ingreso}
-            label="Ingresos actuales"
+            label="💵 Ingresos actuales"
             unit="COP"
             maxvalue={10000000}
             flag={"ocrev"}
           />
+          {/*
+          <StatCard
+            value={cancelacionReservas}
+            label="❌ Numero de cancelación"
+            unit="UNI"
+            maxvalue={100}
+            flag={"ocrev"}
+          />
+          */}
         </div>
       </div>
 
-      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", marginTop: "20px" }}>	
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          marginTop: "20px",
+        }}
+      >
         <h1 className="title">Ocupación próximos </h1>
-        <Box sx={{ width: 65, backgroundColor: "#ffffff", borderRadius: "5px", marginLeft: "10px" }}>
+        <Box
+          sx={{
+            width: 65,
+            backgroundColor: "#ffffff",
+            borderRadius: "5px",
+            marginLeft: "10px",
+          }}
+        >
           <FormControl fullWidth>
             <Select
               labelId="demo-simple-select-label"
@@ -184,6 +257,51 @@ function App() {
         }}
       >
         <OcupacionChart valorIntervalo={fechas} />
+      </div>
+
+      {/*Ocupacion pasada */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          marginTop: "50px"
+        }}
+      >
+        <h1 className="title">Histórico de Ocupación</h1>
+        <Box
+          sx={{
+            width: 65,
+            backgroundColor: "#ffffff",
+            borderRadius: "5px",
+            marginLeft: "10px",
+          }}
+        >
+          <FormControl fullWidth>
+            <Select
+              labelId="demo-simple-select-label"
+              id="demo-simple-select"
+              value={fechasPasado}
+              onChange={handleChangeFechaPasado}
+              size="small"
+            >
+              <MenuItem value={10}>10</MenuItem>
+              <MenuItem value={20}>20</MenuItem>
+              <MenuItem value={30}>30</MenuItem>
+            </Select>
+          </FormControl>
+        </Box>
+        <h1 className="title">días atrás</h1>
+      </div>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          marginTop: "-20px"
+        }}
+      >
+        <OcupacionPasadoChart valorIntervalo={fechasPasado} />
       </div>
     </div>
   );

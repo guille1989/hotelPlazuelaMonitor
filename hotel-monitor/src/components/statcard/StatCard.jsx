@@ -7,13 +7,15 @@ import "./StatCard.css";
 
 function StatCard({ value, valueCheckIn, label, unit, maxvalue, flag }) {
   const formattedValue =
-    unit === "COP"
-      ? new Intl.NumberFormat("es-CO", {
-          style: "currency",
-          currency: "COP",
-          minimumFractionDigits: 0,
-        }).format(Number(value))
-      : "(" + value + "%)";
+  unit === "COP"
+    ? new Intl.NumberFormat("es-CO", {
+        style: "currency",
+        currency: "COP",
+        minimumFractionDigits: 0,
+      }).format(Number(value))
+    : unit === "UNI"
+    ? `${value}`
+    : "(" + value + "%)";
 
   return (
     <Card

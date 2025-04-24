@@ -25,9 +25,7 @@ export default function OcupacionChart({ valorIntervalo }) {
       try {
         const response = await axios.get(
           `http://${process.env.REACT_APP_URL_PRODUCCION}/api/reservasfuturas`
-        );
-        console.log("OcupacionChart: ", response.data);
-        //Guardamos los datos teniendo en cuenta el intervalo
+        ); //Guardamos los datos teniendo en cuenta el intervalo
         const filteredData = {
           conteoPorDia: response.data.conteoPorDia.slice(0, valorIntervalo),
           conteoPorDiaConCheckIn: response.data.conteoPorDiaConCheckIn.slice(
@@ -53,9 +51,43 @@ export default function OcupacionChart({ valorIntervalo }) {
   class CustomizedLabel extends PureComponent {
     render() {
       const { x, y, stroke, value } = this.props;
+      // Si el valor es 0, no renderiza nada
+      if (value === 0) {
+        return null;
+      }
 
       return (
-        <text x={x} y={y} dy={-4} fill="#fff" fontSize={15} textAnchor="middle">
+        <text
+          x={x}
+          y={y}
+          dy={-4}
+          fill="#3B82F6"
+          fontSize={20}
+          textAnchor="middle"
+        >
+          {value}
+        </text>
+      );
+    }
+  }
+
+  class CustomizedLabelAux extends PureComponent {
+    render() {
+      const { x, y, stroke, value } = this.props;
+      // Si el valor es 0, no renderiza nada
+      if (value === 0) {
+        return null;
+      }
+
+      return (
+        <text
+          x={x}
+          y={y}
+          dy={20}
+          fill="#22C55E"
+          fontSize={20}
+          textAnchor="middle"
+        >
           {value}
         </text>
       );
@@ -83,7 +115,13 @@ export default function OcupacionChart({ valorIntervalo }) {
                 margin: 0,
               }}
             >
-              {`${item.name}: ${item.value}`}
+              {`${
+                item.name === "ocupacion"
+                  ? "Reservas totales"
+                  : item.name === "ocupacionConCheckIn"
+                  ? "Reservas con check-in"
+                  : item.name
+              }: ${item.value}`}
             </p>
           ))}
         </div>
@@ -105,7 +143,7 @@ export default function OcupacionChart({ valorIntervalo }) {
             dy={5}
             textAnchor="end"
             fill="#666"
-            transform="rotate(-45)"
+            transform="rotate(-25)"
           >
             {payload.value.split("-")[1] + "-" + payload.value.split("-")[2]}
           </text>
@@ -122,26 +160,38 @@ export default function OcupacionChart({ valorIntervalo }) {
       >
         <XAxis dataKey="dia" tick={<CustomizedAxisTick />} />
         <YAxis domain={[0, 29]} />
-        <ReferenceLine y={29} label="Ocupación-100%" stroke="green" />
-        <ReferenceLine y={15} label="Ocupación-50%" stroke="orange" />
-
+        <ReferenceLine
+          y={29}
+          strokeDasharray="3 3"
+          label="Ocupación-100%"
+          stroke="#9CA3AF "
+        />
+        <ReferenceLine
+          y={15}
+          strokeDasharray="3 3"
+          label="Ocupación-50%"
+          stroke="#9CA3AF"
+        />
         <Tooltip content={<CustomTooltip />} /> {/* Tooltip personalizado */}
-        <Legend wrapperStyle={{
+        <Legend
+          wrapperStyle={{
             marginTop: "0px", // Agrega un margen superior
-            marginBottom: "-15px", // Opcional: margen inferior
-        }}/>
+            marginBottom: "-5px", // Opcional: margen inferior
+          }}
+        />
         <Line
           type="monotone"
           dataKey="ocupacionConCheckIn"
-          stroke="#448481"
+          stroke="#22C55E"
           strokeWidth={2}
-          label={<CustomizedLabel />}
+          dot={{ r: 3 }}
+          label={<CustomizedLabelAux />}
         />
         <Line
           type="monotone"
           dataKey="ocupacion"
-          stroke="#c5efec"
-          strokeDasharray="5 5"
+          stroke="#3B82F6"
+          strokeDasharray="10 5"
           label={<CustomizedLabel />}
         />
       </LineChart>
