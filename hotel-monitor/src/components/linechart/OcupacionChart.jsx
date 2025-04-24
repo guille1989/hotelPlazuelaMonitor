@@ -26,6 +26,7 @@ export default function OcupacionChart({ valorIntervalo }) {
         const response = await axios.get(
           `http://${process.env.REACT_APP_URL_PRODUCCION}/api/reservasfuturas`
         ); //Guardamos los datos teniendo en cuenta el intervalo
+        
         const filteredData = {
           conteoPorDia: response.data.conteoPorDia.slice(0, valorIntervalo),
           conteoPorDiaConCheckIn: response.data.conteoPorDiaConCheckIn.slice(
@@ -45,7 +46,7 @@ export default function OcupacionChart({ valorIntervalo }) {
     fetchData();
   }, [valorIntervalo]);
 
-  if (loading) return <div>Cargando...</div>;
+  if (loading) return <div style={{ color: "white", marginTop: "20px" }}>Cargando...</div>;
   if (error) return <div>{error}</div>;
 
   class CustomizedLabel extends PureComponent {

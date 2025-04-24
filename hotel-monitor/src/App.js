@@ -50,6 +50,7 @@ function App() {
         const response = await axios.get(
           `http://${process.env.REACT_APP_URL_PRODUCCION}/api/reservas`
         );
+        console.log(response.data)
         setActualizacionreserva(response.data);
         setLoading(false);
       } catch (err) {
