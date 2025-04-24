@@ -14,11 +14,11 @@ router.get("/", async (req, res) => {
 
     const hoy = new Date();
     hoy.setDate(hoy.getDate() - 1); // Asegura que hoy sea el día siguiente
-    hoy.setHours(23, 59, 59, 999); // Final del día anterior en UTC
+    hoy.setUTCHours(23, 59, 59, 999); // Final del día anterior en UTC
     const inicioRango = new Date(hoy);
     inicioRango.setDate(hoy.getDate() - 30); // Hace 30 días
-    inicioRango.setHours(23, 59, 59, 999);
-    
+    inicioRango.setUTCHours(0, 0, 0, 0); // Inicio del rango en UTC
+        
     // Reservas cuya estancia se traslape con algún día del rango
     const reservas = await collection
       .find({
