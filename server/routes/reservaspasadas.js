@@ -18,18 +18,27 @@ router.get("/", async (req, res) => {
     const inicioRango = new Date(hoy);
     inicioRango.setDate(hoy.getDate() - 30); // Hace 30 días
     inicioRango.setUTCHours(0, 0, 0, 0); // Inicio del rango en UTC
-        
+
     // Reservas cuya estancia se traslape con algún día del rango
     const reservas = await collection
       .find({
         fecha_cancelacion: new Date("1900-01-01T00:00:00.000Z"),
-        fecha_liquidacion: {$ne: new Date("1900-01-01T00:00:00.000Z")},
+        fecha_liquidacion: { $ne: new Date("1900-01-01T00:00:00.000Z") },
         fecha_llegada: { $gte: inicioRango }, // Llegada dentro de los últimos 30 días
         fecha_salida: { $lte: hoy }, // Salida hasta hoy
       })
       .toArray();
     const conteoPorDia = [];
     const conteoPorDiaConCheckIn = [];
+
+    console.log("Inicio del rango:", inicioRango);
+    console.log("Fin del rango (hoy):", hoy);
+    reservas.forEach((reserva) => {
+      console.log("Reserva:", {
+        llegada: reserva.fecha_llegada,
+        salida: reserva.fecha_salida,
+      });
+    });
 
     for (let i = 0; i <= 30; i++) {
       const dia = new Date(hoy);
