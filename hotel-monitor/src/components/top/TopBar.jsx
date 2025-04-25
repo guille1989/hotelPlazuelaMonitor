@@ -26,7 +26,7 @@ function TopBar() {
 
   const today = new Date();
   const options = {
-    weekday: "short",
+    weekday: "long",
     year: "numeric",
     month: "short",
     day: "numeric",
@@ -59,10 +59,10 @@ function TopBar() {
   return (
     <div className="topbar-container">
       <div className="topbar-content">
-        <div>
-          <h1 className="title">Monitor de Ocupación {formattedDate}</h1>
+        <div style={{ width: "70%", display: "flex", alignItems: "center", justifyContent: "left" }}>
+          <h1 className="title">Monitor de Ocupación <br /> {formattedDate}</h1>
         </div>
-        <div>
+        <div style={{ width: "30%" }}>
           <span className="last-update">
             Última actualización: {formatearFecha(mostRecent?.fecha)}
           </span>

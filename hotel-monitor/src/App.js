@@ -50,7 +50,7 @@ function App() {
         const response = await axios.get(
           `http://${process.env.REACT_APP_URL_PRODUCCION}/api/reservas`
         );
-        console.log(response.data)
+        console.log(response.data);
         setActualizacionreserva(response.data);
         setLoading(false);
       } catch (err) {
@@ -228,9 +228,11 @@ function App() {
         <Box
           sx={{
             width: 65,
-            backgroundColor: "#ffffff",
+            height: 30,
+            backgroundColor: "#353d54",
             borderRadius: "5px",
             marginLeft: "10px",
+            color: "#ffffff", // Cambia el color del texto
           }}
         >
           <FormControl fullWidth>
@@ -240,6 +242,23 @@ function App() {
               value={fechas}
               onChange={handleChange}
               size="small"
+              sx={{
+                backgroundColor: "#353d54", // Cambia el color de fondo
+                borderRadius: "8px", // Cambia el radio de los bordes
+                color: "#ffffff", // Cambia el color del texto
+                "& .MuiOutlinedInput-notchedOutline": {
+                  borderColor: "#353d54", // Cambia el color del borde para que coincida con el fondo
+                },
+                "&:hover .MuiOutlinedInput-notchedOutline": {
+                  borderColor: "#353d54", // Cambia el color del borde al pasar el mouse
+                },
+                "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                  borderColor: "#353d54", // Cambia el color del borde al enfocar
+                },
+                "& .MuiSelect-icon": {
+                  color: "#ffffff", // Cambia el color del icono
+                },
+              }}
             >
               <MenuItem value={10}>10</MenuItem>
               <MenuItem value={20}>20</MenuItem>
@@ -254,7 +273,7 @@ function App() {
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
-          marginTop: "-20px",
+          marginTop: "-10px",
         }}
       >
         <OcupacionChart valorIntervalo={fechas} />
@@ -266,25 +285,43 @@ function App() {
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
-          marginTop: "50px"
+          marginTop: "50px",
         }}
       >
         <h1 className="title">Histórico de Ocupación</h1>
         <Box
           sx={{
             width: 65,
-            backgroundColor: "#ffffff",
+            height: 30,
+            backgroundColor: "#353d54",
             borderRadius: "5px",
             marginLeft: "10px",
           }}
         >
-          <FormControl fullWidth>
+          <FormControl fullWidth sx={{ }}>
             <Select
               labelId="demo-simple-select-label"
               id="demo-simple-select"
               value={fechasPasado}
               onChange={handleChangeFechaPasado}
               size="small"
+              sx={{
+                backgroundColor: "#353d54", // Cambia el color de fondo
+                borderRadius: "8px", // Cambia el radio de los bordes
+                color: "#ffffff", // Cambia el color del texto
+                "& .MuiOutlinedInput-notchedOutline": {
+                  borderColor: "#353d54", // Cambia el color del borde para que coincida con el fondo
+                },
+                "&:hover .MuiOutlinedInput-notchedOutline": {
+                  borderColor: "#353d54", // Cambia el color del borde al pasar el mouse
+                },
+                "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                  borderColor: "#353d54", // Cambia el color del borde al enfocar
+                },
+                "& .MuiSelect-icon": {
+                  color: "#ffffff", // Cambia el color del icono
+                },
+              }}
             >
               <MenuItem value={10}>10</MenuItem>
               <MenuItem value={20}>20</MenuItem>
@@ -299,7 +336,7 @@ function App() {
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
-          marginTop: "-20px"
+          marginTop: "-10px",
         }}
       >
         <OcupacionPasadoChart valorIntervalo={fechasPasado} />

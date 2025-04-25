@@ -159,13 +159,14 @@ export default function OcupacionPasadoChart({ valorIntervalo }) {
         <ReferenceLine
           y={29}
           strokeDasharray="3 3"
-          label="Ocupación-100%"
+          label="Ocupación"
+          
           stroke="#9CA3AF "
         />
         <ReferenceLine
           y={15}
           strokeDasharray="3 3"
-          label="Ocupación-50%"
+          label="50%"
           stroke="#9CA3AF"
         />
         <Tooltip content={<CustomTooltip />} /> {/* Tooltip personalizado */}
