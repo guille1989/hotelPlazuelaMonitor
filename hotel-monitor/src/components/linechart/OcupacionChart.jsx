@@ -62,7 +62,7 @@ export default function OcupacionChart({ valorIntervalo }) {
           x={x}
           y={y}
           dy={-4}
-          fill="#3B82F6"
+          fill="#22C55E"
           fontSize={20}
           textAnchor="middle"
         >
@@ -180,6 +180,7 @@ export default function OcupacionChart({ valorIntervalo }) {
             marginBottom: "-5px", // Opcional: margen inferior
           }}
         />
+        {/* 
         <Line
           type="monotone"
           dataKey="ocupacionConCheckIn"
@@ -188,13 +189,15 @@ export default function OcupacionChart({ valorIntervalo }) {
           dot={{ r: 3 }}
           label={<CustomizedLabelAux />}
         />
+        */}
         <Line
           type="monotone"
           dataKey="ocupacion"
-          stroke="#3B82F6"
+          stroke="#22C55E"
           strokeDasharray="10 5"
           label={<CustomizedLabel />}
         />
+
       </LineChart>
     </ResponsiveContainer>
   );
