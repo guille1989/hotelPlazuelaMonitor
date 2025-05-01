@@ -64,6 +64,7 @@ function App() {
         const response = await axios.get(
           `http://${process.env.REACT_APP_URL_PRODUCCION}/api/reservascanceladas`
         );
+        console.log(response.data); 
         setActualizacionreservacancelaciones(response.data);
         setLoading(false);
       } catch (err) {
@@ -83,31 +84,31 @@ function App() {
       const occupancyRate = actualizacionreserva
         .filter(
           (stat) =>
-            parseInt(stat.canuti_reh) > 0 &&
+            parseInt(stat.cantid_reh) > 0 &&
             parseInt(stat.estado_habitacion) === 31
         )
-        .reduce((acc, stat) => acc + parseInt(stat.canuti_reh, 10), 0);
+        .reduce((acc, stat) => acc + parseInt(stat.cantid_reh, 10), 0);
       //projectedOccupancy is length of stats * 100 / 30 with two decimal points
       //30 is the number of rooms
       const ocupacionConCheckIn = actualizacionreserva
-        .filter((stat) => parseInt(stat.canuti_reh) === 0)
-        .reduce((acc) => acc + 1, 0);
+        .filter((stat) => parseInt(stat.estado_habitacion) !== '31')
+        .reduce((acc, stat) => acc + parseInt(stat.cantid_reh, 10), 0);
       setOccupancyRate(parseFloat(((occupancyRate * 100) / 29).toFixed(2)));
       setOccupancyWithCheckIn(occupancyRate);
 
-      setProjectedOcupacionCheckIn(ocupacionConCheckIn + occupancyRate);
+      setProjectedOcupacionCheckIn(ocupacionConCheckIn);
       setProjectedOccupancy(
         parseFloat(
-          (((ocupacionConCheckIn + occupancyRate) * 100) / 29).toFixed(2)
+          (((ocupacionConCheckIn) * 100) / 29).toFixed(2)
         )
       );
 
-      //revPAR is the sum of valor_habitacion for all elements with estado_habitacion = 31 and canuti_reh > 0
+      //revPAR is the sum of valor_habitacion for all elements with estado_habitacion = 31 and cantid_reh > 0
       const revPAR = actualizacionreserva
         .filter(
           (stat) =>
             parseInt(stat.estado_habitacion) === 31 &&
-            parseInt(stat.canuti_reh) > 0
+            parseInt(stat.cantid_reh) > 0
         )
         .reduce((acc, stat) => acc + stat.valor_habitacion, 0);
       setRevPAR(revPAR / 29);
@@ -117,10 +118,10 @@ function App() {
         .filter(
           (stat) =>
             parseInt(stat.estado_habitacion) === 31 &&
-            parseInt(stat.canuti_reh) > 0
+            parseInt(stat.cantid_reh) > 0
         )
         .reduce(
-          (acc, stat) => acc + stat.valor_habitacion * stat.canuti_reh,
+          (acc, stat) => acc + stat.valor_habitacion * stat.cantid_reh,
           0
         );
       setIngreso(ingresoPorReservaConchecking);
@@ -130,7 +131,7 @@ function App() {
     const totalPersonasHotel = actualizacionreserva
       .filter(
         (stat) =>
-          parseInt(stat.canuti_reh) > 0 &&
+          parseInt(stat.cantid_reh) > 0 &&
           parseInt(stat.estado_habitacion) === 31
       )
       .reduce((acc, stat) => acc + (stat.adultos + stat.ninos), 0);

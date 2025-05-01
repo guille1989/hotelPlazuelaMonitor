@@ -59,8 +59,8 @@ router.get("/", async (req, res) => {
           const diaObj = conteoPorDia.find((d) => d.dia === diaStr);          
 
           if (diaObj) {
-            if (reserva.canuti_reh > 0) {
-              diaObj.ocupacion += reserva.canuti_reh;             
+            if (reserva.cantid_reh > 0) {
+              diaObj.ocupacion += reserva.cantid_reh;             
             } else {
               diaObj.ocupacion++;
             }
