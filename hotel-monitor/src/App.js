@@ -110,7 +110,7 @@ function App() {
             //parseInt(stat.estado_habitacion) === 31 &&
             parseInt(stat.cantid_reh) > 0
         )
-        .reduce((acc, stat) => acc + stat.valor_habitacion, 0);
+        .reduce((acc, stat) => acc + stat.valor_habitacion * stat.cantid_reh, 0);
       setRevPAR(revPAR / 29);
 
       //Ingresos
