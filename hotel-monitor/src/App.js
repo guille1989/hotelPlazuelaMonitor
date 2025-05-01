@@ -107,7 +107,7 @@ function App() {
       const revPAR = actualizacionreserva
         .filter(
           (stat) =>
-            parseInt(stat.estado_habitacion) === 31 &&
+            //parseInt(stat.estado_habitacion) === 31 &&
             parseInt(stat.cantid_reh) > 0
         )
         .reduce((acc, stat) => acc + stat.valor_habitacion, 0);
