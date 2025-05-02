@@ -12,29 +12,23 @@ router.get("/", async (req, res) => {
     const database = client.db("hotellpmonitor");
     const collection = database.collection("reservas");
 
-    const hoyAux = new Date();
-    //hoy.setHours(0, 0, 0, 0); // Asegura que hoy sea a las 00:00
+    const moment = require("moment-timezone");
 
-    //console.log("Fecha de hoy:", hoy.toISOString());
+    // Calcular el inicio del día actual en la zona horaria LOCAL (America/Bogota, GMT-0500)
+    const hoy = moment().tz("America/Bogota").startOf("day");
 
-    // Calcular el inicio del día en la zona horaria LOCAL
-    const hoy = new Date(
-      hoyAux.getFullYear(),
-      hoyAux.getMonth(),
-      hoyAux.getDate(),
-      0,
-      0,
-      0,
-      0
-    );
+    // Calcular el fin del rango (30 días después, a las 23:59:59.999)
+    const finRango = moment(hoy).add(30, "days").endOf("day");
 
-    console.log("Inicio del rango (UTC):", hoy.toISOString());
-
-    const finRango = new Date(hoy);
-    finRango.setDate(hoy.getDate() + 30);
-    finRango.setHours(23, 59, 59, 999);
-
-    console.log("Fin del rango (UTC):", finRango.toISOString());
+    // Imprimir para verificar
+    console.log(
+      "Inicio del rango (local):",
+      hoy.format("YYYY-MM-DD HH:mm:ss.SSS ZZ")
+    ); // 2025-05-01 00:00:00.000 -0500
+    console.log(
+      "Fin del rango (local):",
+      finRango.format("YYYY-MM-DD HH:mm:ss.SSS ZZ")
+    ); // 2025-05-31 23:59:59.999 -0500
 
     // Reservas cuya estancia se traslape con algún día del rango
     const reservas = await collection
