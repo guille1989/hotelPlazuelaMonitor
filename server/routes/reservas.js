@@ -11,23 +11,11 @@ router.get("/", async (req, res) => {
     await client.connect();
     const database = client.db("hotellpmonitor");
     const collection = database.collection("reservas");
-    // Crear la fecha base
-    const hoy = new Date();
-
-    // Calcular el inicio del día actual en la zona horaria LOCAL (Colombia, GMT-0500)
-    const inicioDelDiaLocal = new Date(
-      hoy.getFullYear(),
-      hoy.getMonth(),
-      hoy.getDate(),
-      0,
-      0,
-      0,
-      0
-    );
-
-    // Calcular la fecha de salida (día siguiente al de llegada) en la zona horaria LOCAL
-    const fechaSalidaLocal = new Date(inicioDelDiaLocal);
-    fechaSalidaLocal.setDate(inicioDelDiaLocal.getDate() + 1);
+    const moment = require("moment-timezone");
+    
+    const hoy = moment().tz("America/Bogota").startOf("day");
+    const inicioDelDiaLocal = hoy.toDate(); // 2025-05-01T00:00:00 GMT-0500
+    const fechaSalidaLocal = moment(hoy).add(1, "day").toDate(); // 2025-05-02T00:00:00 GMT-0500
 
     // Ejecutar la query con fechas en UTC
     const reservasHoy = await collection
@@ -42,7 +30,7 @@ router.get("/", async (req, res) => {
     const reservasHoyFiltradas = reservasHoy.filter((reserva) => {
       const fechaLlegada = new Date(reserva.fecha_llegada);
       return fechaLlegada <= inicioDelDiaLocal;
-    });  
+    });
     res.json(reservasHoyFiltradas);
   } catch (error) {
     console.error("Error fetching reservas:", error);
