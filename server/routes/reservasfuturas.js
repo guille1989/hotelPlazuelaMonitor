@@ -13,8 +13,6 @@ router.get("/", async (req, res) => {
     const database = client.db("hotellpmonitor");
     const collection = database.collection("reservas");
 
-    const moment = require("moment-timezone");
-
     // Calcular el inicio del día actual en la zona horaria LOCAL (America/Bogota, GMT-0500)
     const hoy = moment().tz("America/Bogota").startOf("day");
 
