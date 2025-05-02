@@ -12,12 +12,29 @@ router.get("/", async (req, res) => {
     const database = client.db("hotellpmonitor");
     const collection = database.collection("reservas");
 
-    const hoy = new Date();
-    hoy.setHours(0, 0, 0, 0); // Asegura que hoy sea a las 00:00
+    const hoyAux = new Date();
+    //hoy.setHours(0, 0, 0, 0); // Asegura que hoy sea a las 00:00
+
+    //console.log("Fecha de hoy:", hoy.toISOString());
+
+    // Calcular el inicio del día en la zona horaria LOCAL
+    const hoy = new Date(
+      hoyAux.getFullYear(),
+      hoyAux.getMonth(),
+      hoyAux.getDate(),
+      0,
+      0,
+      0,
+      0
+    );
+
+    console.log("Inicio del rango (UTC):", hoy.toISOString());
 
     const finRango = new Date(hoy);
     finRango.setDate(hoy.getDate() + 30);
     finRango.setHours(23, 59, 59, 999);
+
+    console.log("Fin del rango (UTC):", finRango.toISOString());
 
     // Reservas cuya estancia se traslape con algún día del rango
     const reservas = await collection
