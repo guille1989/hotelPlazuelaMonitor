@@ -1,6 +1,7 @@
 const express = require("express");
 const { MongoClient } = require("mongodb");
 const router = express.Router();
+const moment = require("moment-timezone");
 
 const uri =
   "mongodb+srv://root:123@cluster0.jwxt0.mongodb.net/hotellpmonitor?retryWrites=true&w=majority";
@@ -11,7 +12,7 @@ router.get("/", async (req, res) => {
     await client.connect();
     const database = client.db("hotellpmonitor");
     const collection = database.collection("reservas");
-    const moment = require("moment-timezone");
+    
     
     const hoy = moment().tz("America/Bogota").startOf("day");
     const inicioDelDiaLocal = hoy.toDate(); // 2025-05-01T00:00:00 GMT-0500
