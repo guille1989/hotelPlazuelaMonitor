@@ -25,7 +25,7 @@ export default function OcupacionPasadoChart({ valorIntervalo }) {
         const response = await axios.get(
           `http://${process.env.REACT_APP_URL_PRODUCCION}/api/reservaspasadas`
         ); //Guardamos los datos teniendo en cuenta el intervalo
-        console.log(response.data)
+        //console.log(response.data)
         const filteredData = {
             conteoPorDia: response.data.slice(0, valorIntervalo),
           };

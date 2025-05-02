@@ -50,7 +50,7 @@ function App() {
         const response = await axios.get(
           `http://${process.env.REACT_APP_URL_PRODUCCION}/api/reservas`
         );
-        console.log(response.data);
+        console.log("Reservas: ", response.data);
         setActualizacionreserva(response.data);
         setLoading(false);
       } catch (err) {
@@ -64,7 +64,7 @@ function App() {
         const response = await axios.get(
           `http://${process.env.REACT_APP_URL_PRODUCCION}/api/reservascanceladas`
         );
-        console.log(response.data); 
+        //console.log(response.data); 
         setActualizacionreservacancelaciones(response.data);
         setLoading(false);
       } catch (err) {

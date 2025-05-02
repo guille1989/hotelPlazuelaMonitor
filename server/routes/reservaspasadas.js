@@ -1,7 +1,8 @@
 const express = require("express");
 const { MongoClient } = require("mongodb");
 const router = express.Router();
-const moment = require("moment-timezone");
+const { getBogotaUtcRangoEntreFechasRelativas  } = require('../functions/rangodiasfuturo.js');
+
 
 const uri =
   "mongodb+srv://root:123@cluster0.jwxt0.mongodb.net/hotellpmonitor?retryWrites=true&w=majority";
@@ -13,33 +14,17 @@ router.get("/", async (req, res) => {
     const database = client.db("hotellpmonitor");
     const collection = database.collection("reservas");
 
-    // Calcular el inicio del día actual en la zona horaria LOCAL (America/Bogota, GMT-0500)
-    const today = moment().tz("America/Bogota");
+    // Calcular fechas dinámicamente
+    const today = new Date();
 
-    // Calcular startDate: 30 días atrás, inicio del día
-    const startDate = moment(today).subtract(30, "days").startOf("day");
-
-    // Calcular endDate: día anterior, fin del día
-    const endDate = moment(today).subtract(1, "day").endOf("day");
-
-    // Imprimir para verificar
-    console.log(
-      "Inicio del rango (local):",
-      startDate.format("YYYY-MM-DD HH:mm:ss.SSS ZZ")
-    ); // 2025-04-01 00:00:00.000 -0500
-    console.log(
-      "Fin del rango (local):",
-      endDate.format("YYYY-MM-DD HH:mm:ss.SSS ZZ")
-    ); // 2025-04-30 23:59:59.999 -0500
-    console.log("Inicio del rango (UTC):", startDate.toISOString()); // 2025-04-01T05:00:00.000Z
-    console.log("Fin del rango (UTC):", endDate.toISOString()); // 2025-05-01T04:59:59.999Z
-
+    //Fechas
+    const { inicioUtc, finUtc } = getBogotaUtcRangoEntreFechasRelativas (31, 1);
     // Reservas cuya estancia se traslape con algún día del rango
     const reservas = await collection
       .find({
         fecha_llegada: {
-          $gte: startDate,
-          $lte: endDate,
+          $gte: inicioUtc,
+          $lte: finUtc,
         },
         fecha_cancelacion: new Date("1900-01-01T00:00:00.000Z"),
       })
@@ -53,7 +38,7 @@ router.get("/", async (req, res) => {
       dia.setHours(0, 0, 0, 0);
       const diaStr = dia.toISOString().split("T")[0]; // yyyy-mm-dd
       // Inicializar cada día con ocupación 0
-      conteoPorDia.push({ dia: diaStr, ocupacion: 0 });
+      conteoPorDia.push({ dia: diaStr, ocupacion: 0 });     
     }
 
     reservas.forEach((reserva) => {
@@ -67,12 +52,12 @@ router.get("/", async (req, res) => {
 
         // Solo contar días entre llegada y salida (sin incluir salida)
         if (dia >= llegada && dia < salida) {
-          const diaStr = dia.toISOString().split("T")[0];
-          const diaObj = conteoPorDia.find((d) => d.dia === diaStr);
+          const diaStr = dia.toISOString().split('T')[0];
+          const diaObj = conteoPorDia.find((d) => d.dia === diaStr);          
 
           if (diaObj) {
             if (reserva.cantid_reh > 0) {
-              diaObj.ocupacion += reserva.cantid_reh;
+              diaObj.ocupacion += reserva.cantid_reh;             
             } else {
               diaObj.ocupacion++;
             }
