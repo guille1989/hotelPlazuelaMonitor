@@ -1,8 +1,9 @@
 const express = require("express");
 const { MongoClient } = require("mongodb");
 const router = express.Router();
-const { getBogotaUtcRangoEntreFechasRelativas  } = require('../functions/rangodiasfuturo.js');
-
+const {
+  getBogotaUtcRangoEntreFechasRelativas,
+} = require("../functions/rangodiasfuturo.js");
 
 const uri =
   "mongodb+srv://root:123@cluster0.jwxt0.mongodb.net/hotellpmonitor?retryWrites=true&w=majority";
@@ -18,7 +19,7 @@ router.get("/", async (req, res) => {
     const today = new Date();
 
     //Fechas
-    const { inicioUtc, finUtc } = getBogotaUtcRangoEntreFechasRelativas (31, 1);
+    const { inicioUtc, finUtc } = getBogotaUtcRangoEntreFechasRelativas(31, 1);
     // Reservas cuya estancia se traslape con algún día del rango
     const reservas = await collection
       .find({
@@ -26,9 +27,17 @@ router.get("/", async (req, res) => {
           $gte: inicioUtc,
           $lte: finUtc,
         },
-        fecha_cancelacion: new Date("1900-01-01T00:00:00.000Z"),
       })
       .toArray();
+
+    const FECHA_1900 = new Date("1900-01-01T00:00:00.000Z");
+
+    const reservasFiltradas = reservas.filter((doc) => {
+      if (!doc.fecha_cancelacion) return true;
+
+      const fecha = new Date(doc.fecha_cancelacion);
+      return fecha.getTime() === FECHA_1900.getTime();
+    });
 
     const conteoPorDia = [];
 
@@ -38,10 +47,10 @@ router.get("/", async (req, res) => {
       dia.setHours(0, 0, 0, 0);
       const diaStr = dia.toISOString().split("T")[0]; // yyyy-mm-dd
       // Inicializar cada día con ocupación 0
-      conteoPorDia.push({ dia: diaStr, ocupacion: 0 });     
+      conteoPorDia.push({ dia: diaStr, ocupacion: 0 });
     }
 
-    reservas.forEach((reserva) => {
+    reservasFiltradas.forEach((reserva) => {
       const llegada = new Date(reserva.fecha_llegada);
       const salida = new Date(reserva.fecha_salida);
 
@@ -52,19 +61,32 @@ router.get("/", async (req, res) => {
 
         // Solo contar días entre llegada y salida (sin incluir salida)
         if (dia >= llegada && dia < salida) {
-          const diaStr = dia.toISOString().split('T')[0];
-          const diaObj = conteoPorDia.find((d) => d.dia === diaStr);          
+          const diaStr = dia.toISOString().split("T")[0];
+          const diaObj = conteoPorDia.find((d) => d.dia === diaStr);
 
           if (diaObj) {
-            if (reserva.cantid_reh > 0) {
-              diaObj.ocupacion += reserva.cantid_reh;             
-            } else {
+            if (
+              reserva.origen &&
+              reserva.origen.trim().toLowerCase() === "con reserva"
+            ) {
+              if (reserva.cantid_reh > 0) {
+                diaObj.ocupacion += reserva.cantid_reh;
+              } else {
+                diaObj.ocupacion++;
+              }
+            }
+
+            if (
+              reserva.origen &&
+              reserva.origen.trim().toLowerCase() === "sin reserva"
+            ) {
               diaObj.ocupacion++;
             }
           }
         }
       }
     });
+    //console.log("Conteo por día:", conteoPorDia);
     res.json(conteoPorDia);
   } catch (error) {
     console.error("Error fetching reservas:", error);

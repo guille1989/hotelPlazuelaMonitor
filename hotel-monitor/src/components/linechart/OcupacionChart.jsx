@@ -14,8 +14,7 @@ import {
 
 export default function OcupacionChart({ valorIntervalo }) {
   const [data, setData] = useState({
-    conteoPorDia: [],
-    conteoPorDiaConCheckIn: [],
+    conteoPorDia: []
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -28,11 +27,7 @@ export default function OcupacionChart({ valorIntervalo }) {
         ); //Guardamos los datos teniendo en cuenta el intervalo
         
         const filteredData = {
-          conteoPorDia: response.data.conteoPorDia.slice(0, valorIntervalo),
-          conteoPorDiaConCheckIn: response.data.conteoPorDiaConCheckIn.slice(
-            0,
-            valorIntervalo
-          ),
+          conteoPorDia: response.data.conteoPorDia.slice(0, valorIntervalo)
         };
 
         setData(filteredData);
@@ -157,7 +152,7 @@ export default function OcupacionChart({ valorIntervalo }) {
     <ResponsiveContainer width="100%" height={200}>
       <LineChart
         data={data.conteoPorDia}
-        margin={{ top: 40, right: 10, left: -30, bottom: -20 }}
+        margin={{ top: 40, right: 10, left: -30, bottom: 0 }}
       >
         <XAxis dataKey="dia" tick={<CustomizedAxisTick />} />
         <YAxis domain={[0, 29]} />
@@ -174,12 +169,7 @@ export default function OcupacionChart({ valorIntervalo }) {
           stroke="#9CA3AF"
         />
         <Tooltip content={<CustomTooltip />} /> {/* Tooltip personalizado */}
-        <Legend
-          wrapperStyle={{
-            marginTop: "0px", // Agrega un margen superior
-            marginBottom: "-5px", // Opcional: margen inferior
-          }}
-        />
+        
         {/* 
         <Line
           type="monotone"

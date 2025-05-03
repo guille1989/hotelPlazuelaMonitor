@@ -33,8 +33,11 @@ function TopBar() {
   };
   const formattedDate = today.toLocaleDateString("es-CO", options);
 
-  if (loading) return <div>Cargando...</div>;
+  if (loading) return <div style={{ display: "flex", justifyContent: "center",
+     color: "white", marginTop: "20px" }}>Cargando...</div>;
   if (error) return <div>{error}</div>;
+
+
   if (!actualizacionreserva.length) return <div>No hay datos disponibles</div>;
 
   const mostRecent = actualizacionreserva.reduce((latest, current) => {

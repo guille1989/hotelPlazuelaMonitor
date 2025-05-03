@@ -152,7 +152,7 @@ export default function OcupacionPasadoChart({ valorIntervalo }) {
     <ResponsiveContainer width="100%" height={200}>
       <LineChart
         data={data.conteoPorDia}
-        margin={{ top: 40, right: 10, left: -30, bottom: -20 }}
+        margin={{ top: 40, right: 10, left: -30, bottom: 0 }}
       >
         <XAxis dataKey="dia" tick={<CustomizedAxisTick />} />
         <YAxis domain={[0, 29]}/>
@@ -170,12 +170,6 @@ export default function OcupacionPasadoChart({ valorIntervalo }) {
           stroke="#9CA3AF"
         />
         <Tooltip content={<CustomTooltip />} /> {/* Tooltip personalizado */}
-        <Legend
-          wrapperStyle={{
-            marginTop: "0px", // Agrega un margen superior
-            marginBottom: "-5px", // Opcional: margen inferior
-          }}
-        />
         <Line
           type="monotone"
           dataKey="ocupacion"

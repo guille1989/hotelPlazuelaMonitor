@@ -12,8 +12,7 @@ router.get("/", async (req, res) => {
     await client.connect();
     const database = client.db("hotellpmonitor");
     const collection = database.collection("reservas");
-    
-    
+
     const hoy = moment().tz("America/Bogota").startOf("day");
     const inicioDelDiaLocal = hoy.toDate(); // 2025-05-01T00:00:00 GMT-0500
     const fechaSalidaLocal = moment(hoy).add(1, "day").toDate(); // 2025-05-02T00:00:00 GMT-0500
@@ -21,17 +20,27 @@ router.get("/", async (req, res) => {
     // Ejecutar la query con fechas en UTC
     const reservasHoy = await collection
       .find({
-        fecha_cancelacion: new Date("1900-01-01T00:00:00.000Z"),
         fecha_llegada: { $lte: fechaSalidaLocal }, // 2025-05-02T05:00:00.000Z
         fecha_salida: { $gt: inicioDelDiaLocal }, // 2025-05-01T05:00:00.000Z
       })
       .toArray();
 
+    const FECHA_1900 = new Date("1900-01-01T00:00:00.000Z");
+
+    const reservasFiltradas = reservasHoy.filter((doc) => {
+      if (!doc.fecha_cancelacion) return true;
+
+      const fecha = new Date(doc.fecha_cancelacion);
+      return fecha.getTime() === FECHA_1900.getTime();
+    });
+
     //Quitar de reservas los que tienen fecha de llegada mayor a hoy
-    const reservasHoyFiltradas = reservasHoy.filter((reserva) => {
+    const reservasHoyFiltradas = reservasFiltradas.filter((reserva) => {
       const fechaLlegada = new Date(reserva.fecha_llegada);
       return fechaLlegada <= inicioDelDiaLocal;
     });
+
+    //console.log("Reservas de hoy:", reservasHoyFiltradas);
     res.json(reservasHoyFiltradas);
   } catch (error) {
     console.error("Error fetching reservas:", error);
