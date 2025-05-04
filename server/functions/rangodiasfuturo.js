@@ -7,7 +7,7 @@
  */
 function getBogotaUtcRangoDesdeHoy(dias) {
     const ahora = new Date();
-    const offsetBogota = +5 * 60; // Bogotá = UTC-5, en minutos
+    const offsetBogota =  0; //-5 * 60; // Bogotá = UTC-5, en minutos
   
     // Hoy en Bogotá (00:00), ajustado a UTC
     const hoyBogota = new Date(
@@ -31,7 +31,7 @@ function getBogotaUtcRangoDesdeHoy(dias) {
   
   function getBogotaUtcRangoEntreFechasRelativas(diasAtras, diasFin) {
     const hoy = new Date();
-    const offsetBogota = +5 * 60; // UTC-5 Bogotá
+    const offsetBogota = 0; // -5 * 60; // UTC-5 Bogotá
   
     const fechaInicioBogota = new Date(
       Date.UTC(hoy.getUTCFullYear(), hoy.getUTCMonth(), hoy.getUTCDate(), 0, 0, 0)
