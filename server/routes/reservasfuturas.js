@@ -17,6 +17,8 @@ router.get("/", async (req, res) => {
 
     //FechasUTC
     const { inicioUtc, finUtc } = getBogotaUtcRangoDesdeHoy(30);
+    console.log("Inicio UTC:", inicioUtc.toISOString());
+    console.log("Fin UTC:", finUtc.toISOString());
 
     // Reservas cuya estancia se traslape con algún día del rango
     const reservas = await collection
