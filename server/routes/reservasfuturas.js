@@ -47,6 +47,7 @@ router.get("/", async (req, res) => {
       // Inicializar cada día con ocupación 0
       conteoPorDia.push({ dia: diaStr, ocupacion: 0, ocupacionConCheckIn: 0 });
     }
+    console.log("Conteo por día inicial:", conteoPorDia);
 
     reservasFiltradas.forEach((reserva) => {
       const llegada = new Date(reserva.fecha_llegada);

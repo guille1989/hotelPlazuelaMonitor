@@ -17,12 +17,12 @@ router.get("/", async (req, res) => {
 
     // Calcular fechas dinámicamente
     const today = new Date();
-    console.log("Hoy reservas Pasadas:", today.toISOString());
+    //console.log("Hoy reservas Pasadas:", today.toISOString());
 
     //Fechas
     const { inicioUtc, finUtc } = getBogotaUtcRangoEntreFechasRelativas(31, 1);
-    console.log("Inicio reservas Pasadas UTC:", inicioUtc.toISOString());
-    console.log("Fin reservas Pasadas UTC:", finUtc.toISOString());
+    //console.log("Inicio reservas Pasadas UTC:", inicioUtc.toISOString());
+    //console.log("Fin reservas Pasadas UTC:", finUtc.toISOString());
     // Reservas cuya estancia se traslape con algún día del rango
     const reservas = await collection
       .find({
