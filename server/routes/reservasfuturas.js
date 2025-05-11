@@ -17,24 +17,39 @@ router.get("/", async (req, res) => {
 
     //FechasUTC
     const { inicioUtc, finUtc } = getBogotaUtcRangoDesdeHoy(30);
-    console.log("Inicio UTC:", inicioUtc.toISOString());
-    console.log("Fin UTC:", finUtc.toISOString());
+    //console.log("Inicio UTC:", inicioUtc.toISOString());
+    //console.log("Fin UTC:", finUtc.toISOString());
 
     // Reservas cuya estancia se traslape con algún día del rango
     const reservas = await collection
       .find({
-        fecha_llegada: { $lte: finUtc },
-        fecha_salida: { $gt: inicioUtc },
+        fecha_llegada: { $lte: finUtc.toISOString().split("T")[0] },
+        fecha_salida: { $gt: inicioUtc.toISOString().split("T")[0] },
       })
       .toArray();
 
-    const FECHA_1900 = new Date("1900-01-01T00:00:00.000Z");
+    // Procesar las reservas para ajustar `fecha_salida` si `fecha_ult_mod` existe y es mayor
+    const reservasProcesadas = reservas.map((reserva) => {
+      if (
+        reserva.fecha_ult_mod && // Verifica que `fecha_ult_mod` exista
+        new Date(reserva.fecha_ult_mod) > new Date(reserva.fecha_salida) // Compara las fechas
+      ) {
+        // Reemplaza `fecha_salida` con `fecha_ult_mod`
+        return {
+          ...reserva,
+          fecha_salida: reserva.fecha_ult_mod,
+        };
+      }
+      return reserva; // Si no se cumple la condición, devuelve la reserva sin cambios
+    });
 
-    const reservasFiltradas = reservas.filter((doc) => {
+    const FECHA_1900 = "1900-01-01"; // Fecha de referencia para cancelación
+
+    const reservasFiltradas = reservasProcesadas.filter((doc) => {
       if (!doc.fecha_cancelacion) return true;
 
-      const fecha = new Date(doc.fecha_cancelacion);
-      return fecha.getTime() === FECHA_1900.getTime();
+      // Comparar directamente las cadenas
+      return doc.fecha_cancelacion.startsWith(FECHA_1900);
     });
 
     const conteoPorDia = [];
@@ -47,11 +62,11 @@ router.get("/", async (req, res) => {
       // Inicializar cada día con ocupación 0
       conteoPorDia.push({ dia: diaStr, ocupacion: 0, ocupacionConCheckIn: 0 });
     }
-    console.log("Conteo por día inicial:", conteoPorDia);
+    //console.log("Conteo por día inicial:", conteoPorDia);
 
     reservasFiltradas.forEach((reserva) => {
-      const llegada = new Date(reserva.fecha_llegada);
-      const salida = new Date(reserva.fecha_salida);
+      const llegada = reserva.fecha_llegada;
+      const salida = reserva.fecha_salida;
 
       for (let i = 0; i <= 30; i++) {
         const dia = new Date(inicioUtc);
@@ -59,8 +74,11 @@ router.get("/", async (req, res) => {
         dia.setHours(0, 0, 0, 0);
 
         // Solo contar días entre llegada y salida (sin incluir salida)
-        if (dia >= llegada && dia < salida) {
-          const diaStr = dia.toISOString().split("T")[0];
+        if (
+          new Date(dia) >= new Date(llegada) &&
+          new Date(dia) < new Date(salida)
+        ) {
+          const diaStr = dia.toISOString().split("T")[0]; // yyyy-mm-dd
           const diaObj = conteoPorDia.find((d) => d.dia === diaStr);
 
           if (diaObj) {

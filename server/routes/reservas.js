@@ -16,22 +16,23 @@ router.get("/", async (req, res) => {
     const hoy = moment().tz("America/Bogota").startOf("day");
     const inicioDelDiaLocal = hoy.toDate(); // 2025-05-01T00:00:00 GMT-0500
     const fechaSalidaLocal = moment(hoy).add(1, "day").toDate(); // 2025-05-02T00:00:00 GMT-0500
+    //console.log("Inicio del día local:", inicioDelDiaLocal);
+    //console.log("Fecha de salida local:", fechaSalidaLocal);
 
     // Ejecutar la query con fechas en UTC
     const reservasHoy = await collection
       .find({
-        fecha_llegada: { $lte: fechaSalidaLocal }, // 2025-05-02T05:00:00.000Z
-        fecha_salida: { $gt: inicioDelDiaLocal }, // 2025-05-01T05:00:00.000Z
+        fecha_llegada: { $lte: fechaSalidaLocal.toISOString().split("T")[0] }, // 2025-05-02T05:00:00.000Z
+        fecha_salida: { $gt: inicioDelDiaLocal.toISOString().split("T")[0] }, // 2025-05-01T05:00:00.000Z
       })
       .toArray();
 
-    const FECHA_1900 = new Date("1900-01-01T00:00:00.000Z");
-
+    const FECHA_1900 = "1900-01-01"; // Fecha de referencia para cancelación
     const reservasFiltradas = reservasHoy.filter((doc) => {
       if (!doc.fecha_cancelacion) return true;
 
-      const fecha = new Date(doc.fecha_cancelacion);
-      return fecha.getTime() === FECHA_1900.getTime();
+      // Comparar directamente las cadenas
+      return doc.fecha_cancelacion.startsWith(FECHA_1900);
     });
 
     //Quitar de reservas los que tienen fecha de llegada mayor a hoy
