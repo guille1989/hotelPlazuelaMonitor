@@ -22,8 +22,21 @@ router.get("/", async (req, res) => {
     // Ejecutar la query con fechas en UTC
     const reservasHoy = await collection
       .find({
-        fecha_llegada_habitacion: { $lte: fechaSalidaLocal.toISOString().split("T")[0] }, // 2025-05-02T05:00:00.000Z
-        fecha_salida_habitacion: { $gt: inicioDelDiaLocal.toISOString().split("T")[0] }, // 2025-05-01T05:00:00.000Z
+        $or: [
+          {
+            fecha_llegada_habitacion: {
+              $lte: fechaSalidaLocal.toISOString().split("T")[0],
+            },
+            fecha_salida_habitacion: {
+              $gt: inicioDelDiaLocal.toISOString().split("T")[0],
+            },
+          },
+          {
+            fecha_llegada_habitacion: null,
+            fecha_llegada: { $lte: fechaSalidaLocal.toISOString().split("T")[0] },
+            fecha_salida: { $gt: inicioDelDiaLocal.toISOString().split("T")[0] },
+          },
+        ],
       })
       .toArray();
 
@@ -37,7 +50,9 @@ router.get("/", async (req, res) => {
 
     //Quitar de reservas los que tienen fecha de llegada mayor a hoy
     const reservasHoyFiltradas = reservasFiltradas.filter((reserva) => {
-      const fechaLlegada = new Date(reserva.fecha_llegada);
+      const fechaLlegadaAux =
+        reserva.fecha_llegada_habitacion || reserva.fecha_llegada;
+      const fechaLlegada = new Date(fechaLlegadaAux);
       return fechaLlegada <= inicioDelDiaLocal;
     });
 
