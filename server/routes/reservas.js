@@ -22,8 +22,8 @@ router.get("/", async (req, res) => {
     // Ejecutar la query con fechas en UTC
     const reservasHoy = await collection
       .find({
-        fecha_llegada: { $lte: fechaSalidaLocal.toISOString().split("T")[0] }, // 2025-05-02T05:00:00.000Z
-        fecha_salida: { $gt: inicioDelDiaLocal.toISOString().split("T")[0] }, // 2025-05-01T05:00:00.000Z
+        fecha_llegada_habitacion: { $lte: fechaSalidaLocal.toISOString().split("T")[0] }, // 2025-05-02T05:00:00.000Z
+        fecha_salida_habitacion: { $gt: inicioDelDiaLocal.toISOString().split("T")[0] }, // 2025-05-01T05:00:00.000Z
       })
       .toArray();
 

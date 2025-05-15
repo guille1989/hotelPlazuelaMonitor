@@ -92,7 +92,7 @@ function App() {
       //30 is the number of rooms
       const ocupacionConCheckIn = actualizacionreserva
         .filter((stat) => parseInt(stat.estado_habitacion) !== '31')
-        .reduce((acc, stat) => acc + parseInt(stat.cantid_reh, 10), 0);
+        .reduce((acc, stat) => acc + (stat.cantid_reh ? parseInt(stat.cantid_reh, 10) : 1), 0);
       setOccupancyRate(parseFloat(((occupancyRate * 100) / 29).toFixed(2)));
       setOccupancyWithCheckIn(occupancyRate);
 
@@ -110,7 +110,7 @@ function App() {
             //parseInt(stat.estado_habitacion) === 31 &&
             parseInt(stat.cantid_reh) > 0
         )
-        .reduce((acc, stat) => acc + stat.valor_habitacion * stat.cantid_reh, 0);
+        .reduce((acc, stat) => acc + stat.valor_habitacion * (stat.cantid_reh ? stat.cantid_reh : 1), 0);
       setRevPAR(revPAR / 29);
 
       //Ingresos
@@ -121,7 +121,7 @@ function App() {
             parseInt(stat.cantid_reh) > 0
         )
         .reduce(
-          (acc, stat) => acc + stat.valor_habitacion * stat.cantid_reh,
+          (acc, stat) => acc + stat.valor_habitacion * (stat.cantid_reh ? stat.cantid_reh : 1),
           0
         );
       setIngreso(ingresoPorReservaConchecking);

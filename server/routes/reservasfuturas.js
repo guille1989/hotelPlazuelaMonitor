@@ -23,21 +23,40 @@ router.get("/", async (req, res) => {
     // Reservas cuya estancia se traslape con algún día del rango
     const reservas = await collection
       .find({
-        fecha_llegada: { $lte: finUtc.toISOString().split("T")[0] },
-        fecha_salida: { $gt: inicioUtc.toISOString().split("T")[0] },
+        $or: [
+          {
+            fecha_llegada_habitacion: {
+              $lte: finUtc.toISOString().split("T")[0],
+            },
+            fecha_salida_habitacion: {
+              $gt: inicioUtc.toISOString().split("T")[0],
+            },
+          },
+          {
+            fecha_llegada_habitacion: null,
+            fecha_llegada: { $lte: finUtc.toISOString().split("T")[0] },
+            fecha_salida: { $gt: inicioUtc.toISOString().split("T")[0] },
+          },
+        ],
       })
       .toArray();
 
     // Procesar las reservas para ajustar `fecha_salida` si `fecha_ult_mod` existe y es mayor
     const reservasProcesadas = reservas.map((reserva) => {
+      //Validamos que fecha tenemos si fecha_llegada_habitacion o fecha_llegada
+      const fechaSalida =
+        reserva.fecha_salida_habitacion || reserva.fecha_salida;
+
       if (
         reserva.fecha_ult_mod && // Verifica que `fecha_ult_mod` exista
-        new Date(reserva.fecha_ult_mod) > new Date(reserva.fecha_salida) // Compara las fechas
+        new Date(reserva.fecha_ult_mod) > new Date(fechaSalida) // Compara las fechas
       ) {
         // Reemplaza `fecha_salida` con `fecha_ult_mod`
         return {
           ...reserva,
-          fecha_salida: reserva.fecha_ult_mod,
+          ...(reserva.fecha_salida_habitacion
+            ? { fecha_salida_habitacion: reserva.fecha_ult_mod }
+            : { fecha_salida: reserva.fecha_ult_mod }),
         };
       }
       return reserva; // Si no se cumple la condición, devuelve la reserva sin cambios
@@ -65,8 +84,15 @@ router.get("/", async (req, res) => {
     //console.log("Conteo por día inicial:", conteoPorDia);
 
     reservasFiltradas.forEach((reserva) => {
-      const llegada = reserva.fecha_llegada;
-      const salida = reserva.fecha_salida;
+
+      const fechaLlegada =
+        reserva.fecha_llegada_habitacion || reserva.fecha_llegada;
+
+      const fechaSalida =
+        reserva.fecha_salida_habitacion || reserva.fecha_salida;
+
+      const llegada = fechaLlegada;
+      const salida = fechaSalida;
 
       for (let i = 0; i <= 30; i++) {
         const dia = new Date(inicioUtc);
