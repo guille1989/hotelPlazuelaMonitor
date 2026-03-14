@@ -13,6 +13,8 @@ import StatCard from "./components/statcard/StatCard";
 import OccupancyForecast from "./components/statcard/OccupancyForecast";
 import OcupacionChart from "./components/linechart/OcupacionChart";
 import OcupacionPasadoChart from "./components/linechart/OcupacionPasadoChart";
+import GaugeUniversal from "./components/gauge/gaugeuniversal";
+
 
 function App() {
   const [actualizacionreserva, setActualizacionreserva] = useState([]);
@@ -64,7 +66,7 @@ function App() {
         const response = await axios.get(
           `http://${process.env.REACT_APP_URL_PRODUCCION}/api/reservascanceladas`
         );
-        //console.log(response.data); 
+        //console.log(response.data);
         setActualizacionreservacancelaciones(response.data);
         setLoading(false);
       } catch (err) {
@@ -91,16 +93,18 @@ function App() {
       //projectedOccupancy is length of stats * 100 / 30 with two decimal points
       //30 is the number of rooms
       const ocupacionConCheckIn = actualizacionreserva
-        .filter((stat) => parseInt(stat.estado_habitacion) !== '31')
-        .reduce((acc, stat) => acc + (stat.cantid_reh ? parseInt(stat.cantid_reh, 10) : 1), 0);
+        .filter((stat) => parseInt(stat.estado_habitacion) !== "31")
+        .reduce(
+          (acc, stat) =>
+            acc + (stat.cantid_reh ? parseInt(stat.cantid_reh, 10) : 1),
+          0
+        );
       setOccupancyRate(parseFloat(((occupancyRate * 100) / 29).toFixed(2)));
       setOccupancyWithCheckIn(occupancyRate);
 
       setProjectedOcupacionCheckIn(ocupacionConCheckIn);
       setProjectedOccupancy(
-        parseFloat(
-          (((ocupacionConCheckIn) * 100) / 29).toFixed(2)
-        )
+        parseFloat(((ocupacionConCheckIn * 100) / 29).toFixed(2))
       );
 
       //revPAR is the sum of valor_habitacion for all elements with estado_habitacion = 31 and cantid_reh > 0
@@ -110,7 +114,12 @@ function App() {
             //parseInt(stat.estado_habitacion) === 31 &&
             parseInt(stat.cantid_reh) > 0
         )
-        .reduce((acc, stat) => acc + stat.valor_habitacion * (stat.cantid_reh ? stat.cantid_reh : 1), 0);
+        .reduce(
+          (acc, stat) =>
+            acc +
+            stat.valor_habitacion * (stat.cantid_reh ? stat.cantid_reh : 1),
+          0
+        );
       setRevPAR(revPAR / 29);
 
       //Ingresos
@@ -121,7 +130,9 @@ function App() {
             parseInt(stat.cantid_reh) > 0
         )
         .reduce(
-          (acc, stat) => acc + stat.valor_habitacion * (stat.cantid_reh ? stat.cantid_reh : 1),
+          (acc, stat) =>
+            acc +
+            stat.valor_habitacion * (stat.cantid_reh ? stat.cantid_reh : 1),
           0
         );
       setIngreso(ingresoPorReservaConchecking);
@@ -148,6 +159,8 @@ function App() {
   return (
     <div className="App">
       <TopBar />
+
+      {/*   */}
 
       <div
         style={{
@@ -178,7 +191,7 @@ function App() {
             maxvalue={100}
             flag={"%"}
           />
-          {/*
+      
           <StatCard
             value={personasEnHotel}
             label="👥 Total de Huéspedes"
@@ -186,7 +199,7 @@ function App() {
             maxvalue={100}
             flag={"n"}
           />
-          */}
+       
         </div>
 
         <div style={{ width: "48%" }}>
@@ -205,7 +218,7 @@ function App() {
             maxvalue={10000000}
             flag={"ocrev"}
           />
-          {/*
+        
           <StatCard
             value={cancelacionReservas}
             label="❌ Numero de cancelación"
@@ -213,10 +226,12 @@ function App() {
             maxvalue={100}
             flag={"ocrev"}
           />
-          */}
+       
         </div>
       </div>
+     
 
+      {/* Ocupación actual     */} 
       <div
         style={{
           display: "flex",
@@ -269,6 +284,7 @@ function App() {
         </Box>
         <h1 className="title">días</h1>
       </div>
+
       <div
         style={{
           display: "flex",
@@ -279,6 +295,7 @@ function App() {
       >
         <OcupacionChart valorIntervalo={fechas} />
       </div>
+    
 
       {/*Ocupacion pasada */}
       <div
@@ -299,7 +316,7 @@ function App() {
             marginLeft: "10px",
           }}
         >
-          <FormControl fullWidth sx={{ }}>
+          <FormControl fullWidth sx={{}}>
             <Select
               labelId="demo-simple-select-label"
               id="demo-simple-select"
@@ -342,6 +359,7 @@ function App() {
       >
         <OcupacionPasadoChart valorIntervalo={fechasPasado} />
       </div>
+      
     </div>
   );
 }

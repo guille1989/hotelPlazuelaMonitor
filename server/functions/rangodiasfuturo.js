@@ -9,7 +9,8 @@ function getBogotaUtcRangoDesdeHoy(dias) {
   const ahora = new Date();
 
   // Bogotá timezone offset, compensando por posibles DST (aunque Bogotá no usa DST)
-  const offsetMinutos = ahora.getTimezoneOffset(); // en minutos respecto a UTC
+  const offsetMinutos = 300; // Bogotá siempre UTC-5 (5 * 60 = 300 minutos)
+
 
   // Crear fecha local a medianoche (00:00) en Bogotá
   const hoyLocal = new Date(
