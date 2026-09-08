@@ -11,23 +11,8 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { TOTAL_HABITACIONES } from "../../config";
+import { TOTAL_HABITACIONES, MESES } from "../../config";
 import "./OcupacionMes.css";
-
-const MESES = [
-  "Enero",
-  "Febrero",
-  "Marzo",
-  "Abril",
-  "Mayo",
-  "Junio",
-  "Julio",
-  "Agosto",
-  "Septiembre",
-  "Octubre",
-  "Noviembre",
-  "Diciembre",
-];
 
 const DIAS_SEMANA = [
   "domingo",

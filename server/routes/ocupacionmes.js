@@ -1,26 +1,13 @@
 const express = require("express");
 const router = express.Router();
 const { diasDelMes, mesActualBogota, hoyBogota } = require("../functions/fechas");
+const {
+  estaCancelada,
+  salidaEfectiva,
+  habitaciones,
+  filtroTraslape,
+} = require("../functions/ocupacion");
 const { getDb } = require("../db");
-
-function estaCancelada(doc) {
-  return !!doc.fecha_cancelacion && !doc.fecha_cancelacion.startsWith("1900");
-}
-
-// Salida efectiva: si fecha_ult_mod es posterior a la salida, la estancia se extendió.
-function salidaEfectiva(reserva) {
-  const salida = reserva.fecha_salida_habitacion || reserva.fecha_salida;
-  if (reserva.fecha_ult_mod && reserva.fecha_ult_mod > salida) {
-    return reserva.fecha_ult_mod;
-  }
-  return salida;
-}
-
-function habitaciones(reserva) {
-  const origen = (reserva.origen || "").trim().toLowerCase();
-  if (origen === "sin reserva") return 1;
-  return reserva.cantid_reh > 0 ? reserva.cantid_reh : 1;
-}
 
 // GET /api/ocupacionmes?mes=YYYY-MM  -> ocupación día a día del mes.
 // Sin `mes` usa el mes actual (Bogotá).
@@ -39,19 +26,7 @@ router.get("/", async (req, res) => {
 
     // Reservas cuya estancia se traslapa con el mes (comparación de strings).
     const reservas = await collection
-      .find({
-        $or: [
-          {
-            fecha_llegada_habitacion: { $lte: fin },
-            fecha_salida_habitacion: { $gt: inicio },
-          },
-          {
-            fecha_llegada_habitacion: null,
-            fecha_llegada: { $lte: fin },
-            fecha_salida: { $gt: inicio },
-          },
-        ],
-      })
+      .find(filtroTraslape(inicio, fin))
       .toArray();
 
     const conteoPorDia = dias.map((dia) => ({

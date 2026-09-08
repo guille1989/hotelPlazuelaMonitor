@@ -5,7 +5,8 @@ import axios from "axios";
 import TopBar from "./components/top/TopBar";
 import StatCard from "./components/statcard/StatCard";
 import OcupacionMes from "./components/linechart/OcupacionMes";
-import { TOTAL_HABITACIONES, formatCOP } from "./config";
+import ResumenPeriodo from "./components/linechart/ResumenPeriodo";
+import { TOTAL_HABITACIONES, formatCOP, MESES } from "./config";
 
 function App() {
   const [actualizacionreserva, setActualizacionreserva] = useState([]);
@@ -25,8 +26,9 @@ function App() {
   const [personasEnHotel, setPersonasEnHotel] = useState(0);
   const [cancelacionReservas, setCancelacionReservas] = useState(0);
 
-  const [vista, setVista] = useState("hoy"); // "hoy" | "mes"
-  const [mesData, setMesData] = useState(null); // { titulo, dias, hoy } del mes en la gráfica
+  const [vista, setVista] = useState("hoy"); // "hoy" | "mes" | "resumen"
+  const [mesData, setMesData] = useState(null); // datos del mes en la gráfica
+  const [periodoData, setPeriodoData] = useState(null); // datos del periodo (resumen)
 
   // Métricas agregadas del mes seleccionado en la gráfica.
   let metricasMes = null;
@@ -46,6 +48,30 @@ function App() {
       totalTarifas: totalTarifasMes,
       tarifaPromedio:
         habsTarifaMes > 0 ? Math.round(totalTarifasMes / habsTarifaMes) : 0,
+    };
+  }
+
+  // Métricas agregadas del periodo (vista Resumen).
+  let metricasPeriodo = null;
+  if (periodoData && periodoData.meses.length) {
+    const M = periodoData.meses;
+    const habNoche = M.reduce((a, x) => a + x.habNoche, 0);
+    const capacidad =
+      M.reduce((a, x) => a + x.dias, 0) * TOTAL_HABITACIONES;
+    const tarifas = M.reduce((a, x) => a + x.tarifas, 0);
+    const habsTarifa = M.reduce((a, x) => a + x.habsTarifa, 0);
+    const medias = M.map((x) => ({
+      mes: x.mes,
+      media: Math.round((x.habNoche * 100) / (x.dias * TOTAL_HABITACIONES)),
+    }));
+    const mejor = medias.reduce((a, b) => (b.media > a.media ? b : a), medias[0]);
+    const [my, mm] = mejor.mes.split("-").map(Number);
+    metricasPeriodo = {
+      media: capacidad > 0 ? Math.round((habNoche * 100) / capacidad) : 0,
+      mejorMesPct: `${mejor.media}%`,
+      mejorMesEtiqueta: `${MESES[mm - 1].slice(0, 3)} ${my}`,
+      canceladas: M.reduce((a, x) => a + x.canceladas, 0),
+      tarifaPromedio: habsTarifa > 0 ? Math.round(tarifas / habsTarifa) : 0,
     };
   }
 
@@ -164,6 +190,12 @@ function App() {
         >
           Mes
         </button>
+        <button
+          className={vista === "resumen" ? "activo" : ""}
+          onClick={() => setVista("resumen")}
+        >
+          Resumen
+        </button>
       </div>
 
       {vista === "hoy" && (
@@ -258,7 +290,45 @@ function App() {
         </>
       )}
 
-      <OcupacionMes onData={setMesData} />
+      {vista === "resumen" && (
+        <>
+          <section className="grupo">
+            <div className="grupo-titulo">
+              Ocupación{periodoData ? ` · ${periodoData.titulo}` : ""}
+            </div>
+            <div className="grupo-cards ocupacion">
+              <StatCard
+                value={metricasPeriodo ? `${metricasPeriodo.media}%` : "—"}
+                sub="promedio del periodo"
+                label="📊 Ocupación media"
+              />
+              <StatCard
+                value={metricasPeriodo ? metricasPeriodo.mejorMesPct : "—"}
+                sub={metricasPeriodo ? metricasPeriodo.mejorMesEtiqueta : "más alto"}
+                label="⬆️ Mejor mes"
+              />
+              <StatCard
+                value={metricasPeriodo ? metricasPeriodo.canceladas : "—"}
+                sub="habitaciones"
+                label="❌ Canceladas"
+              />
+              <StatCard
+                value={
+                  metricasPeriodo ? formatCOP(metricasPeriodo.tarifaPromedio) : "—"
+                }
+                sub="por habitación-noche"
+                label="💵 Tarifa promedio"
+              />
+            </div>
+          </section>
+        </>
+      )}
+
+      {vista === "resumen" ? (
+        <ResumenPeriodo onData={setPeriodoData} />
+      ) : (
+        <OcupacionMes onData={setMesData} />
+      )}
     </div>
   );
 }

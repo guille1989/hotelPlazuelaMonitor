@@ -8,3 +8,39 @@ export const formatCOP = (n) =>
     currency: "COP",
     maximumFractionDigits: 0,
   }).format(Number(n) || 0);
+
+export const MESES = [
+  "Enero",
+  "Febrero",
+  "Marzo",
+  "Abril",
+  "Mayo",
+  "Junio",
+  "Julio",
+  "Agosto",
+  "Septiembre",
+  "Octubre",
+  "Noviembre",
+  "Diciembre",
+];
+
+export const MESES_CORTO = [
+  "Ene",
+  "Feb",
+  "Mar",
+  "Abr",
+  "May",
+  "Jun",
+  "Jul",
+  "Ago",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dic",
+];
+
+// "2026-09" -> "Sep 2026"
+export const etiquetaMes = (ym) => {
+  const [y, m] = ym.split("-").map(Number);
+  return `${MESES_CORTO[m - 1]} ${y}`;
+};
