@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import {
-  LineChart,
+  ComposedChart,
+  Area,
   Line,
+  CartesianGrid,
   ReferenceLine,
   XAxis,
   YAxis,
@@ -10,6 +12,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { TOTAL_HABITACIONES } from "../../config";
+import "./OcupacionMes.css";
 
 const MESES = [
   "Enero",
@@ -26,17 +29,37 @@ const MESES = [
   "Diciembre",
 ];
 
+const DIAS_SEMANA = [
+  "domingo",
+  "lunes",
+  "martes",
+  "miércoles",
+  "jueves",
+  "viernes",
+  "sábado",
+];
+
+// "2026-09-08" -> "lunes 8 de septiembre"
+const fechaLarga = (ymd) => {
+  const [y, m, d] = ymd.split("-").map(Number);
+  const dt = new Date(y, m - 1, d);
+  return `${DIAS_SEMANA[dt.getDay()]} ${d} de ${MESES[m - 1].toLowerCase()}`;
+};
+
+const pct = (ocupacion) =>
+  Math.round(((ocupacion || 0) * 100) / TOTAL_HABITACIONES);
+
 // Punto rojo pequeño con el número de habitaciones canceladas ese día.
 const CancelDot = ({ cx, cy, payload }) => {
   if (cx == null || cy == null || !payload || !payload.cancelaciones) return null;
   return (
     <g>
-      <circle cx={cx} cy={cy} r={3} fill="#EF4444" />
+      <circle cx={cx} cy={cy} r={3} fill="#f87171" />
       <text
         x={cx}
         y={cy - 8}
         textAnchor="middle"
-        fill="#EF4444"
+        fill="#f87171"
         fontSize={11}
         fontWeight="bold"
       >
@@ -49,23 +72,11 @@ const CancelDot = ({ cx, cy, payload }) => {
 // Tick del eje X: solo el número de día ("2026-09-08" -> "8").
 const DiaTick = ({ x, y, payload }) => (
   <g transform={`translate(${x},${y})`}>
-    <text x={0} y={0} dy={12} textAnchor="middle" fill="#9CA3AF" fontSize={11}>
+    <text x={0} y={0} dy={12} textAnchor="middle" fill="#94a3b8" fontSize={11}>
       {parseInt(payload.value.slice(8, 10), 10)}
     </text>
   </g>
 );
-
-const botonEstilo = {
-  backgroundColor: "#353d54",
-  color: "#fff",
-  border: "none",
-  borderRadius: 6,
-  width: 34,
-  height: 34,
-  fontSize: 20,
-  lineHeight: 1,
-  cursor: "pointer",
-};
 
 export default function OcupacionMes() {
   const [offset, setOffset] = useState(0); // 0 = mes actual
@@ -118,156 +129,182 @@ export default function OcupacionMes() {
 
   const hoyEnEsteMes =
     data.hoy && data.dias.some((d) => d.dia === data.hoy) ? data.hoy : null;
+  const anchoMin = Math.max(640, (data.dias.length || 30) * 26);
 
   return (
-    <div style={{ width: "100%" }}>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          gap: 16,
-          marginTop: 20,
-        }}
-      >
+    <div className="om-card">
+      <div className="om-nav">
         <button
+          className="om-arrow"
           onClick={() => setOffset((o) => o - 1)}
-          style={botonEstilo}
           aria-label="Mes anterior"
         >
           ‹
         </button>
-        <h1
-          className="title"
-          style={{ minWidth: 220, textAlign: "center", margin: 0 }}
-        >
-          {titulo}
-        </h1>
+        <div className="om-month">{titulo}</div>
         <button
+          className="om-arrow"
           onClick={() => setOffset((o) => o + 1)}
-          style={botonEstilo}
           aria-label="Mes siguiente"
         >
           ›
         </button>
       </div>
 
-      {loading && (
-        <div style={{ color: "white", marginTop: 20, textAlign: "center" }}>
-          Cargando...
-        </div>
-      )}
-      {error && !loading && (
-        <div style={{ textAlign: "center", marginTop: 20 }}>{error}</div>
-      )}
+      {loading && <div className="om-state">Cargando…</div>}
+      {error && !loading && <div className="om-state err">{error}</div>}
 
       {!loading && !error && (
-      <>
-        <div
-          style={{ overflowX: "auto", WebkitOverflowScrolling: "touch", width: "100%" }}
-        >
-        <div style={{ minWidth: Math.max(640, (data.dias.length || 30) * 26) }}>
-        <ResponsiveContainer width="100%" height={240}>
-          <LineChart
-            data={data.dias}
-            margin={{ top: 30, right: 20, left: -20, bottom: 0 }}
-            onMouseMove={handleActivo}
-            onClick={handleActivo}
-            onMouseLeave={() => setActivo(null)}
+        <>
+          <div
+            style={{
+              overflowX: "auto",
+              WebkitOverflowScrolling: "touch",
+              width: "100%",
+            }}
           >
-            <XAxis dataKey="dia" tick={<DiaTick />} interval={0} />
-            <YAxis domain={[0, TOTAL_HABITACIONES]} />
-            <ReferenceLine
-              y={TOTAL_HABITACIONES}
-              strokeDasharray="3 3"
-              stroke="#9CA3AF"
-              label={{ value: "100%", position: "right", fill: "#9CA3AF", fontSize: 11 }}
-            />
-            <ReferenceLine
-              y={TOTAL_HABITACIONES / 2}
-              strokeDasharray="3 3"
-              stroke="#9CA3AF"
-              label={{ value: "50%", position: "right", fill: "#9CA3AF", fontSize: 11 }}
-            />
-            {hoyEnEsteMes && (
-              <ReferenceLine
-                x={hoyEnEsteMes}
-                stroke="#FBBF24"
-                strokeWidth={1.5}
-                label={{ value: "hoy", position: "top", fill: "#FBBF24", fontSize: 11 }}
-              />
-            )}
-            {/* Línea discontinua roja desde el nº de canceladas hasta el eje X */}
-            {data.dias
-              .filter((d) => d.cancelaciones > 0)
-              .map((d) => (
-                <ReferenceLine
-                  key={d.dia}
-                  segment={[
-                    { x: d.dia, y: d.cancelaciones },
-                    { x: d.dia, y: 0 },
-                  ]}
-                  stroke="#EF4444"
-                  strokeDasharray="4 4"
-                  strokeWidth={1}
-                />
-              ))}
-            <Tooltip
-              content={() => null}
-              cursor={{ stroke: "#9CA3AF", strokeDasharray: "3 3" }}
-            />
-            <Line
-              type="monotone"
-              dataKey="ocupacion"
-              stroke="#22C55E"
-              strokeWidth={2}
-              dot={{ r: 2 }}
-              isAnimationActive={false}
-            />
-            <Line
-              type="monotone"
-              dataKey="cancelMark"
-              stroke="none"
-              legendType="none"
-              isAnimationActive={false}
-              dot={<CancelDot />}
-              activeDot={false}
-              connectNulls={false}
-            />
-          </LineChart>
-        </ResponsiveContainer>
-        </div>
-        </div>
+            <div style={{ minWidth: anchoMin }}>
+              <ResponsiveContainer width="100%" height={240}>
+                <ComposedChart
+                  data={data.dias}
+                  margin={{ top: 24, right: 16, left: -12, bottom: 0 }}
+                  onMouseMove={handleActivo}
+                  onClick={handleActivo}
+                  onMouseLeave={() => setActivo(null)}
+                >
+                  <defs>
+                    <linearGradient id="omOcupacion" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#22C55E" stopOpacity={0.35} />
+                      <stop offset="100%" stopColor="#22C55E" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
 
-        <div
-          style={{
-            margin: "6px auto 0",
-            maxWidth: 340,
-            background: "#353d54",
-            color: "#fff",
-            borderRadius: 6,
-            padding: "8px 12px",
-            textAlign: "center",
-            fontSize: 14,
-            minHeight: 44,
-            boxSizing: "border-box",
-          }}
-        >
-          {activo ? (
-            <>
-              <span style={{ fontWeight: "bold" }}>{activo.dia}</span>
-              <span>{` · Ocupadas: ${activo.ocupacion ?? 0}`}</span>
-              {activo.cancelaciones > 0 && (
-                <span style={{ color: "#EF4444" }}>
-                  {` · Canceladas: ${activo.cancelaciones}`}
+                  <CartesianGrid
+                    stroke="rgba(255,255,255,0.06)"
+                    vertical={false}
+                  />
+                  <XAxis
+                    dataKey="dia"
+                    tick={<DiaTick />}
+                    interval={0}
+                    axisLine={{ stroke: "rgba(255,255,255,0.15)" }}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    domain={[0, TOTAL_HABITACIONES]}
+                    width={34}
+                    tick={{ fill: "#94a3b8", fontSize: 11 }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+
+                  <ReferenceLine
+                    y={TOTAL_HABITACIONES}
+                    strokeDasharray="3 3"
+                    stroke="rgba(255,255,255,0.18)"
+                    label={{
+                      value: "100%",
+                      position: "right",
+                      fill: "#94a3b8",
+                      fontSize: 10,
+                    }}
+                  />
+                  <ReferenceLine
+                    y={TOTAL_HABITACIONES / 2}
+                    strokeDasharray="3 3"
+                    stroke="rgba(255,255,255,0.18)"
+                    label={{
+                      value: "50%",
+                      position: "right",
+                      fill: "#94a3b8",
+                      fontSize: 10,
+                    }}
+                  />
+                  {hoyEnEsteMes && (
+                    <ReferenceLine
+                      x={hoyEnEsteMes}
+                      stroke="#FBBF24"
+                      strokeWidth={1.5}
+                      label={{
+                        value: "hoy",
+                        position: "top",
+                        fill: "#FBBF24",
+                        fontSize: 11,
+                      }}
+                    />
+                  )}
+                  {/* Línea discontinua roja desde el nº de canceladas hasta el eje X */}
+                  {data.dias
+                    .filter((d) => d.cancelaciones > 0)
+                    .map((d) => (
+                      <ReferenceLine
+                        key={d.dia}
+                        segment={[
+                          { x: d.dia, y: d.cancelaciones },
+                          { x: d.dia, y: 0 },
+                        ]}
+                        stroke="#f87171"
+                        strokeDasharray="4 4"
+                        strokeWidth={1}
+                      />
+                    ))}
+
+                  <Tooltip
+                    content={() => null}
+                    cursor={{
+                      stroke: "rgba(255,255,255,0.25)",
+                      strokeDasharray: "3 3",
+                    }}
+                  />
+
+                  <Area
+                    type="monotone"
+                    dataKey="ocupacion"
+                    stroke="#22C55E"
+                    strokeWidth={2}
+                    fill="url(#omOcupacion)"
+                    isAnimationActive={false}
+                    activeDot={{ r: 4, fill: "#22C55E", stroke: "#fff", strokeWidth: 1.5 }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="cancelMark"
+                    stroke="none"
+                    legendType="none"
+                    isAnimationActive={false}
+                    dot={<CancelDot />}
+                    activeDot={false}
+                    connectNulls={false}
+                  />
+                </ComposedChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          <div className="om-readout">
+            {activo ? (
+              <>
+                <span className="om-day">{fechaLarga(activo.dia)}</span>
+                <span>
+                  Ocupación{" "}
+                  <b>
+                    {activo.ocupacion ?? 0}/{TOTAL_HABITACIONES}
+                  </b>{" "}
+                  · <b>{pct(activo.ocupacion)}%</b>
                 </span>
-              )}
-            </>
-          ) : (
-            <span style={{ opacity: 0.6 }}>Pasa el cursor o toca un día</span>
-          )}
-        </div>
-      </>
+                {activo.cancelaciones > 0 && (
+                  <span className="om-cancel">
+                    Canceladas <b>{activo.cancelaciones}</b>
+                  </span>
+                )}
+              </>
+            ) : (
+              <span className="om-hint">
+                Pasa el cursor o toca un día para ver el detalle
+              </span>
+            )}
+          </div>
+        </>
       )}
     </div>
   );
