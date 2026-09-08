@@ -116,7 +116,8 @@ export default function OcupacionMes() {
         if (cancelado) return;
         const dias = r.data.dias.map((d) => ({
           ...d,
-          cancelMark: d.cancelaciones > 0 ? Math.max(d.ocupacion, 1) : null,
+          // el punto se ubica a la altura del nº de canceladas en el eje Y
+          cancelMark: d.cancelaciones > 0 ? d.cancelaciones : null,
         }));
         setData({ dias, hoy: r.data.hoy });
         setError(null);
