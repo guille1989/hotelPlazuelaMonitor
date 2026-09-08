@@ -2,7 +2,15 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import "./TopBar.css";
 
-function TopBar() {
+const VISTAS = [
+  ["hoy", "Hoy"],
+  ["mes", "Mes"],
+  ["resumen", "Resumen"],
+  ["pickup", "Pickup"],
+  ["canales", "Canales"],
+];
+
+function TopBar({ vista, onVista }) {
   const [actualizacionreserva, setActualizacionreserva] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -84,21 +92,6 @@ function TopBar() {
     </div>
   );
 
-  if (loading)
-    return (
-      <div className="topbar">
-        {marca}
-        <div className="topbar-cargando">Cargando…</div>
-      </div>
-    );
-  if (error)
-    return (
-      <div className="topbar">
-        {marca}
-        <div className="topbar-cargando">{error}</div>
-      </div>
-    );
-
   const mostRecent = actualizacionreserva.length
     ? actualizacionreserva.reduce((latest, current) => {
         const latestDate = new Date(latest.fecha);
@@ -112,21 +105,38 @@ function TopBar() {
   return (
     <div className="topbar">
       {marca}
-      <div className="topbar-row">
-        <div>
-          <div className="topbar-eyebrow">Monitor de Ocupación</div>
-          <h1 className="topbar-fecha">
-            <span>{fechaLinea1}</span> <span>{fechaLinea2}</span>
-          </h1>
-        </div>
-        <div className="topbar-update">
-          <div className="lbl">Última actualización</div>
-          <div className="val">{formatearFecha(mostRecent?.fecha)}</div>
-          <div className={`topbar-estado ${ok ? "ok" : "err"}`}>
-            <span className="dot" />
-            <span className="txt">{ok ? "EN VIVO" : "REVISAR"}</span>
+
+      {loading || error ? (
+        <div className="topbar-cargando">{error || "Cargando…"}</div>
+      ) : (
+        <div className="topbar-row">
+          <div>
+            <div className="topbar-eyebrow">Monitor de Ocupación</div>
+            <h1 className="topbar-fecha">
+              <span>{fechaLinea1}</span> <span>{fechaLinea2}</span>
+            </h1>
+          </div>
+          <div className="topbar-update">
+            <div className="lbl">Última actualización</div>
+            <div className="val">{formatearFecha(mostRecent?.fecha)}</div>
+            <div className={`topbar-estado ${ok ? "ok" : "err"}`}>
+              <span className="dot" />
+              <span className="txt">{ok ? "EN VIVO" : "REVISAR"}</span>
+            </div>
           </div>
         </div>
+      )}
+
+      <div className="toggle-vista">
+        {VISTAS.map(([id, etiqueta]) => (
+          <button
+            key={id}
+            className={vista === id ? "activo" : ""}
+            onClick={() => onVista(id)}
+          >
+            {etiqueta}
+          </button>
+        ))}
       </div>
     </div>
   );

@@ -223,40 +223,7 @@ function App() {
 
   return (
     <div className="App">
-      <TopBar />
-
-      <div className="toggle-vista">
-        <button
-          className={vista === "hoy" ? "activo" : ""}
-          onClick={() => setVista("hoy")}
-        >
-          Hoy
-        </button>
-        <button
-          className={vista === "mes" ? "activo" : ""}
-          onClick={() => setVista("mes")}
-        >
-          Mes
-        </button>
-        <button
-          className={vista === "resumen" ? "activo" : ""}
-          onClick={() => setVista("resumen")}
-        >
-          Resumen
-        </button>
-        <button
-          className={vista === "pickup" ? "activo" : ""}
-          onClick={() => setVista("pickup")}
-        >
-          Pickup
-        </button>
-        <button
-          className={vista === "canales" ? "activo" : ""}
-          onClick={() => setVista("canales")}
-        >
-          Canales
-        </button>
-      </div>
+      <TopBar vista={vista} onVista={setVista} />
 
       {vista === "hoy" && (
         <Carrusel
