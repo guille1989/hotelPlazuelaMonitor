@@ -34,9 +34,16 @@ router.get("/", async (req, res) => {
       };
     });
 
-    // Agregados por MES DE LLEGADA (para estancia media y tasa de cancelación).
+    // Agregados por MES DE LLEGADA (estancia media, tasa de cancelación, antelación).
     // Salen de reservas — el folio no distingue check-in/reservada ni cancelaciones.
-    const arribo = { checkin: 0, reservadas: 0, canceladas: 0, roomNoches: 0 };
+    const arribo = {
+      checkin: 0,
+      reservadas: 0,
+      canceladas: 0,
+      roomNoches: 0,
+      antelacionDias: 0,
+      antelacionN: 0,
+    };
     for (const r of reservas) {
       const llegada = r.fecha_llegada_habitacion || r.fecha_llegada;
       const salida = salidaEfectiva(r);
@@ -48,6 +55,10 @@ router.get("/", async (req, res) => {
         if (String(r.estado_habitacion) === "31") arribo.checkin += habs;
         else arribo.reservadas += habs;
         arribo.roomNoches += noches(llegada, salida) * habs;
+        if (r.fecha_reserva && r.fecha_reserva <= llegada) {
+          arribo.antelacionDias += noches(r.fecha_reserva, llegada);
+          arribo.antelacionN += 1;
+        }
       }
     }
 

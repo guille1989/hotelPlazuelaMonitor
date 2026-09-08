@@ -56,6 +56,9 @@ router.get("/", async (req, res) => {
         reservadas: 0,
         canceladasLlegada: 0,
         roomNoches: 0,
+        antelacionDias: 0,
+        antelacionN: 0,
+        canal: {}, // habitaciones por canal (modo_reserva), solo no canceladas
       };
     });
     const idx = new Map(meses.map((M, i) => [M.mes, i]));
@@ -95,6 +98,12 @@ router.get("/", async (req, res) => {
         if (String(r.estado_habitacion) === "31") M.checkin += habs;
         else M.reservadas += habs;
         M.roomNoches += noches(llegada, salida) * habs;
+        if (r.fecha_reserva && r.fecha_reserva <= llegada) {
+          M.antelacionDias += noches(r.fecha_reserva, llegada);
+          M.antelacionN += 1;
+        }
+        const modo = r.modo_reserva || "?";
+        M.canal[modo] = (M.canal[modo] || 0) + habs;
       }
     }
 
