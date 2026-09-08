@@ -1,143 +1,130 @@
-.om-card.pickup-card {
-  width: calc(100% - 8px);
-  padding: 18px 14px 16px;
+.pickup {
+  padding: 4px 16px 24px;
 }
 
-.pickup-heading {
-  justify-content: center;
-  margin-bottom: 6px;
+.pickup-head {
+  text-align: center;
+  margin: 20px 0 4px;
 }
-
-.pickup-heading .om-month {
-  flex: 0 1 auto;
+.pickup-titulo {
   font-size: 1rem;
   font-weight: 700;
+  color: var(--color-text);
+  letter-spacing: -0.02em;
 }
 
 .pickup-periodo {
+  display: flex;
+  justify-content: center;
   gap: 6px;
-  margin: 0 0 10px;
+  margin-top: 10px;
 }
-
 .pickup-periodo button {
-  min-width: 62px;
-  padding-inline: 12px;
+  border: none;
+  background: var(--color-surface);
+  color: var(--color-muted);
+  padding: 5px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: 0.75rem;
+  font-weight: 500;
+  transition: background 0.18s ease, color 0.18s ease;
+}
+.pickup-periodo button.activo {
+  background: var(--color-accent);
+  color: #1f293d;
+  font-weight: 600;
 }
 
 .pickup-summary {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: center;
-  gap: 2px 4px;
-  margin: 2px 0 14px;
-  color: var(--color-muted);
-  font-size: 0.78rem;
-  line-height: 1.45;
   text-align: center;
+  margin: 12px 0 16px;
+  font-size: 0.78rem;
+  color: var(--color-muted);
+  line-height: 1.5;
 }
-
-.pickup-summary b,
-.pickup-values b {
+.pickup-summary b {
   font-weight: 700;
 }
-
 .pickup-summary .positivo,
-.pickup-values .positivo {
-  color: var(--color-positive);
+.pickup-net.positivo {
+  color: var(--color-accent);
 }
-
 .pickup-summary .negativo,
-.pickup-values .negativo {
+.pickup-net.negativo {
   color: var(--color-red);
 }
 
-.pickup-breakdown {
-  color: var(--color-muted);
-  font-size: 0.7rem;
-  opacity: 0.76;
-}
-
-.pickup-empty {
-  padding: 16px 0;
-}
-
 .pickup-list {
-  width: 100%;
-  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
 }
-
 .pickup-row {
-  margin-bottom: 11px;
-}
-
-.pickup-row:last-child {
-  margin-bottom: 0;
+  padding: 10px 0 8px;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .pickup-row-head {
   display: flex;
-  align-items: baseline;
   justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 4px;
-  font-size: 0.78rem;
-}
-
-.pickup-month {
-  flex-shrink: 0;
-  color: var(--color-text);
-  font-weight: 600;
-}
-
-.pickup-values {
-  display: flex;
   align-items: baseline;
-  justify-content: flex-end;
-  gap: 6px;
-  min-width: 0;
-  margin-left: auto;
+  gap: 12px;
+  margin-bottom: 5px;
+}
+.pickup-month {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--color-text);
+}
+.pickup-net {
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
   white-space: nowrap;
+  text-align: right;
+}
+.pickup-breakdown {
+  font-weight: 400;
+  font-size: 0.7rem;
+  color: var(--color-muted);
 }
 
 .pickup-track {
-  height: 8px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 99px;
   overflow: hidden;
-  background: rgba(143, 164, 184, 0.2);
-  border-radius: 999px;
 }
-
 .pickup-fill {
   height: 100%;
-  min-width: 3px;
-  border-radius: inherit;
+  border-radius: 99px;
+  transition: width 0.4s ease;
 }
-
 .pickup-fill.positivo {
-  background: var(--color-positive);
+  background: var(--color-accent);
 }
-
 .pickup-fill.negativo {
   background: var(--color-red);
 }
 
-@media (max-width: 360px) {
-  .om-card.pickup-card {
-    padding-inline: 12px;
-  }
+.pickup-state {
+  text-align: center;
+  color: var(--color-muted);
+  padding: 24px 0;
+  font-size: 0.85rem;
+}
+.pickup-state.err {
+  color: var(--color-red);
+}
 
+@media (max-width: 360px) {
   .pickup-row-head {
     flex-wrap: wrap;
     gap: 1px 8px;
   }
-
-  .pickup-values {
+  .pickup-net {
     width: 100%;
-    justify-content: space-between;
-    margin-left: 0;
-  }
-
-  .pickup-summary .pickup-breakdown {
-    flex-basis: 100%;
+    text-align: left;
   }
 }

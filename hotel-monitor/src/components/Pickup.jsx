@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { MESES } from "../config";
-import "./linechart/OcupacionMes.css";
 import "./Pickup.css";
 
 const VENTANAS = [7, 14, 30];
@@ -41,62 +40,59 @@ export default function Pickup() {
   }, [dias]);
 
   const meses = (data && data.meses) || [];
-  const maxAbs = Math.max(1, ...meses.map((m) => Math.abs(m.nuevas - m.canceladas)));
+  const maxAbs = Math.max(
+    1,
+    ...meses.map((m) => Math.abs(m.nuevas - m.canceladas))
+  );
   const neto = data ? data.totales.nuevas - data.totales.canceladas : 0;
 
   return (
-    <div className="om-card pickup-card">
-      <div className="om-nav pickup-heading">
-        <div className="om-month">Pickup · últimos {dias} días</div>
+    <div className="pickup">
+      <div className="pickup-head">
+        <div className="pickup-titulo">Pickup · Últimos {dias} Días</div>
+        <div className="pickup-periodo">
+          {VENTANAS.map((v) => (
+            <button
+              key={v}
+              className={dias === v ? "activo" : ""}
+              onClick={() => setDias(v)}
+            >
+              {v} días
+            </button>
+          ))}
+        </div>
       </div>
 
-      <div className="om-periodo pickup-periodo">
-        {VENTANAS.map((v) => (
-          <button
-            key={v}
-            className={dias === v ? "activo" : ""}
-            onClick={() => setDias(v)}
-          >
-            {v} días
-          </button>
-        ))}
-      </div>
-
-      {loading && <div className="om-state">Cargando…</div>}
-      {error && !loading && <div className="om-state err">{error}</div>}
+      {loading && <div className="pickup-state">Cargando…</div>}
+      {error && !loading && <div className="pickup-state err">{error}</div>}
 
       {!loading && !error && data && (
         <>
           <div className="pickup-summary">
-            <span>Neto</span>
+            Neto{" "}
             <b className={neto >= 0 ? "positivo" : "negativo"}>
               {neto >= 0 ? "+" : ""}
               {neto} hab
-            </b>
-            <span className="pickup-breakdown">
-              ({data.totales.nuevas} nuevas · {data.totales.canceladas} canceladas)
-            </span>
+            </b>{" "}
+            ({data.totales.nuevas} nuevas · {data.totales.canceladas} canceladas)
           </div>
 
           {meses.length === 0 && (
-            <div className="om-state pickup-empty">
-              Sin movimiento en la ventana.
-            </div>
+            <div className="pickup-state">Sin movimiento en la ventana.</div>
           )}
 
           <div className="pickup-list">
             {meses.map((m) => {
               const n = m.nuevas - m.canceladas;
               const w = (Math.abs(n) / maxAbs) * 100;
+              const pos = n >= 0;
               return (
                 <div className="pickup-row" key={m.mes}>
                   <div className="pickup-row-head">
                     <span className="pickup-month">{etiqueta(m.mes)}</span>
-                    <span className="pickup-values">
-                      <b className={n >= 0 ? "positivo" : "negativo"}>
-                        {n >= 0 ? "+" : ""}
-                        {n} hab
-                      </b>
+                    <span className={`pickup-net ${pos ? "positivo" : "negativo"}`}>
+                      {pos ? "+" : ""}
+                      {n} hab{" "}
                       <span className="pickup-breakdown">
                         ({m.nuevas} nvs · {m.canceladas} canc)
                       </span>
@@ -104,10 +100,8 @@ export default function Pickup() {
                   </div>
                   <div className="pickup-track">
                     <div
-                      className={`pickup-fill ${n >= 0 ? "positivo" : "negativo"}`}
-                      style={{
-                        width: `${w}%`,
-                      }}
+                      className={`pickup-fill ${pos ? "positivo" : "negativo"}`}
+                      style={{ width: `${w}%` }}
                     />
                   </div>
                 </div>
