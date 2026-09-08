@@ -32,9 +32,19 @@ const MesTick = ({ x, y, payload }) => (
   </g>
 );
 
+const tituloPeriodo = (tipo, inicioTotal, finTotal) => {
+  const ai = Math.floor(inicioTotal / 12);
+  const af = Math.floor(finTotal / 12);
+  if (tipo === "anio") return `${ai}`;
+  if (ai === af)
+    return `${MESES_CORTO[inicioTotal % 12]}–${MESES_CORTO[finTotal % 12]} ${ai}`;
+  return `${MESES_CORTO[inicioTotal % 12]} ${ai} – ${MESES_CORTO[finTotal % 12]} ${af}`;
+};
+
 export default function ResumenPeriodo({ onData }) {
   const [tipo, setTipo] = useState("trimestre");
   const [offset, setOffset] = useState(0);
+  const [comparar, setComparar] = useState(false);
   const [meses, setMeses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -53,32 +63,36 @@ export default function ResumenPeriodo({ onData }) {
   const desde = ym(inicioTotal);
   const hasta = ym(finTotal);
 
-  const anioIni = Math.floor(inicioTotal / 12);
-  const anioFin = Math.floor(finTotal / 12);
-  let titulo;
-  if (tipo === "anio") titulo = `${anioIni}`;
-  else if (anioIni === anioFin)
-    titulo = `${MESES_CORTO[inicioTotal % 12]}–${MESES_CORTO[finTotal % 12]} ${anioIni}`;
-  else
-    titulo = `${MESES_CORTO[inicioTotal % 12]} ${anioIni} – ${
-      MESES_CORTO[finTotal % 12]
-    } ${anioFin}`;
+  const titulo = tituloPeriodo(tipo, inicioTotal, finTotal);
+  // Mismo periodo, año anterior (−12 meses).
+  const desdePrev = ym(inicioTotal - 12);
+  const hastaPrev = ym(finTotal - 12);
+  const tituloPrev = tituloPeriodo(tipo, inicioTotal - 12, finTotal - 12);
 
   useEffect(() => {
     let cancelado = false;
     setLoading(true);
     setActivo(null);
-    axios
-      .get(
-        `http://${process.env.REACT_APP_URL_PRODUCCION}/api/ocupacionperiodo?desde=${desde}&hasta=${hasta}`
-      )
-      .then((r) => {
+    const base = `http://${process.env.REACT_APP_URL_PRODUCCION}/api/ocupacionperiodo`;
+    const reqs = [axios.get(`${base}?desde=${desde}&hasta=${hasta}`)];
+    if (comparar) reqs.push(axios.get(`${base}?desde=${desdePrev}&hasta=${hastaPrev}`));
+
+    Promise.all(reqs)
+      .then(([r, rp]) => {
         if (cancelado) return;
         setMeses(r.data.meses || []);
         setError(null);
         setLoading(false);
         if (onData)
-          onData({ tipo, titulo, desde, hasta, meses: r.data.meses || [] });
+          onData({
+            tipo,
+            titulo,
+            tituloPrev: comparar ? tituloPrev : null,
+            desde,
+            hasta,
+            meses: r.data.meses || [],
+            mesesPrev: rp ? rp.data.meses || [] : null,
+          });
       })
       .catch(() => {
         if (cancelado) return;
@@ -89,7 +103,7 @@ export default function ResumenPeriodo({ onData }) {
       cancelado = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [desde, hasta, tipo]);
+  }, [desde, hasta, tipo, comparar]);
 
   const datos = meses.map((M) => ({
     mes: M.mes,
@@ -147,6 +161,13 @@ export default function ResumenPeriodo({ onData }) {
             {p.label}
           </button>
         ))}
+        <button
+          className={comparar ? "activo" : ""}
+          onClick={() => setComparar((c) => !c)}
+          style={{ marginLeft: 8 }}
+        >
+          ⇄ Comparar {comparar ? `con ${tituloPrev}` : ""}
+        </button>
       </div>
 
       {loading && <div className="om-state">Cargando…</div>}
