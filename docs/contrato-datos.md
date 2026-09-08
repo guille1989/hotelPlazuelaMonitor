@@ -231,14 +231,18 @@ número de filas y `SUM(costo_01)` por reserva.
 
 ## Estado del roadmap
 
-- **Fase 0** — backup, git del ETL, este contrato. *(en curso)*
-- **Fase 1** — refactor de `app.js`: schema, `toFechaYMD` UTC, `bulkWrite`+upsert,
-  conteo real de éxito/fallo, cierre limpio de conexiones, `STRING_AGG` ordenado.
-- **Fase 2** — dedup, re-sync sobre copia, validación, índices, promoción a prod.
+- **Fase 0** — ✅ backup, git del ETL, este contrato.
+- **Fase 1** — ✅ refactor de `app.js`: schema, `toFechaYMD` UTC, `bulkWrite`+upsert,
+  conteo real de éxito/fallo, cierre limpio, `limpiarTexto`, `deduplicar`/`fusionar`,
+  orden de listas normalizado en JS. Validado con DRY_RUN + `hotellpmonitor_test`.
+- **Fase 2** — ✅ `hotellpmonitor.reservas` borrada y recreada con el ETL nuevo
+  (2026-09-08). Backup en `C:\scriptdb\backup-hotellpmonitor-20260908`. Índices únicos
+  creados en la misma corrida. Dashboard operativo.
 - **Fase 3** — backend: conexión Mongo compartida, `reservasCanceladas` roto,
   helpers de fecha unificados.
 - **Fase 4** — frontend: race de cancelaciones, comparaciones número/string,
   `fecha_cancelacion`, código muerto.
+- **Fase 5** — reactivar `cron.schedule` del ETL; alerta en `UltimaActualizacion` error.
 
 Aparcado (no se toca por ahora): mover credenciales a `.env`, sacar `.env`/`build/`
 de git, CORS/auth/HTTPS.
