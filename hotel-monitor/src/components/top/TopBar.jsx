@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import logoInnoApp from "../../assets/innoapp-logo.png";
 import "./TopBar.css";
 
 const VISTAS = [
@@ -71,23 +72,7 @@ function TopBar({ vista, onVista }) {
 
   const marca = (
     <div className="topbar-brand">
-      <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-        <path
-          d="M6 22 L14 6 L22 22"
-          stroke="#8cf4ee"
-          strokeWidth="3"
-          strokeLinejoin="round"
-        />
-        <path
-          d="M14 6 L18 14"
-          stroke="#59b2b0"
-          strokeWidth="3"
-          strokeLinejoin="round"
-        />
-      </svg>
-      <span className="marca">
-        Inno<span>App</span>
-      </span>
+      <img className="topbar-logo" src={logoInnoApp} alt="InnoApp" />
       <span className="sector">HOTELERÍA</span>
     </div>
   );

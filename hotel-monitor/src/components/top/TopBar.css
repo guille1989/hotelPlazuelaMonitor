@@ -10,14 +10,10 @@
   gap: 8px;
   margin-bottom: 18px;
 }
-.topbar-brand .marca {
-  font-weight: 700;
-  font-size: 16px;
-  color: var(--color-text);
-  letter-spacing: -0.02em;
-}
-.topbar-brand .marca span {
-  color: var(--color-accent);
+.topbar-logo {
+  height: 26px;
+  width: auto;
+  display: block;
 }
 .topbar-brand .sector {
   margin-left: auto;
