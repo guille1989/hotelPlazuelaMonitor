@@ -24,21 +24,38 @@ function TopBar() {
     fetchData();
   }, []);
 
+  const DIAS = [
+    "domingo",
+    "lunes",
+    "martes",
+    "miércoles",
+    "jueves",
+    "viernes",
+    "sábado",
+  ];
+  const MESES_LARGO = [
+    "enero",
+    "febrero",
+    "marzo",
+    "abril",
+    "mayo",
+    "junio",
+    "julio",
+    "agosto",
+    "septiembre",
+    "octubre",
+    "noviembre",
+    "diciembre",
+  ];
   const today = new Date();
-  const options = {
-    weekday: "long",
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  };
-  const formattedDate = today.toLocaleDateString("es-CO", options);
+  const dia = DIAS[today.getDay()];
+  const fechaLinea1 = `${dia[0].toUpperCase()}${dia.slice(1)}, ${today.getDate()} de`;
+  const fechaLinea2 = `${MESES_LARGO[today.getMonth()]} ${today.getFullYear()}`;
 
+  // Solo la hora ("06:34 p. m."), como en el diseño.
   const formatearFecha = (fecha) => {
     if (!fecha) return "—";
-    const date = new Date(fecha);
-    return date.toLocaleString("es-CO", {
-      day: "2-digit",
-      month: "short",
+    return new Date(fecha).toLocaleTimeString("es-CO", {
       hour: "2-digit",
       minute: "2-digit",
     });
@@ -46,7 +63,7 @@ function TopBar() {
 
   const marca = (
     <div className="topbar-brand">
-      <svg width="26" height="26" viewBox="0 0 28 28" fill="none">
+      <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
         <path
           d="M6 22 L14 6 L22 22"
           stroke="#8cf4ee"
@@ -98,7 +115,9 @@ function TopBar() {
       <div className="topbar-row">
         <div>
           <div className="topbar-eyebrow">Monitor de Ocupación</div>
-          <h1 className="topbar-fecha">{formattedDate}</h1>
+          <h1 className="topbar-fecha">
+            <span>{fechaLinea1}</span> <span>{fechaLinea2}</span>
+          </h1>
         </div>
         <div className="topbar-update">
           <div className="lbl">Última actualización</div>

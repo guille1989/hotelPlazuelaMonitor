@@ -1,17 +1,18 @@
 .topbar {
-  padding: 22px 20px 18px;
+  padding: 24px 24px 20px;
   border-bottom: 1px solid var(--color-border);
 }
 
+/* ── Barra de marca ── */
 .topbar-brand {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 16px;
+  margin-bottom: 18px;
 }
 .topbar-brand .marca {
   font-weight: 700;
-  font-size: 15px;
+  font-size: 16px;
   color: var(--color-text);
   letter-spacing: -0.02em;
 }
@@ -20,50 +21,52 @@
 }
 .topbar-brand .sector {
   margin-left: auto;
-  font-size: 9px;
+  font-size: 10px;
   color: var(--color-muted);
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
 }
 
+/* ── Fila título / actualización ── */
 .topbar-row {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 14px;
+  gap: 16px;
 }
 
 .topbar-eyebrow {
-  font-size: 9px;
-  font-weight: 600;
-  letter-spacing: 0.12em;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--color-teal);
   margin-bottom: 5px;
 }
 
 .topbar-fecha {
-  font-size: 1.15rem;
+  font-size: 1.375rem;
   font-weight: 600;
   line-height: 1.25;
   color: var(--color-text);
   letter-spacing: -0.02em;
   margin: 0;
 }
-.topbar-fecha::first-letter {
-  text-transform: uppercase;
+.topbar-fecha span {
+  white-space: nowrap;
 }
 
 .topbar-update {
   text-align: right;
   flex-shrink: 0;
+  padding-top: 4px;
 }
 .topbar-update .lbl {
-  font-size: 9px;
+  font-size: 10px;
   color: var(--color-muted);
-  margin-bottom: 4px;
+  margin-bottom: 5px;
 }
 .topbar-update .val {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--color-text);
   font-weight: 500;
 }
@@ -89,12 +92,13 @@
 .topbar-estado.ok .dot {
   background: var(--color-accent);
   box-shadow: 0 0 6px var(--color-accent);
+  animation: topbar-pulse 2s ease infinite;
 }
 .topbar-estado.err .dot {
   background: var(--color-red);
 }
 .topbar-estado .txt {
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 600;
 }
 .topbar-estado.ok .txt {
@@ -102,6 +106,16 @@
 }
 .topbar-estado.err .txt {
   color: var(--color-red);
+}
+
+@keyframes topbar-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
 }
 
 .topbar-cargando {
