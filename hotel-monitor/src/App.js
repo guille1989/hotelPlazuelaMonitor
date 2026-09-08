@@ -1,18 +1,11 @@
 import "./App.css";
 import React, { useState, useEffect } from "react";
-import Box from "@mui/material/Box";
-import MenuItem from "@mui/material/MenuItem";
-import FormControl from "@mui/material/FormControl";
-import Select from "@mui/material/Select";
 import axios from "axios";
 
 import TopBar from "./components/top/TopBar";
 import StatCard from "./components/statcard/StatCard";
-import OcupacionChart from "./components/linechart/OcupacionChart";
-import OcupacionPasadoChart from "./components/linechart/OcupacionPasadoChart";
-
-// Total de habitaciones del hotel (denominador de todos los % de ocupación).
-const TOTAL_HABITACIONES = 29;
+import OcupacionMes from "./components/linechart/OcupacionMes";
+import { TOTAL_HABITACIONES } from "./config";
 
 function App() {
   const [actualizacionreserva, setActualizacionreserva] = useState([]);
@@ -29,17 +22,6 @@ function App() {
   const [ingreso, setIngreso] = useState(0);
   const [personasEnHotel, setPersonasEnHotel] = useState(0);
   const [cancelacionReservas, setCancelacionReservas] = useState(0);
-
-  const [fechas, setFechas] = React.useState("10");
-
-  const handleChange = (event) => {
-    setFechas(event.target.value);
-  };
-
-  const [fechasPasado, setFechasPasado] = React.useState("10");
-  const handleChangeFechaPasado = (event) => {
-    setFechasPasado(event.target.value);
-  };
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -246,7 +228,7 @@ function App() {
       </div>
      
 
-      {/* Ocupación actual     */} 
+      {/* Ocupación por mes (día a día, navegable) */}
       <div
         style={{
           display: "flex",
@@ -255,126 +237,10 @@ function App() {
           marginTop: "20px",
         }}
       >
-        <h1 className="title">Ocupación próximos </h1>
-        <Box
-          sx={{
-            width: 65,
-            height: 30,
-            backgroundColor: "#353d54",
-            borderRadius: "5px",
-            marginLeft: "10px",
-            color: "#ffffff", // Cambia el color del texto
-          }}
-        >
-          <FormControl fullWidth>
-            <Select
-              labelId="demo-simple-select-label"
-              id="demo-simple-select"
-              value={fechas}
-              onChange={handleChange}
-              size="small"
-              sx={{
-                backgroundColor: "#353d54", // Cambia el color de fondo
-                borderRadius: "8px", // Cambia el radio de los bordes
-                color: "#ffffff", // Cambia el color del texto
-                "& .MuiOutlinedInput-notchedOutline": {
-                  borderColor: "#353d54", // Cambia el color del borde para que coincida con el fondo
-                },
-                "&:hover .MuiOutlinedInput-notchedOutline": {
-                  borderColor: "#353d54", // Cambia el color del borde al pasar el mouse
-                },
-                "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                  borderColor: "#353d54", // Cambia el color del borde al enfocar
-                },
-                "& .MuiSelect-icon": {
-                  color: "#ffffff", // Cambia el color del icono
-                },
-              }}
-            >
-              <MenuItem value={10}>10</MenuItem>
-              <MenuItem value={20}>20</MenuItem>
-              <MenuItem value={30}>30</MenuItem>
-            </Select>
-          </FormControl>
-        </Box>
-        <h1 className="title">días</h1>
+        <h1 className="title">Ocupación por mes</h1>
       </div>
 
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          marginTop: "-10px",
-        }}
-      >
-        <OcupacionChart valorIntervalo={fechas} />
-      </div>
-    
-
-      {/*Ocupacion pasada */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          marginTop: "50px",
-        }}
-      >
-        <h1 className="title">Histórico de Ocupación</h1>
-        <Box
-          sx={{
-            width: 65,
-            height: 30,
-            backgroundColor: "#353d54",
-            borderRadius: "5px",
-            marginLeft: "10px",
-          }}
-        >
-          <FormControl fullWidth sx={{}}>
-            <Select
-              labelId="demo-simple-select-label"
-              id="demo-simple-select"
-              value={fechasPasado}
-              onChange={handleChangeFechaPasado}
-              size="small"
-              sx={{
-                backgroundColor: "#353d54", // Cambia el color de fondo
-                borderRadius: "8px", // Cambia el radio de los bordes
-                color: "#ffffff", // Cambia el color del texto
-                "& .MuiOutlinedInput-notchedOutline": {
-                  borderColor: "#353d54", // Cambia el color del borde para que coincida con el fondo
-                },
-                "&:hover .MuiOutlinedInput-notchedOutline": {
-                  borderColor: "#353d54", // Cambia el color del borde al pasar el mouse
-                },
-                "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                  borderColor: "#353d54", // Cambia el color del borde al enfocar
-                },
-                "& .MuiSelect-icon": {
-                  color: "#ffffff", // Cambia el color del icono
-                },
-              }}
-            >
-              <MenuItem value={10}>10</MenuItem>
-              <MenuItem value={20}>20</MenuItem>
-              <MenuItem value={30}>30</MenuItem>
-            </Select>
-          </FormControl>
-        </Box>
-        <h1 className="title">días atrás</h1>
-      </div>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          marginTop: "-10px",
-        }}
-      >
-        <OcupacionPasadoChart valorIntervalo={fechasPasado} />
-      </div>
-      
+      <OcupacionMes />
     </div>
   );
 }

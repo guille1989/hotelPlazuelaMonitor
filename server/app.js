@@ -11,6 +11,7 @@ const reservasFuturasRouter = require("./routes/reservasfuturas");
 const reservasActualizacionControlRouter = require("./routes/reservasactualizacioncontrol");
 const reservasCanceladas = require("./routes/reservasCanceladas");
 const reservasPasadas = require("./routes/reservaspasadas");
+const ocupacionMesRouter = require("./routes/ocupacionmes");
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -21,6 +22,7 @@ app.use("/api/reservasfuturas", reservasFuturasRouter);
 app.use("/api/reservasactualizacioncontrol", reservasActualizacionControlRouter);
 app.use("/api/reservascanceladas", reservasCanceladas);
 app.use("/api/reservaspasadas", reservasPasadas);
+app.use("/api/ocupacionmes", ocupacionMesRouter);
 
 // Calienta la conexión a Mongo al arrancar (no bloquea el listen; las rutas la reutilizan).
 getDb()

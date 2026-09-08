@@ -23,4 +23,25 @@ function rangoDias(offsetDesde, offsetHasta) {
   return dias;
 }
 
-module.exports = { TZ, hoyBogota, fechaBogota, rangoDias };
+// "YYYY-MM" del mes actual en Bogotá.
+const mesActualBogota = () => moment().tz(TZ).format("YYYY-MM");
+
+// Array de "YYYY-MM-DD" con todos los días del mes. `mes` es 1-12.
+function diasDelMes(anio, mes) {
+  const ultimo = new Date(anio, mes, 0).getDate(); // día 0 del mes siguiente
+  const mm = String(mes).padStart(2, "0");
+  const dias = [];
+  for (let d = 1; d <= ultimo; d++) {
+    dias.push(`${anio}-${mm}-${String(d).padStart(2, "0")}`);
+  }
+  return dias;
+}
+
+module.exports = {
+  TZ,
+  hoyBogota,
+  fechaBogota,
+  rangoDias,
+  mesActualBogota,
+  diasDelMes,
+};
