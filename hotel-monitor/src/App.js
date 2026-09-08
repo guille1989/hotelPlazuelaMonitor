@@ -23,40 +23,34 @@ function App() {
   const [personasEnHotel, setPersonasEnHotel] = useState(0);
   const [cancelacionReservas, setCancelacionReservas] = useState(0);
 
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [vista, setVista] = useState("hoy"); // "hoy" | "mes"
+  const [mesData, setMesData] = useState(null); // { titulo, dias, hoy } del mes en la gráfica
+
+  // Métricas agregadas del mes seleccionado en la gráfica.
+  let metricasMes = null;
+  if (mesData && mesData.dias.length) {
+    const ocup = mesData.dias.map((d) => d.ocupacion);
+    const suma = ocup.reduce((a, b) => a + b, 0);
+    metricasMes = {
+      media: Math.round((suma * 100) / (ocup.length * TOTAL_HABITACIONES)),
+      pico: Math.max(...ocup),
+      llenos: ocup.filter((o) => o >= TOTAL_HABITACIONES).length,
+      canceladas: mesData.dias.reduce((a, d) => a + d.cancelaciones, 0),
+    };
+  }
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await axios.get(
-          `http://${process.env.REACT_APP_URL_PRODUCCION}/api/reservas`
-        );
-        console.log("Reservas: ", response.data);
-        setActualizacionreserva(response.data);
-        setLoading(false);
-      } catch (err) {
-        setError("Error al cargar los datos");
-        setLoading(false);
-      }
-    };
+    const base = `http://${process.env.REACT_APP_URL_PRODUCCION}`;
 
-    const fetchDataCancelaciones = async () => {
-      try {
-        const response = await axios.get(
-          `http://${process.env.REACT_APP_URL_PRODUCCION}/api/reservascanceladas`
-        );
-        //console.log(response.data);
-        setActualizacionreservacancelaciones(response.data);
-        setLoading(false);
-      } catch (err) {
-        setError("Error al cargar los datos");
-        setLoading(false);
-      }
-    };
+    axios
+      .get(`${base}/api/reservas`)
+      .then((r) => setActualizacionreserva(r.data))
+      .catch((e) => console.error("Error cargando reservas:", e.message));
 
-    fetchDataCancelaciones();
-    fetchData();
+    axios
+      .get(`${base}/api/reservascanceladas`)
+      .then((r) => setActualizacionreservacancelaciones(r.data))
+      .catch((e) => console.error("Error cargando cancelaciones:", e.message));
   }, []);
 
   //Parse the stats data to get the values for the cards
@@ -157,49 +151,90 @@ function App() {
     <div className="App">
       <TopBar />
 
-      <section className="grupo">
-        <div className="grupo-titulo">Ocupación · hoy</div>
-        <div className="grupo-cards ocupacion">
-          <StatCard
-            value={`${occupancyRate}%`}
-            sub={`${occupancyWithCheckIn} / ${TOTAL_HABITACIONES} hab`}
-            label="🛏️ Ocupación actual"
-          />
-          <StatCard
-            value={`${projectedOccupancy}%`}
-            sub={`${projectedOcupacionCheckIn} / ${TOTAL_HABITACIONES} hab`}
-            label="📅 Ocupación proyectada"
-          />
-          <StatCard
-            value={personasEnHotel}
-            sub="en casa"
-            label="👥 Huéspedes"
-          />
-          <StatCard
-            value={cancelacionReservas}
-            sub="habitaciones"
-            label="❌ Canceladas"
-          />
-        </div>
-      </section>
+      <div className="toggle-vista">
+        <button
+          className={vista === "hoy" ? "activo" : ""}
+          onClick={() => setVista("hoy")}
+        >
+          Hoy
+        </button>
+        <button
+          className={vista === "mes" ? "activo" : ""}
+          onClick={() => setVista("mes")}
+        >
+          Mes
+        </button>
+      </div>
 
-      <section className="grupo">
-        <div className="grupo-titulo">Ingresos · hoy</div>
-        <div className="grupo-cards ingresos">
-          <StatCard
-            value={formatCOP(revPAR)}
-            sub="por habitación"
-            label="💸 RevPAR"
-          />
-          <StatCard
-            value={formatCOP(ingreso)}
-            sub="del día"
-            label="💵 Ingresos"
-          />
-        </div>
-      </section>
+      {vista === "hoy" && (
+        <>
+          <section className="grupo">
+            <div className="grupo-titulo">Ocupación</div>
+            <div className="grupo-cards ocupacion">
+              <StatCard
+                value={`${occupancyRate}%`}
+                sub={`${occupancyWithCheckIn} / ${TOTAL_HABITACIONES} hab`}
+                label="🛏️ Ocupación actual"
+              />
+              <StatCard
+                value={`${projectedOccupancy}%`}
+                sub={`${projectedOcupacionCheckIn} / ${TOTAL_HABITACIONES} hab`}
+                label="📅 Ocupación proyectada"
+              />
+              <StatCard value={personasEnHotel} sub="en casa" label="👥 Huéspedes" />
+              <StatCard
+                value={cancelacionReservas}
+                sub="habitaciones"
+                label="❌ Canceladas"
+              />
+            </div>
+          </section>
 
-      <OcupacionMes />
+          <section className="grupo">
+            <div className="grupo-titulo">Ingresos</div>
+            <div className="grupo-cards ingresos">
+              <StatCard
+                value={formatCOP(revPAR)}
+                sub="por habitación"
+                label="💸 RevPAR"
+              />
+              <StatCard value={formatCOP(ingreso)} sub="del día" label="💵 Ingresos" />
+            </div>
+          </section>
+        </>
+      )}
+
+      {vista === "mes" && (
+        <section className="grupo">
+          <div className="grupo-titulo">
+            Mes{mesData ? ` · ${mesData.titulo}` : ""}
+          </div>
+          <div className="grupo-cards ocupacion">
+            <StatCard
+              value={metricasMes ? `${metricasMes.media}%` : "—"}
+              sub="promedio"
+              label="📊 Ocupación media"
+            />
+            <StatCard
+              value={metricasMes ? metricasMes.pico : "—"}
+              sub={`/ ${TOTAL_HABITACIONES} hab`}
+              label="⬆️ Día pico"
+            />
+            <StatCard
+              value={metricasMes ? metricasMes.llenos : "—"}
+              sub="días"
+              label="🏨 Días llenos"
+            />
+            <StatCard
+              value={metricasMes ? metricasMes.canceladas : "—"}
+              sub="habitaciones"
+              label="❌ Canceladas"
+            />
+          </div>
+        </section>
+      )}
+
+      <OcupacionMes onData={setMesData} />
     </div>
   );
 }

@@ -1,3 +1,27 @@
+.toggle-vista {
+  display: flex;
+  width: fit-content;
+  margin: 14px auto 4px;
+  background: #1f2a44;
+  border-radius: 999px;
+  padding: 3px;
+}
+.toggle-vista button {
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  padding: 6px 22px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.toggle-vista button.activo {
+  background: #2a3654;
+  color: #fff;
+}
+
 .grupo {
   max-width: 1100px;
   margin: 0 auto;
@@ -6,11 +30,11 @@
 
 .grupo-titulo {
   color: #94a3b8;
-  font-size: 0.78rem;
+  font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.6px;
-  margin: 16px 0 8px 4px;
+  margin: 12px 0 6px 4px;
 }
 
 .grupo-cards {
@@ -31,10 +55,10 @@
 
 .stat-card {
   background: #2a3654;
-  border-radius: 12px;
-  padding: 14px 12px;
+  border-radius: 10px;
+  padding: 10px 8px;
   text-align: center;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.18);
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -42,20 +66,20 @@
 
 .stat-value {
   color: #fff;
-  font-size: 1.6rem;
+  font-size: 1.35rem;
   font-weight: 700;
-  line-height: 1.15;
+  line-height: 1.1;
 }
 
 .stat-sub {
   color: #94a3b8;
-  font-size: 0.78rem;
-  margin-top: 3px;
+  font-size: 0.72rem;
+  margin-top: 2px;
 }
 
 .stat-label {
   color: #cbd5e1;
-  font-size: 0.85rem;
-  margin-top: 10px;
+  font-size: 0.78rem;
+  margin-top: 6px;
   white-space: nowrap;
 }

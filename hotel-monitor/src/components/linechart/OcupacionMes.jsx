@@ -78,7 +78,7 @@ const DiaTick = ({ x, y, payload }) => (
   </g>
 );
 
-export default function OcupacionMes() {
+export default function OcupacionMes({ onData }) {
   const [offset, setOffset] = useState(0); // 0 = mes actual
   const [data, setData] = useState({ dias: [], hoy: null });
   const [loading, setLoading] = useState(true);
@@ -116,6 +116,7 @@ export default function OcupacionMes() {
         setData({ dias, hoy: r.data.hoy });
         setError(null);
         setLoading(false);
+        if (onData) onData({ mes: mesStr, titulo, dias, hoy: r.data.hoy });
       })
       .catch(() => {
         if (cancelado) return;
@@ -125,6 +126,7 @@ export default function OcupacionMes() {
     return () => {
       cancelado = true;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mesStr]);
 
   const hoyEnEsteMes =
