@@ -6,10 +6,20 @@ function estaCancelada(doc) {
   return !!doc.fecha_cancelacion && !doc.fecha_cancelacion.startsWith("1900");
 }
 
-// Salida efectiva: si fecha_ult_mod es posterior a la salida, la estancia se extendió.
+// Días máximo que fecha_ult_mod puede extender la salida. Más que eso suele ser un
+// ajuste tardío del folio, no una estancia más larga (validado contra el trasunto
+// de agosto 2026: sin tope da +13 hab-noche, con tope de 2 días queda en +2).
+const MAX_EXTENSION_DIAS = 2;
+
+// Salida efectiva: si fecha_ult_mod es posterior a la salida (y por poco), la estancia
+// se extendió.
 function salidaEfectiva(reserva) {
   const salida = reserva.fecha_salida_habitacion || reserva.fecha_salida;
-  if (reserva.fecha_ult_mod && reserva.fecha_ult_mod > salida) {
+  if (
+    reserva.fecha_ult_mod &&
+    reserva.fecha_ult_mod > salida &&
+    noches(salida, reserva.fecha_ult_mod) <= MAX_EXTENSION_DIAS
+  ) {
     return reserva.fecha_ult_mod;
   }
   return salida;
