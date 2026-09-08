@@ -5,9 +5,9 @@ const {
   estaCancelada,
   salidaEfectiva,
   habitaciones,
-  filtroTraslape,
   noches,
 } = require("../functions/ocupacion");
+const { ocupacionPorDia } = require("../functions/ocupacionDiaria");
 const { getDb } = require("../db");
 
 // GET /api/ocupacionmes?mes=YYYY-MM  -> ocupación día a día del mes.
@@ -18,62 +18,36 @@ router.get("/", async (req, res) => {
       ? req.query.mes
       : mesActualBogota();
     const [anio, m] = mes.split("-").map(Number);
-
     const dias = diasDelMes(anio, m);
-    const inicio = dias[0];
-    const fin = dias[dias.length - 1];
 
-    const collection = (await getDb()).collection("reservas");
+    const db = await getDb();
+    const { porDia, reservas } = await ocupacionPorDia(db, dias);
 
-    // Reservas cuya estancia se traslapa con el mes (comparación de strings).
-    const reservas = await collection
-      .find(filtroTraslape(inicio, fin))
-      .toArray();
+    const conteoPorDia = dias.map((dia) => {
+      const o = porDia.get(dia);
+      return {
+        dia,
+        ocupacion: o.ocupacion,
+        cancelaciones: o.cancelaciones,
+        tarifas: o.tarifas,
+        habsTarifa: o.habsTarifa,
+      };
+    });
 
-    const conteoPorDia = dias.map((dia) => ({
-      dia,
-      ocupacion: 0,
-      cancelaciones: 0,
-      tarifas: 0, // Σ (valor_habitacion × habitaciones) de las ocupadas ese día
-      habsTarifa: 0, // habitaciones con tarifa (para el promedio ponderado)
-    }));
-    const porDia = new Map(conteoPorDia.map((d) => [d.dia, d]));
-
-    // Acumulador por MES DE LLEGADA (para tasa de cancelación y estancia media).
+    // Agregados por MES DE LLEGADA (para estancia media y tasa de cancelación).
+    // Salen de reservas — el folio no distingue check-in/reservada ni cancelaciones.
     const arribo = { checkin: 0, reservadas: 0, canceladas: 0, roomNoches: 0 };
-
-    for (const reserva of reservas) {
-      const llegada = reserva.fecha_llegada_habitacion || reserva.fecha_llegada;
-      const salida = salidaEfectiva(reserva);
-      if (!llegada || !salida) continue;
-
-      const cancelada = estaCancelada(reserva);
-      const habs = habitaciones(reserva);
-      const valor = Number(reserva.valor_habitacion) || 0;
-
-      if (llegada.slice(0, 7) === mes) {
-        if (cancelada) {
-          arribo.canceladas += habs;
-        } else {
-          if (String(reserva.estado_habitacion) === "31") arribo.checkin += habs;
-          else arribo.reservadas += habs;
-          arribo.roomNoches += noches(llegada, salida) * habs;
-        }
-      }
-
-      for (const dia of dias) {
-        if (dia >= llegada && dia < salida) {
-          const d = porDia.get(dia);
-          if (cancelada) {
-            d.cancelaciones += habs;
-          } else {
-            d.ocupacion += habs;
-            if (valor > 0) {
-              d.tarifas += valor * habs;
-              d.habsTarifa += habs;
-            }
-          }
-        }
+    for (const r of reservas) {
+      const llegada = r.fecha_llegada_habitacion || r.fecha_llegada;
+      const salida = salidaEfectiva(r);
+      if (!llegada || !salida || llegada.slice(0, 7) !== mes) continue;
+      const habs = habitaciones(r);
+      if (estaCancelada(r)) {
+        arribo.canceladas += habs;
+      } else {
+        if (String(r.estado_habitacion) === "31") arribo.checkin += habs;
+        else arribo.reservadas += habs;
+        arribo.roomNoches += noches(llegada, salida) * habs;
       }
     }
 

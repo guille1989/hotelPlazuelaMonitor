@@ -5,9 +5,9 @@ const {
   estaCancelada,
   salidaEfectiva,
   habitaciones,
-  filtroTraslape,
   noches,
 } = require("../functions/ocupacion");
+const { ocupacionPorDia } = require("../functions/ocupacionDiaria");
 const { getDb } = require("../db");
 
 const RE_MES = /^\d{4}-\d{2}$/;
@@ -26,17 +26,6 @@ function mesesEntre(desde, hasta) {
     }
   }
   return lista;
-}
-
-// Primer día del mes siguiente a `ym` ("2026-12" -> "2027-01-01").
-function primerDiaSiguiente(ym) {
-  let [y, m] = ym.split("-").map(Number);
-  m += 1;
-  if (m > 12) {
-    m = 1;
-    y += 1;
-  }
-  return `${y}-${String(m).padStart(2, "0")}-01`;
 }
 
 // GET /api/ocupacionperiodo?desde=YYYY-MM&hasta=YYYY-MM
@@ -58,69 +47,54 @@ router.get("/", async (req, res) => {
       return {
         mes,
         dias: diasDelMes(y, m).length,
-        habNoche: 0, // Σ habitaciones ocupadas por día (para % ocupación)
+        habNoche: 0, // habitación-noche ocupadas (folio para pasado, reservas para futuro)
         canceladas: 0, // canceladas que se traslapan con el mes
         tarifas: 0,
         habsTarifa: 0,
-        // Conteos por MES DE LLEGADA (para la barra apilada):
-        checkin: 0, // reservas con check-in hecho (estado 31)
-        reservadas: 0, // reservadas sin llegar (estado 21/11...)
-        canceladasLlegada: 0, // canceladas cuya llegada cae en el mes
-        roomNoches: 0, // Σ (noches × habitaciones) de las no canceladas que llegan en el mes
+        // Conteos por MES DE LLEGADA (barra apilada + estancia media + tasa cancelación):
+        checkin: 0,
+        reservadas: 0,
+        canceladasLlegada: 0,
+        roomNoches: 0,
       };
     });
     const idx = new Map(meses.map((M, i) => [M.mes, i]));
 
-    const inicioStr = `${desde}-01`;
-    const finExclusivo = primerDiaSiguiente(claves[claves.length - 1]);
-    const finStr = `${claves[claves.length - 1]}-31`;
+    // Todos los días del rango.
+    const dias = [];
+    for (const clave of claves) {
+      const [y, m] = clave.split("-").map(Number);
+      dias.push(...diasDelMes(y, m));
+    }
 
-    const collection = (await getDb()).collection("reservas");
-    const reservas = await collection
-      .find(filtroTraslape(inicioStr, finStr))
-      .toArray();
+    const db = await getDb();
+    const { porDia, reservas } = await ocupacionPorDia(db, dias);
 
-    for (const reserva of reservas) {
-      const llegada = reserva.fecha_llegada_habitacion || reserva.fecha_llegada;
-      const salida = salidaEfectiva(reserva);
+    // Roll-up día -> mes de ocupación / ingreso / cancelaciones.
+    for (const [dia, o] of porDia) {
+      const M = meses[idx.get(dia.slice(0, 7))];
+      if (!M) continue;
+      M.habNoche += o.ocupacion;
+      M.tarifas += o.tarifas;
+      M.habsTarifa += o.habsTarifa;
+      M.canceladas += o.cancelaciones;
+    }
+
+    // Agregados por MES DE LLEGADA, desde reservas.
+    for (const r of reservas) {
+      const llegada = r.fecha_llegada_habitacion || r.fecha_llegada;
+      const salida = salidaEfectiva(r);
       if (!llegada || !salida) continue;
-
-      const cancelada = estaCancelada(reserva);
-      const habs = habitaciones(reserva);
-      const valor = Number(reserva.valor_habitacion) || 0;
-
-      // Barra apilada: por MES DE LLEGADA, según estado.
-      const miLlegada = idx.get(llegada.slice(0, 7));
-      if (miLlegada !== undefined) {
-        const M = meses[miLlegada];
-        if (cancelada) {
-          M.canceladasLlegada += habs;
-        } else {
-          if (String(reserva.estado_habitacion) === "31") M.checkin += habs;
-          else M.reservadas += habs;
-          M.roomNoches += noches(llegada, salida) * habs;
-        }
-      }
-
-      const d0 = llegada < inicioStr ? inicioStr : llegada;
-      const d1 = salida < finExclusivo ? salida : finExclusivo;
-      let cur = new Date(`${d0}T00:00:00Z`);
-      const end = new Date(`${d1}T00:00:00Z`);
-      while (cur < end) {
-        const mi = idx.get(cur.toISOString().slice(0, 7));
-        if (mi !== undefined) {
-          const M = meses[mi];
-          if (cancelada) {
-            M.canceladas += habs;
-          } else {
-            M.habNoche += habs;
-            if (valor > 0) {
-              M.tarifas += valor * habs;
-              M.habsTarifa += habs;
-            }
-          }
-        }
-        cur.setUTCDate(cur.getUTCDate() + 1);
+      const mi = idx.get(llegada.slice(0, 7));
+      if (mi === undefined) continue;
+      const M = meses[mi];
+      const habs = habitaciones(r);
+      if (estaCancelada(r)) {
+        M.canceladasLlegada += habs;
+      } else {
+        if (String(r.estado_habitacion) === "31") M.checkin += habs;
+        else M.reservadas += habs;
+        M.roomNoches += noches(llegada, salida) * habs;
       }
     }
 
