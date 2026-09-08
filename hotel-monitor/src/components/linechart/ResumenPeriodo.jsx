@@ -4,7 +4,6 @@ import {
   BarChart,
   Bar,
   CartesianGrid,
-  Legend,
   XAxis,
   YAxis,
   Tooltip,
@@ -23,22 +22,6 @@ const mediaMes = (M) =>
   Math.round((M.habNoche * 100) / (M.dias * TOTAL_HABITACIONES));
 const tarifaMes = (M) =>
   M.habsTarifa > 0 ? Math.round(M.tarifas / M.habsTarifa) : 0;
-
-const MesTick = ({ x, y, payload }) => (
-  <g transform={`translate(${x},${y})`}>
-    <text
-      x={0}
-      y={0}
-      dy={12}
-      textAnchor="middle"
-      fill="#8fa4b8"
-      fontFamily="Poppins"
-      fontSize={10}
-    >
-      {payload.value}
-    </text>
-  </g>
-);
 
 const tituloPeriodo = (tipo, inicioTotal, finTotal) => {
   const ai = Math.floor(inicioTotal / 12);
@@ -183,48 +166,42 @@ export default function ResumenPeriodo({ onData }) {
 
       {!loading && !error && (
         <>
-          <ResponsiveContainer width="100%" height={240}>
+          <ResponsiveContainer width="100%" height={220}>
             <BarChart
               data={datos}
-              margin={{ top: 18, right: 8, left: 4, bottom: 0 }}
+              margin={{ top: 8, right: 6, left: -4, bottom: 0 }}
               barCategoryGap="25%"
               onMouseMove={handleActivo}
               onClick={handleActivo}
               onMouseLeave={() => setActivo(null)}
             >
-              <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke="rgba(255,255,255,0.05)"
+                vertical={false}
+              />
               <XAxis
                 dataKey="corto"
-                tick={<MesTick />}
-                axisLine={{ stroke: "rgba(255,255,255,0.15)" }}
+                tick={{ fill: "#8fa4b8", fontSize: 9, fontFamily: "Poppins" }}
+                axisLine={false}
                 tickLine={false}
               />
               <YAxis
                 allowDecimals={false}
                 width={40}
-                tick={{ fill: "#8fa4b8", fontSize: 10, fontFamily: "Poppins" }}
+                tick={{ fill: "#8fa4b8", fontSize: 9, fontFamily: "Poppins" }}
                 axisLine={false}
                 tickLine={false}
               />
               <Tooltip
                 content={() => null}
-                cursor={{ fill: "rgba(255,255,255,0.06)" }}
-              />
-              <Legend
-                iconSize={8}
-                wrapperStyle={{
-                  color: "#8fa4b8",
-                  fontFamily: "Poppins",
-                  fontSize: 10,
-                  paddingTop: 6,
-                }}
-                iconType="circle"
+                cursor={{ fill: "rgba(255,255,255,0.04)" }}
               />
               <Bar
                 dataKey="checkin"
                 name="Con check-in"
                 stackId="a"
-                fill="#22c55e"
+                fill="#8cf4ee"
                 isAnimationActive={false}
               />
               <Bar
@@ -239,11 +216,23 @@ export default function ResumenPeriodo({ onData }) {
                 name="Canceladas"
                 stackId="a"
                 fill="#f07070"
-                radius={[4, 4, 0, 0]}
+                radius={[3, 3, 0, 0]}
                 isAnimationActive={false}
               />
             </BarChart>
           </ResponsiveContainer>
+
+          <div className="om-leyenda">
+            <span className="om-leyenda-item om-leyenda-sq" style={{ "--m": "#8cf4ee" }}>
+              Con check-in
+            </span>
+            <span className="om-leyenda-item om-leyenda-sq" style={{ "--m": "#5b8ef0" }}>
+              Reservadas
+            </span>
+            <span className="om-leyenda-item om-leyenda-sq" style={{ "--m": "#f07070" }}>
+              Canceladas
+            </span>
+          </div>
 
           <div className="om-readout">
             {activo ? (
@@ -252,7 +241,7 @@ export default function ResumenPeriodo({ onData }) {
                 <span>
                   Ocupación media <b>{activo.media}%</b>
                 </span>
-                <span style={{ color: "#22c55e" }}>
+                <span style={{ color: "#8cf4ee" }}>
                   Check-in <b>{activo.checkin}</b>
                 </span>
                 <span style={{ color: "#5b8ef0" }}>

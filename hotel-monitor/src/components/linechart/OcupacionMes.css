@@ -115,6 +115,13 @@
   border-radius: 50%;
   background: var(--color-red);
 }
+/* Marcador cuadrado (leyenda de barras del Resumen) */
+.om-leyenda-sq::before {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--m, var(--color-accent));
+}
 
 /* Readout tipo Figma: fecha + ocupación a la izquierda, canceladas a la derecha */
 .om-readout-dia {
@@ -168,8 +175,9 @@
   transition: background 0.18s ease, color 0.18s ease;
 }
 .om-periodo button.activo {
-  background: var(--color-teal-dark);
-  color: var(--color-text);
+  background: var(--color-accent);
+  color: #1f293d;
+  font-weight: 600;
 }
 
 .recharts-cartesian-axis-tick text,
