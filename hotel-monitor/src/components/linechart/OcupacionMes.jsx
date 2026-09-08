@@ -26,18 +26,18 @@ const MESES = [
   "Diciembre",
 ];
 
-// Punto rojo con el número de habitaciones canceladas ese día.
+// Punto rojo pequeño con el número de habitaciones canceladas ese día.
 const CancelDot = ({ cx, cy, payload }) => {
   if (cx == null || cy == null || !payload || !payload.cancelaciones) return null;
   return (
     <g>
-      <circle cx={cx} cy={cy} r={5} fill="#EF4444" stroke="#fff" strokeWidth={1} />
+      <circle cx={cx} cy={cy} r={3} fill="#EF4444" />
       <text
         x={cx}
-        y={cy - 10}
+        y={cy - 8}
         textAnchor="middle"
         fill="#EF4444"
-        fontSize={12}
+        fontSize={11}
         fontWeight="bold"
       >
         {payload.cancelaciones}
@@ -210,6 +210,21 @@ export default function OcupacionMes() {
                 label={{ value: "hoy", position: "top", fill: "#FBBF24", fontSize: 11 }}
               />
             )}
+            {/* Línea discontinua roja desde el nº de canceladas hasta el eje X */}
+            {data.dias
+              .filter((d) => d.cancelaciones > 0)
+              .map((d) => (
+                <ReferenceLine
+                  key={d.dia}
+                  segment={[
+                    { x: d.dia, y: d.cancelaciones },
+                    { x: d.dia, y: 0 },
+                  ]}
+                  stroke="#EF4444"
+                  strokeDasharray="4 4"
+                  strokeWidth={1}
+                />
+              ))}
             <Tooltip content={<OcupacionTooltip />} />
             <Line
               type="monotone"
