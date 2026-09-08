@@ -7,6 +7,7 @@ import StatCard from "./components/statcard/StatCard";
 import OcupacionMes from "./components/linechart/OcupacionMes";
 import ResumenPeriodo from "./components/linechart/ResumenPeriodo";
 import MixCanales from "./components/MixCanales";
+import Pickup from "./components/Pickup";
 import { TOTAL_HABITACIONES, formatCOP } from "./config";
 
 function App() {
@@ -250,6 +251,12 @@ function App() {
         >
           Resumen
         </button>
+        <button
+          className={vista === "pickup" ? "activo" : ""}
+          onClick={() => setVista("pickup")}
+        >
+          Pickup
+        </button>
       </div>
 
       {vista === "hoy" && (
@@ -478,9 +485,9 @@ function App() {
           );
         })()}
 
-      {vista === "resumen" ? (
-        <ResumenPeriodo onData={setPeriodoData} />
-      ) : (
+      {vista === "pickup" && <Pickup />}
+      {vista === "resumen" && <ResumenPeriodo onData={setPeriodoData} />}
+      {(vista === "hoy" || vista === "mes") && (
         <OcupacionMes onData={setMesData} />
       )}
     </div>

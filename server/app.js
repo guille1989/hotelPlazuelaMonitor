@@ -13,6 +13,7 @@ const reservasCanceladas = require("./routes/reservasCanceladas");
 const reservasPasadas = require("./routes/reservaspasadas");
 const ocupacionMesRouter = require("./routes/ocupacionmes");
 const ocupacionPeriodoRouter = require("./routes/ocupacionperiodo");
+const pickupRouter = require("./routes/pickup");
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -25,6 +26,7 @@ app.use("/api/reservascanceladas", reservasCanceladas);
 app.use("/api/reservaspasadas", reservasPasadas);
 app.use("/api/ocupacionmes", ocupacionMesRouter);
 app.use("/api/ocupacionperiodo", ocupacionPeriodoRouter);
+app.use("/api/pickup", pickupRouter);
 
 // Calienta la conexión a Mongo al arrancar (no bloquea el listen; las rutas la reutilizan).
 getDb()
