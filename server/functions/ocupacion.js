@@ -22,6 +22,16 @@ function habitaciones(reserva) {
   return reserva.cantid_reh > 0 ? reserva.cantid_reh : 1;
 }
 
+// Noches entre dos fechas "YYYY-MM-DD" (0 si son inválidas o invertidas).
+function noches(llegada, salida) {
+  if (!llegada || !salida) return 0;
+  const n = Math.round(
+    (Date.parse(`${salida}T00:00:00Z`) - Date.parse(`${llegada}T00:00:00Z`)) /
+      86400000
+  );
+  return n > 0 ? n : 0;
+}
+
 // Filtro Mongo: reservas cuya estancia se traslapa con [inicio, fin] (strings YYYY-MM-DD).
 function filtroTraslape(inicio, fin) {
   return {
@@ -44,4 +54,5 @@ module.exports = {
   salidaEfectiva,
   habitaciones,
   filtroTraslape,
+  noches,
 };

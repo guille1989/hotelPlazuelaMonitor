@@ -47,9 +47,13 @@
   .grupo-cards.ocupacion {
     grid-template-columns: repeat(4, 1fr);
   }
-  .grupo-cards.ingresos {
+  .grupo-cards.tres {
+    grid-template-columns: repeat(3, 1fr);
+    max-width: 800px;
+  }
+  .grupo-cards.dos {
     grid-template-columns: repeat(2, 1fr);
-    max-width: 520px;
+    max-width: 540px;
   }
 }
 

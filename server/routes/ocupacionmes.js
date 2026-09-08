@@ -6,6 +6,7 @@ const {
   salidaEfectiva,
   habitaciones,
   filtroTraslape,
+  noches,
 } = require("../functions/ocupacion");
 const { getDb } = require("../db");
 
@@ -38,6 +39,9 @@ router.get("/", async (req, res) => {
     }));
     const porDia = new Map(conteoPorDia.map((d) => [d.dia, d]));
 
+    // Acumulador por MES DE LLEGADA (para tasa de cancelación y estancia media).
+    const arribo = { checkin: 0, reservadas: 0, canceladas: 0, roomNoches: 0 };
+
     for (const reserva of reservas) {
       const llegada = reserva.fecha_llegada_habitacion || reserva.fecha_llegada;
       const salida = salidaEfectiva(reserva);
@@ -46,6 +50,16 @@ router.get("/", async (req, res) => {
       const cancelada = estaCancelada(reserva);
       const habs = habitaciones(reserva);
       const valor = Number(reserva.valor_habitacion) || 0;
+
+      if (llegada.slice(0, 7) === mes) {
+        if (cancelada) {
+          arribo.canceladas += habs;
+        } else {
+          if (String(reserva.estado_habitacion) === "31") arribo.checkin += habs;
+          else arribo.reservadas += habs;
+          arribo.roomNoches += noches(llegada, salida) * habs;
+        }
+      }
 
       for (const dia of dias) {
         if (dia >= llegada && dia < salida) {
@@ -63,7 +77,7 @@ router.get("/", async (req, res) => {
       }
     }
 
-    res.json({ mes, hoy: hoyBogota(), dias: conteoPorDia });
+    res.json({ mes, hoy: hoyBogota(), arribo, dias: conteoPorDia });
   } catch (error) {
     console.error("Error fetching ocupacionmes:", error);
     res.status(500).json({ error: "Internal Server Error" });

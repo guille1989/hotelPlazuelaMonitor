@@ -40,14 +40,27 @@ function App() {
       (a, d) => a + (d.habsTarifa || 0),
       0
     );
+    const capacidadMes = ocup.length * TOTAL_HABITACIONES;
+    const arr = mesData.arribo || {
+      checkin: 0,
+      reservadas: 0,
+      canceladas: 0,
+      roomNoches: 0,
+    };
+    const habsArribo = arr.checkin + arr.reservadas;
+    const totalArribo = habsArribo + arr.canceladas;
     metricasMes = {
-      media: Math.round((suma * 100) / (ocup.length * TOTAL_HABITACIONES)),
+      media: Math.round((suma * 100) / capacidadMes),
       pico: Math.max(...ocup),
       llenos: ocup.filter((o) => o >= TOTAL_HABITACIONES).length,
       canceladas: mesData.dias.reduce((a, d) => a + d.cancelaciones, 0),
       totalTarifas: totalTarifasMes,
       tarifaPromedio:
         habsTarifaMes > 0 ? Math.round(totalTarifasMes / habsTarifaMes) : 0,
+      revpar: Math.round(totalTarifasMes / capacidadMes),
+      los: habsArribo > 0 ? arr.roomNoches / habsArribo : 0,
+      tasaCancelacion:
+        totalArribo > 0 ? Math.round((arr.canceladas * 100) / totalArribo) : 0,
     };
   }
 
@@ -58,6 +71,8 @@ function App() {
     const sum = (f) => M.reduce((a, x) => a + (x[f] || 0), 0);
     const capacidad = sum("dias") * TOTAL_HABITACIONES;
     const habsTarifa = sum("habsTarifa");
+    const habsArribo = sum("checkin") + sum("reservadas");
+    const totalArribo = habsArribo + sum("canceladasLlegada");
     metricasPeriodo = {
       media: capacidad > 0 ? Math.round((sum("habNoche") * 100) / capacidad) : 0,
       checkin: sum("checkin"),
@@ -65,6 +80,12 @@ function App() {
       canceladas: sum("canceladasLlegada"),
       tarifaPromedio: habsTarifa > 0 ? Math.round(sum("tarifas") / habsTarifa) : 0,
       totalTarifas: sum("tarifas"),
+      revpar: capacidad > 0 ? Math.round(sum("tarifas") / capacidad) : 0,
+      los: habsArribo > 0 ? sum("roomNoches") / habsArribo : 0,
+      tasaCancelacion:
+        totalArribo > 0
+          ? Math.round((sum("canceladasLlegada") * 100) / totalArribo)
+          : 0,
     };
   }
 
@@ -216,22 +237,25 @@ function App() {
           </section>
 
           <section className="grupo">
-            <div className="grupo-titulo">Tarifas</div>
-            <div className="grupo-cards ingresos">
+            <div className="grupo-titulo">Tarifas e ingresos</div>
+            <div className="grupo-cards tres">
               <StatCard
                 value={formatCOP(tarifaPromedio)}
-                sub="por habitación"
+                sub="ADR · por habitación vendida"
                 label="💵 Tarifa promedio"
               />
               <StatCard
+                value={formatCOP(Math.round(totalTarifas / TOTAL_HABITACIONES))}
+                sub="por habitación disponible"
+                label="📈 RevPAR"
+              />
+              <StatCard
                 value={formatCOP(totalTarifas)}
-                sub="alojamiento"
-                label="📊 Total tarifas del día"
+                sub="alojamiento del día"
+                label="📊 Total tarifas"
               />
             </div>
           </section>
-
-          {/* Ingresos (RevPAR) oculto por ahora */}
         </>
       )}
 
@@ -266,17 +290,38 @@ function App() {
           </section>
 
           <section className="grupo">
-            <div className="grupo-titulo">Tarifas</div>
-            <div className="grupo-cards ingresos">
+            <div className="grupo-titulo">Tarifas e ingresos</div>
+            <div className="grupo-cards tres">
               <StatCard
                 value={metricasMes ? formatCOP(metricasMes.tarifaPromedio) : "—"}
-                sub="por habitación-noche"
+                sub="ADR · por habitación-noche"
                 label="💵 Tarifa promedio"
+              />
+              <StatCard
+                value={metricasMes ? formatCOP(metricasMes.revpar) : "—"}
+                sub="por habitación disponible"
+                label="📈 RevPAR"
               />
               <StatCard
                 value={metricasMes ? formatCOP(metricasMes.totalTarifas) : "—"}
                 sub="alojamiento del mes"
                 label="📊 Total tarifas"
+              />
+            </div>
+          </section>
+
+          <section className="grupo">
+            <div className="grupo-titulo">Comercial</div>
+            <div className="grupo-cards dos">
+              <StatCard
+                value={metricasMes ? metricasMes.los.toFixed(1) : "—"}
+                sub="noches por reserva"
+                label="🗓️ Estancia media"
+              />
+              <StatCard
+                value={metricasMes ? `${metricasMes.tasaCancelacion}%` : "—"}
+                sub="de las reservas del mes"
+                label="🔴 Tasa de cancelación"
               />
             </div>
           </section>
@@ -314,14 +359,19 @@ function App() {
           </section>
 
           <section className="grupo">
-            <div className="grupo-titulo">Tarifas</div>
-            <div className="grupo-cards ingresos">
+            <div className="grupo-titulo">Tarifas e ingresos</div>
+            <div className="grupo-cards tres">
               <StatCard
                 value={
                   metricasPeriodo ? formatCOP(metricasPeriodo.tarifaPromedio) : "—"
                 }
-                sub="por habitación-noche"
+                sub="ADR · por habitación-noche"
                 label="💵 Tarifa promedio"
+              />
+              <StatCard
+                value={metricasPeriodo ? formatCOP(metricasPeriodo.revpar) : "—"}
+                sub="por habitación disponible"
+                label="📈 RevPAR"
               />
               <StatCard
                 value={
@@ -329,6 +379,24 @@ function App() {
                 }
                 sub="alojamiento del periodo"
                 label="📊 Total tarifas"
+              />
+            </div>
+          </section>
+
+          <section className="grupo">
+            <div className="grupo-titulo">Comercial</div>
+            <div className="grupo-cards dos">
+              <StatCard
+                value={metricasPeriodo ? metricasPeriodo.los.toFixed(1) : "—"}
+                sub="noches por reserva"
+                label="🗓️ Estancia media"
+              />
+              <StatCard
+                value={
+                  metricasPeriodo ? `${metricasPeriodo.tasaCancelacion}%` : "—"
+                }
+                sub="de las reservas del periodo"
+                label="🔴 Tasa de cancelación"
               />
             </div>
           </section>

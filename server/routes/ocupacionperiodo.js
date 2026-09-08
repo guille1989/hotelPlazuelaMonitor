@@ -6,6 +6,7 @@ const {
   salidaEfectiva,
   habitaciones,
   filtroTraslape,
+  noches,
 } = require("../functions/ocupacion");
 const { getDb } = require("../db");
 
@@ -65,6 +66,7 @@ router.get("/", async (req, res) => {
         checkin: 0, // reservas con check-in hecho (estado 31)
         reservadas: 0, // reservadas sin llegar (estado 21/11...)
         canceladasLlegada: 0, // canceladas cuya llegada cae en el mes
+        roomNoches: 0, // Σ (noches × habitaciones) de las no canceladas que llegan en el mes
       };
     });
     const idx = new Map(meses.map((M, i) => [M.mes, i]));
@@ -91,9 +93,13 @@ router.get("/", async (req, res) => {
       const miLlegada = idx.get(llegada.slice(0, 7));
       if (miLlegada !== undefined) {
         const M = meses[miLlegada];
-        if (cancelada) M.canceladasLlegada += habs;
-        else if (String(reserva.estado_habitacion) === "31") M.checkin += habs;
-        else M.reservadas += habs;
+        if (cancelada) {
+          M.canceladasLlegada += habs;
+        } else {
+          if (String(reserva.estado_habitacion) === "31") M.checkin += habs;
+          else M.reservadas += habs;
+          M.roomNoches += noches(llegada, salida) * habs;
+        }
       }
 
       const d0 = llegada < inicioStr ? inicioStr : llegada;
