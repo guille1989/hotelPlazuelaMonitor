@@ -44,6 +44,17 @@ del backend y los cálculos del frontend puedan asumir un formato estable.
 Zeus usa fechas "vacías" como `1900-01-01` (y a veces `1899-12-30`, `1753-01-01`).
 El ETL las convierte a `null`. Regla: cualquier fecha con año `< 1990` → `null`.
 
+### Verificado con `testQuery.csv` (muestra de 30 días)
+- `fecha_llegada` / `fecha_salida`: sin nulls, todas a medianoche, año 2026. OK.
+- `fecha_cancelacion`: años 1900 (centinela → null), 2025 y 2026 (cancelaciones reales →
+  se conservan). OK.
+- `fecha_liquidacion` / `fecha_ult_mod`: traen hora real (p.ej. `2026-08-19 03:14:25`).
+  `toFechaYMD` las reduce a fecha. Confirmado que hay que leerlas con `getUTC*`: un
+  timestamp de las 3 AM en un server en zona Bogotá daría el día anterior con `getDate()`.
+- `prefijo_reserva`: Zeus lo devuelve como `char()` con relleno — "con desayuno" + hasta
+  1500 espacios. El ETL lo recorta (`limpiarTexto`). Igual para dobles espacios en
+  `nombre_cliente` ("HOTZ  KATRIN").
+
 ---
 
 ## Cancelación
@@ -85,12 +96,28 @@ Declarados en el schema:
 
 ---
 
-## Fan-out de costos (bug del SQL actual — pendiente de validar contra Zeus)
+## Fan-out de costos (bug del SQL actual — confirmado con datos)
 
 En la subconsulta "Con reserva", `REGISTRO` y `MAEFOLIO` se unen a nivel de reserva,
 pero el `GROUP BY` incluye `h.LINEA_REH`. Si una reserva tiene N líneas de habitación,
 cada folio se cuenta N veces → `SUM(f.MOVTODEB)` queda multiplicado por N en `costo_01`
 y `costo_02`.
+
+**Confirmado** en la muestra de 30 días (`testQuery.csv`, 392 filas): de 312 filas
+"con reserva", 23 reservas tienen 2-3 líneas. Ejemplos:
+- `038103`: 2 líneas, `costo_01 = 1043595.62` en **ambas** → sumar da 2.087.191,24 (real: 1.043.595,62).
+- `037753`: 3 líneas, `costo_01 = 863888.89` en las tres.
+
+Además `codigo_registro`, `codigo_folio`, `numero_habitacion` y `nombre_cliente_folio`
+salen **idénticos en cada línea** (la lista completa a nivel reserva, no la de esa línea).
+O sea: para reservas multi-línea, esos campos y los costos son de la **reserva**, no de
+la línea. Hoy ningún consumidor los lee (`App.js` usa `valor_habitacion`, que sí es por
+línea), así que el fan-out no rompe nada en pantalla — pero el dato guardado está mal.
+
+Decisión: la reestructura con CTEs se hace en Fase 2/3, no en la corrida de recuperación
+(la query de 60 líneas sin probar es más riesgo que beneficio dado que esos campos no se
+usan). Con los CTEs, los costos quedan a nivel reserva repetidos igual en cada línea (no
+multiplicados). Si se decide que `costo_01/02` no hacen falta, se quitan del SELECT.
 
 ### Correcciones
 1. **Ya aplicado en `app.js`:** el ETL normaliza en JS (`normalizarLista`) las listas
