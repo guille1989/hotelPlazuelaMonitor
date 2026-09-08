@@ -55,30 +55,6 @@ const DiaTick = ({ x, y, payload }) => (
   </g>
 );
 
-const OcupacionTooltip = ({ active, payload }) => {
-  if (!active || !payload || !payload.length) return null;
-  const fila = payload[0].payload || {};
-  return (
-    <div
-      style={{
-        backgroundColor: "#353d54",
-        color: "#fff",
-        padding: 10,
-        borderRadius: 5,
-        border: "1px solid #ccc",
-      }}
-    >
-      <p style={{ margin: 0 }}>{fila.dia}</p>
-      <p style={{ margin: 0 }}>{`Habitaciones ocupadas: ${fila.ocupacion ?? 0}`}</p>
-      {fila.cancelaciones > 0 && (
-        <p style={{ margin: 0, color: "#EF4444" }}>
-          {`Habitaciones canceladas: ${fila.cancelaciones}`}
-        </p>
-      )}
-    </div>
-  );
-};
-
 const botonEstilo = {
   backgroundColor: "#353d54",
   color: "#fff",
@@ -96,6 +72,12 @@ export default function OcupacionMes() {
   const [data, setData] = useState({ dias: [], hoy: null });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [activo, setActivo] = useState(null); // día bajo el cursor/tap
+
+  const handleActivo = (state) => {
+    const p = state && state.activePayload && state.activePayload[0];
+    setActivo(p ? p.payload : null);
+  };
 
   const base = new Date();
   base.setDate(1);
@@ -108,6 +90,7 @@ export default function OcupacionMes() {
   useEffect(() => {
     let cancelado = false;
     setLoading(true);
+    setActivo(null);
     axios
       .get(
         `http://${process.env.REACT_APP_URL_PRODUCCION}/api/ocupacionmes?mes=${mesStr}`
@@ -179,6 +162,7 @@ export default function OcupacionMes() {
       )}
 
       {!loading && !error && (
+      <>
         <div
           style={{ overflowX: "auto", WebkitOverflowScrolling: "touch", width: "100%" }}
         >
@@ -187,6 +171,9 @@ export default function OcupacionMes() {
           <LineChart
             data={data.dias}
             margin={{ top: 30, right: 20, left: -20, bottom: 0 }}
+            onMouseMove={handleActivo}
+            onClick={handleActivo}
+            onMouseLeave={() => setActivo(null)}
           >
             <XAxis dataKey="dia" tick={<DiaTick />} interval={0} />
             <YAxis domain={[0, TOTAL_HABITACIONES]} />
@@ -225,7 +212,10 @@ export default function OcupacionMes() {
                   strokeWidth={1}
                 />
               ))}
-            <Tooltip content={<OcupacionTooltip />} />
+            <Tooltip
+              content={() => null}
+              cursor={{ stroke: "#9CA3AF", strokeDasharray: "3 3" }}
+            />
             <Line
               type="monotone"
               dataKey="ocupacion"
@@ -248,6 +238,36 @@ export default function OcupacionMes() {
         </ResponsiveContainer>
         </div>
         </div>
+
+        <div
+          style={{
+            margin: "6px auto 0",
+            maxWidth: 340,
+            background: "#353d54",
+            color: "#fff",
+            borderRadius: 6,
+            padding: "8px 12px",
+            textAlign: "center",
+            fontSize: 14,
+            minHeight: 44,
+            boxSizing: "border-box",
+          }}
+        >
+          {activo ? (
+            <>
+              <span style={{ fontWeight: "bold" }}>{activo.dia}</span>
+              <span>{` · Ocupadas: ${activo.ocupacion ?? 0}`}</span>
+              {activo.cancelaciones > 0 && (
+                <span style={{ color: "#EF4444" }}>
+                  {` · Canceladas: ${activo.cancelaciones}`}
+                </span>
+              )}
+            </>
+          ) : (
+            <span style={{ opacity: 0.6 }}>Pasa el cursor o toca un día</span>
+          )}
+        </div>
+      </>
       )}
     </div>
   );
