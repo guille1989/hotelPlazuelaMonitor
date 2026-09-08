@@ -265,12 +265,12 @@ function App() {
               <StatCard
                 value={formatCOP(tarifaPromedio)}
                 sub="ADR · por habitación vendida"
-                label="💵 Tarifa promedio"
+                label="💵 Tarifa media diaria"
               />
               <StatCard
                 value={formatCOP(Math.round(totalTarifas / TOTAL_HABITACIONES))}
-                sub="por habitación disponible"
-                label="📈 RevPAR"
+                sub="RevPAR · venta ÷ 29 hab"
+                label="📈 Tarifa promedio"
               />
               <StatCard
                 value={formatCOP(totalTarifas)}
@@ -318,12 +318,12 @@ function App() {
               <StatCard
                 value={metricasMes ? formatCOP(metricasMes.tarifaPromedio) : "—"}
                 sub="ADR · por habitación-noche"
-                label="💵 Tarifa promedio"
+                label="💵 Tarifa media diaria"
               />
               <StatCard
                 value={metricasMes ? formatCOP(metricasMes.revpar) : "—"}
-                sub="por habitación disponible"
-                label="📈 RevPAR"
+                sub="RevPAR · venta ÷ 29 hab"
+                label="📈 Tarifa promedio"
               />
               <StatCard
                 value={metricasMes ? formatCOP(metricasMes.totalTarifas) : "—"}
@@ -401,13 +401,13 @@ function App() {
                     value={p ? formatCOP(p.tarifaPromedio) : "—"}
                     delta={pp && deltaPct(p.tarifaPromedio, pp.tarifaPromedio, true)}
                     sub="ADR · por habitación-noche"
-                    label="💵 Tarifa promedio"
+                    label="💵 Tarifa media diaria"
                   />
                   <StatCard
                     value={p ? formatCOP(p.revpar) : "—"}
                     delta={pp && deltaPct(p.revpar, pp.revpar, true)}
-                    sub="por habitación disponible"
-                    label="📈 RevPAR"
+                    sub="RevPAR · venta ÷ 29 hab"
+                    label="📈 Tarifa promedio"
                   />
                   <StatCard
                     value={p ? formatCOP(p.totalTarifas) : "—"}
