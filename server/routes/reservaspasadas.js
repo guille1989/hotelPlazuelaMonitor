@@ -1,130 +1,82 @@
 const express = require("express");
 const router = express.Router();
-const {
-  getBogotaUtcRangoEntreFechasRelativas,
-} = require("../functions/rangodiasfuturo.js");
+const { rangoDias } = require("../functions/fechas");
 const { getDb } = require("../db");
+
+const DIAS = 31; // ventana: ayer .. hace 31 días
+
+function estaCancelada(doc) {
+  return !!doc.fecha_cancelacion && !doc.fecha_cancelacion.startsWith("1900");
+}
+
+// Salida efectiva: si fecha_ult_mod es posterior a la salida, la estancia se extendió.
+function salidaEfectiva(reserva) {
+  const salida = reserva.fecha_salida_habitacion || reserva.fecha_salida;
+  if (reserva.fecha_ult_mod && reserva.fecha_ult_mod > salida) {
+    return reserva.fecha_ult_mod;
+  }
+  return salida;
+}
+
+function habitaciones(reserva) {
+  const origen = (reserva.origen || "").trim().toLowerCase();
+  if (origen === "sin reserva") return 1;
+  return reserva.cantid_reh > 0 ? reserva.cantid_reh : 1;
+}
 
 router.get("/", async (req, res) => {
   try {
     const collection = (await getDb()).collection("reservas");
 
-    // Calcular fechas dinámicamente
-    const today = new Date();
-    //console.log("Hoy reservas Pasadas:", today.toISOString());
+    // De ayer (-1) hacia atrás. Orden descendente (ayer primero) como el gráfico espera.
+    const dias = rangoDias(-1, -DIAS);
+    const masAntiguo = dias[dias.length - 1];
+    const ayer = dias[0];
 
-    //Fechas
-    const { inicioUtc, finUtc } = getBogotaUtcRangoEntreFechasRelativas(31, 1);
-    //console.log("Inicio reservas Pasadas UTC:", inicioUtc.toISOString());
-    //console.log("Fin reservas Pasadas UTC:", finUtc.toISOString());
-    // Reservas cuya estancia se traslape con algún día del rango
+    // Reservas cuya estancia se traslapa con la ventana (comparación de strings).
     const reservas = await collection
       .find({
         $or: [
           {
-            fecha_llegada_habitacion: {
-              $gte: inicioUtc.toISOString().split("T")[0],
-              $lte: finUtc.toISOString().split("T")[0],
-            },
+            fecha_llegada_habitacion: { $lte: ayer },
+            fecha_salida_habitacion: { $gt: masAntiguo },
           },
           {
             fecha_llegada_habitacion: null,
-            fecha_llegada: {
-              $gte: inicioUtc.toISOString().split("T")[0],
-              $lte: finUtc.toISOString().split("T")[0],
-            },
+            fecha_llegada: { $lte: ayer },
+            fecha_salida: { $gt: masAntiguo },
           },
         ],
       })
       .toArray();
 
-    // Procesar las reservas para ajustar `fecha_salida` si `fecha_ult_mod` existe y es mayor
-    const reservasProcesadas = reservas.map((reserva) => {
-      //Validamos que fecha tenemos si fecha_llegada_habitacion o fecha_llegada
-      const fechaLlegada =
-        reserva.fecha_llegada_habitacion || reserva.fecha_llegada;
-      if (
-        reserva.fecha_ult_mod && // Verifica que `fecha_ult_mod` exista
-        new Date(reserva.fecha_ult_mod) > new Date(fechaLlegada) // Compara las fechas
-      ) {
-        // Reemplaza `fecha_salida` con `fecha_ult_mod` o `fecha_salida_habitacion` con `fecha_ult_mod`
-        return {
-          ...reserva,
-          ...(reserva.fecha_salida_habitacion
-            ? { fecha_salida_habitacion: reserva.fecha_ult_mod }
-            : { fecha_salida: reserva.fecha_ult_mod }),
-        };
-      }
-      return reserva; // Si no se cumple la condición, devuelve la reserva sin cambios
-    });
+    const conteoPorDia = dias.map((dia) => ({
+      dia,
+      ocupacion: 0,
+      cancelaciones: 0,
+    }));
+    const porDia = new Map(conteoPorDia.map((d) => [d.dia, d]));
 
-    const FECHA_1900 = "1900-01-01"; // Fecha de referencia para cancelación
+    for (const reserva of reservas) {
+      const llegada = reserva.fecha_llegada_habitacion || reserva.fecha_llegada;
+      const salida = salidaEfectiva(reserva);
+      if (!llegada || !salida) continue;
 
-    const reservasFiltradas = reservasProcesadas.filter((doc) => {
-      if (!doc.fecha_cancelacion) return true;
+      const cancelada = estaCancelada(reserva);
+      const habs = habitaciones(reserva);
 
-      // Comparar directamente las cadenas
-      return doc.fecha_cancelacion.startsWith(FECHA_1900);
-    });
-
-    const conteoPorDia = [];
-
-    for (let i = 1; i <= 31; i++) {
-      const dia = new Date(today);
-      dia.setDate(today.getDate() - i);
-      dia.setHours(0, 0, 0, 0);
-      const diaStr = dia.toISOString().split("T")[0]; // yyyy-mm-dd
-      // Inicializar cada día con ocupación 0
-      conteoPorDia.push({ dia: diaStr, ocupacion: 0 });
-    }
-
-    reservasFiltradas.forEach((reserva) => {
-      //Revisar si tenemos fecha_llegada_habitacion o fecha_llegada. fecha_salida_habitacion o fecha_salida
-      const fechaLlegada =
-        reserva.fecha_llegada_habitacion || reserva.fecha_llegada;
-
-      const fechaSalida =
-        reserva.fecha_salida_habitacion || reserva.fecha_salida;
-
-      const llegada = new Date(fechaLlegada);
-      const salida = new Date(fechaSalida);
-
-      for (let i = 1; i <= 31; i++) {
-        const dia = new Date(today);
-        dia.setDate(today.getDate() - i);
-        dia.setHours(0, 0, 0, 0);
-
-        // Solo contar días entre llegada y salida (sin incluir salida)
+      for (const dia of dias) {
         if (dia >= llegada && dia < salida) {
-          const diaStr = dia.toISOString().split("T")[0];
-          const diaObj = conteoPorDia.find((d) => d.dia === diaStr);
-
-          if (diaObj) {
-            if (
-              reserva.origen &&
-              reserva.origen.trim().toLowerCase() === "con reserva"
-            ) {
-              if (reserva.cantid_reh > 0) {
-                diaObj.ocupacion += reserva.cantid_reh;
-              } else {
-                diaObj.ocupacion++;
-              }
-            }
-
-            if (
-              reserva.origen &&
-              reserva.origen.trim().toLowerCase() === "sin reserva"
-            ) {
-              diaObj.ocupacion++;
-            }
-          }
+          const d = porDia.get(dia);
+          if (cancelada) d.cancelaciones += habs;
+          else d.ocupacion += habs;
         }
       }
-    });
-    //console.log("Conteo por día:", conteoPorDia);
+    }
+
     res.json(conteoPorDia);
   } catch (error) {
-    console.error("Error fetching reservas:", error);
+    console.error("Error fetching reservaspasadas:", error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
