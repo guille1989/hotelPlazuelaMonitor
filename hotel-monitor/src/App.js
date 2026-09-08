@@ -5,7 +5,8 @@ import axios from "axios";
 import TopBar from "./components/top/TopBar";
 import StatCard from "./components/statcard/StatCard";
 import OcupacionMes from "./components/linechart/OcupacionMes";
-import { TOTAL_HABITACIONES, formatCOP } from "./config";
+import { TOTAL_HABITACIONES } from "./config";
+// formatCOP: se usará cuando se reactive la sección de Ingresos
 
 function App() {
   const [actualizacionreserva, setActualizacionreserva] = useState([]);
@@ -18,8 +19,8 @@ function App() {
   const [occupancyWithCheckIn, setOccupancyWithCheckIn] = useState(0);
   const [projectedOccupancy, setProjectedOccupancy] = useState(0);
   const [projectedOcupacionCheckIn, setProjectedOcupacionCheckIn] = useState(0);
-  const [revPAR, setRevPAR] = useState(0);
-  const [ingreso, setIngreso] = useState(0);
+  // const [revPAR, setRevPAR] = useState(0);      // Ingresos oculto por ahora
+  // const [ingreso, setIngreso] = useState(0);
   const [personasEnHotel, setPersonasEnHotel] = useState(0);
   const [cancelacionReservas, setCancelacionReservas] = useState(0);
 
@@ -88,35 +89,16 @@ function App() {
         parseFloat(((ocupacionProyectada * 100) / TOTAL_HABITACIONES).toFixed(2))
       );
 
-      //revPAR is the sum of valor_habitacion for all elements with estado_habitacion = 31 and cantid_reh > 0
-      const revPAR = actualizacionreserva
-        .filter(
-          (stat) =>
-            //parseInt(stat.estado_habitacion) === 31 &&
-            parseInt(stat.cantid_reh) > 0
-        )
-        .reduce(
-          (acc, stat) =>
-            acc +
-            stat.valor_habitacion * (stat.cantid_reh ? stat.cantid_reh : 1),
-          0
-        );
-      setRevPAR(revPAR / TOTAL_HABITACIONES);
-
-      //Ingresos
-      const ingresoPorReservaConchecking = actualizacionreserva
-        .filter(
-          (stat) =>
-            //parseInt(stat.estado_habitacion) === 31 &&
-            parseInt(stat.cantid_reh) > 0
-        )
-        .reduce(
-          (acc, stat) =>
-            acc +
-            stat.valor_habitacion * (stat.cantid_reh ? stat.cantid_reh : 1),
-          0
-        );
-      setIngreso(ingresoPorReservaConchecking);
+      // --- Ingresos oculto por ahora (RevPAR / Ingresos del día) ---
+      // const totalIngreso = actualizacionreserva
+      //   .filter((stat) => parseInt(stat.cantid_reh) > 0)
+      //   .reduce(
+      //     (acc, stat) =>
+      //       acc + stat.valor_habitacion * (stat.cantid_reh ? stat.cantid_reh : 1),
+      //     0
+      //   );
+      // setRevPAR(totalIngreso / TOTAL_HABITACIONES);
+      // setIngreso(totalIngreso);
     }
 
     //Calculo de total personas en el hotel
@@ -190,6 +172,7 @@ function App() {
             </div>
           </section>
 
+          {/* Ingresos oculto por ahora
           <section className="grupo">
             <div className="grupo-titulo">Ingresos</div>
             <div className="grupo-cards ingresos">
@@ -201,6 +184,7 @@ function App() {
               <StatCard value={formatCOP(ingreso)} sub="del día" label="💵 Ingresos" />
             </div>
           </section>
+          */}
         </>
       )}
 
