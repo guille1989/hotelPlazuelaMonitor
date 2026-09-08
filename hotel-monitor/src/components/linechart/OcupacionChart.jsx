@@ -125,7 +125,7 @@ export default function OcupacionChart({ valorIntervalo }) {
           <p style={{ margin: 0 }}>{`Reservas totales: ${fila.ocupacion ?? 0}`}</p>
           {fila.cancelaciones > 0 && (
             <p style={{ margin: 0, color: "#EF4444" }}>
-              {`Canceladas: ${fila.cancelaciones}`}
+              {`Habitaciones canceladas: ${fila.cancelaciones}`}
             </p>
           )}
         </div>

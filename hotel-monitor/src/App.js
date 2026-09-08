@@ -145,16 +145,26 @@ function App() {
           parseInt(stat.cantid_reh) > 0 &&
           parseInt(stat.estado_habitacion) === 31
       )
-      .reduce((acc, stat) => acc + (stat.adultos + stat.ninos), 0);
+      .reduce(
+        (acc, stat) =>
+          acc + (parseInt(stat.adultos, 10) || 0) + (parseInt(stat.ninos, 10) || 0),
+        0
+      );
     setPersonasEnHotel(totalPersonasHotel);
-
-    //Calculo de total de cancelacion en el hotel
-    const totalCancelacionesReservas = actualizacionreservacancelaciones.filter(
-      (stat) => stat.fecha_cancelacion !== "1900-01-01T00:00:00.000Z"
-    ); // Cuenta el número de cancelaciones
-
-    setCancelacionReservas(totalCancelacionesReservas.length);
   }, [actualizacionreserva]);
+
+  // Cancelaciones: total de HABITACIONES canceladas (consistente con el gráfico).
+  // Efecto propio: depende solo de las cancelaciones, así no hay carrera con la
+  // otra petición (antes se calculaba en el efecto de [actualizacionreserva] y si
+  // esta respuesta llegaba después, el contador se quedaba en 0).
+  useEffect(() => {
+    const habitacionesCanceladas = actualizacionreservacancelaciones.reduce(
+      (acc, stat) =>
+        acc + (parseInt(stat.cantid_reh, 10) > 0 ? parseInt(stat.cantid_reh, 10) : 1),
+      0
+    );
+    setCancelacionReservas(habitacionesCanceladas);
+  }, [actualizacionreservacancelaciones]);
 
   return (
     <div className="App">
@@ -221,7 +231,7 @@ function App() {
         
           <StatCard
             value={cancelacionReservas}
-            label="❌ Numero de cancelación"
+            label="❌ Habitaciones canceladas"
             unit="UNI"
             maxvalue={100}
             flag={"ocrev"}
