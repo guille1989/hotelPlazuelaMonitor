@@ -6,6 +6,7 @@ import TopBar from "./components/top/TopBar";
 import StatCard from "./components/statcard/StatCard";
 import OcupacionMes from "./components/linechart/OcupacionMes";
 import ResumenPeriodo from "./components/linechart/ResumenPeriodo";
+import MixCanales from "./components/MixCanales";
 import { TOTAL_HABITACIONES, formatCOP } from "./config";
 
 function App() {
@@ -46,6 +47,8 @@ function App() {
       reservadas: 0,
       canceladas: 0,
       roomNoches: 0,
+      antelacionDias: 0,
+      antelacionN: 0,
     };
     const habsArribo = arr.checkin + arr.reservadas;
     const totalArribo = habsArribo + arr.canceladas;
@@ -61,6 +64,10 @@ function App() {
       los: habsArribo > 0 ? arr.roomNoches / habsArribo : 0,
       tasaCancelacion:
         totalArribo > 0 ? Math.round((arr.canceladas * 100) / totalArribo) : 0,
+      antelacion:
+        arr.antelacionN > 0
+          ? Math.round(arr.antelacionDias / arr.antelacionN)
+          : 0,
     };
   }
 
@@ -72,6 +79,14 @@ function App() {
     const habsTarifa = sum("habsTarifa");
     const habsArribo = sum("checkin") + sum("reservadas");
     const totalArribo = habsArribo + sum("canceladasLlegada");
+    const antN = sum("antelacionN");
+    // Mix de canales: suma el objeto `canal` de cada mes.
+    const canal = {};
+    for (const x of M) {
+      for (const [k, v] of Object.entries(x.canal || {})) {
+        canal[k] = (canal[k] || 0) + v;
+      }
+    }
     return {
       media: capacidad > 0 ? Math.round((sum("habNoche") * 100) / capacidad) : 0,
       checkin: sum("checkin"),
@@ -85,6 +100,8 @@ function App() {
         totalArribo > 0
           ? Math.round((sum("canceladasLlegada") * 100) / totalArribo)
           : 0,
+      antelacion: antN > 0 ? Math.round(sum("antelacionDias") / antN) : 0,
+      canal,
     };
   };
 
@@ -335,11 +352,18 @@ function App() {
 
           <section className="grupo">
             <div className="grupo-titulo">Comercial</div>
-            <div className="grupo-cards dos">
+            <div className="grupo-cards tres">
               <StatCard
                 value={metricasMes ? metricasMes.los.toFixed(1) : "—"}
                 sub="noches por reserva"
                 label="🗓️ Estancia media"
+              />
+              <StatCard
+                value={
+                  metricasMes ? `${metricasMes.antelacion} días` : "—"
+                }
+                sub="al hacer la reserva"
+                label="⏱️ Antelación media"
               />
               <StatCard
                 value={metricasMes ? `${metricasMes.tasaCancelacion}%` : "—"}
@@ -420,12 +444,18 @@ function App() {
 
               <section className="grupo">
                 <div className="grupo-titulo">Comercial{vs}</div>
-                <div className="grupo-cards dos">
+                <div className="grupo-cards tres">
                   <StatCard
                     value={p ? p.los.toFixed(1) : "—"}
                     delta={pp && deltaPuntos(p.los, pp.los, true, 1)}
                     sub="noches por reserva"
                     label="🗓️ Estancia media"
+                  />
+                  <StatCard
+                    value={p ? `${p.antelacion} días` : "—"}
+                    delta={pp && deltaPuntos(p.antelacion, pp.antelacion, true)}
+                    sub="al hacer la reserva"
+                    label="⏱️ Antelación media"
                   />
                   <StatCard
                     value={p ? `${p.tasaCancelacion}%` : "—"}
@@ -437,6 +467,13 @@ function App() {
                   />
                 </div>
               </section>
+
+              {p && Object.keys(p.canal).length > 0 && (
+                <section className="grupo">
+                  <div className="grupo-titulo">Mix de canales{vs}</div>
+                  <MixCanales canal={p.canal} canalPrev={pp && pp.canal} />
+                </section>
+              )}
             </>
           );
         })()}
