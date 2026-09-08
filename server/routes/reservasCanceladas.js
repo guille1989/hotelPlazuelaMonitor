@@ -13,19 +13,19 @@ router.get("/", async (req, res) => {
     const collection = (await getDb()).collection("reservas");
 
     const hoy = moment().tz("America/Bogota").format("YYYY-MM-DD");
-    const manana = moment().tz("America/Bogota").add(1, "day").format("YYYY-MM-DD");
 
+    // Canceladas que estarían ocupando habitación hoy: llegada <= hoy < salida.
     const canceladas = await collection
       .find({
         fecha_cancelacion: { $ne: null },
         $or: [
           {
-            fecha_llegada_habitacion: { $lte: manana },
+            fecha_llegada_habitacion: { $lte: hoy },
             fecha_salida_habitacion: { $gt: hoy },
           },
           {
             fecha_llegada_habitacion: null,
-            fecha_llegada: { $lte: manana },
+            fecha_llegada: { $lte: hoy },
             fecha_salida: { $gt: hoy },
           },
         ],
