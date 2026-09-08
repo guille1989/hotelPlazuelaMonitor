@@ -92,7 +92,7 @@ export default function Canales() {
               textAlign: "center",
               color: "var(--color-muted)",
               fontSize: 11,
-              margin: "4px 0 16px",
+              margin: "6px 0 18px",
             }}
           >
             Habitaciones-noche por canal de reserva
