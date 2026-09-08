@@ -93,10 +93,16 @@ cada folio se cuenta N veces → `SUM(f.MOVTODEB)` queda multiplicado por N en `
 y `costo_02`.
 
 ### Correcciones
-1. **Ya aplicado en `app.js`:** todos los `STRING_AGG` llevan
-   `WITHIN GROUP (ORDER BY ...)` para que `codigo_registro` / `codigo_folio` /
-   `numero_habitacion` tengan orden determinístico entre corridas (sin esto, un cambio
-   de orden en la cadena rompe el match del upsert y crea duplicados).
+1. **Ya aplicado en `app.js`:** el ETL normaliza en JS (`normalizarLista`) las listas
+   concatenadas `codigo_registro` / `codigo_folio` / `numero_habitacion` /
+   `nombre_cliente_folio` a un orden estable. `STRING_AGG ... WITHIN GROUP (ORDER BY)`
+   **no se usa**: da Msg 102 en Zeus. El servidor es SQL Server 2022, así que la causa
+   es el *compatibility level* de la base `Zeus` (< 110 → sin `WITHIN GROUP`; < 110
+   tampoco tendría `STRING_AGG` — confirmar con
+   `SELECT compatibility_level FROM sys.databases WHERE name = 'Zeus'`). Sin normalizar,
+   un cambio de orden en la cadena hace que cada corrida marque el documento como
+   "modificado" (no crea duplicados: para "con reserva" la llave del upsert es
+   `{codigo_reserva, linea_habitacion}`, no `codigo_registro`).
 
 2. **Propuesta a validar:** pre-agregar folios y registros en CTEs a nivel de reserva
    y unirlos ya agregados, quitando el `GROUP BY` del SELECT externo (una fila por
