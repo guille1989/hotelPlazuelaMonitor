@@ -34,24 +34,10 @@ const fechaLarga = (ymd) => {
 const pct = (ocupacion) =>
   Math.round(((ocupacion || 0) * 100) / TOTAL_HABITACIONES);
 
-// Punto rojo pequeño con el número de habitaciones canceladas ese día.
+// Punto rojo pequeño en los días con habitaciones canceladas.
 const CancelDot = ({ cx, cy, payload }) => {
   if (cx == null || cy == null || !payload || !payload.cancelaciones) return null;
-  return (
-    <g>
-      <circle cx={cx} cy={cy} r={3} fill="#f07070" />
-      <text
-        x={cx}
-        y={cy - 8}
-        textAnchor="middle"
-        fill="#f07070"
-        fontSize={11}
-        fontWeight="bold"
-      >
-        {payload.cancelaciones}
-      </text>
-    </g>
-  );
+  return <circle cx={cx} cy={cy} r={3.5} fill="#f07070" />;
 };
 
 // Tick del eje X: solo el número de día ("2026-09-08" -> "8").
@@ -95,8 +81,8 @@ export default function OcupacionMes({ onData }) {
         if (cancelado) return;
         const dias = r.data.dias.map((d) => ({
           ...d,
-          // el punto se ubica a la altura del nº de canceladas en el eje Y
-          cancelMark: d.cancelaciones > 0 ? d.cancelaciones : null,
+          // serie continua para la línea punteada de canceladas (0 si no hay)
+          cancelLinea: d.cancelaciones > 0 ? d.cancelaciones : 0,
         }));
         setData({ dias, hoy: r.data.hoy });
         setError(null);
@@ -150,6 +136,10 @@ export default function OcupacionMes({ onData }) {
 
       {!loading && !error && (
         <>
+          <div className="om-leyenda">
+            <span className="om-leyenda-item om-leyenda-ocup">Ocupación</span>
+            <span className="om-leyenda-item om-leyenda-canc">Canceladas</span>
+          </div>
           <div className="om-scroll">
             <div style={{ minWidth: anchoMin }}>
               <ResponsiveContainer width="100%" height={240}>
@@ -162,8 +152,8 @@ export default function OcupacionMes({ onData }) {
                 >
                   <defs>
                     <linearGradient id="omOcupacion" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#22c55e" stopOpacity={0.32} />
-                      <stop offset="100%" stopColor="#22c55e" stopOpacity={0} />
+                      <stop offset="0%" stopColor="#8cf4ee" stopOpacity={0.24} />
+                      <stop offset="100%" stopColor="#8cf4ee" stopOpacity={0} />
                     </linearGradient>
                   </defs>
 
@@ -211,31 +201,16 @@ export default function OcupacionMes({ onData }) {
                   {hoyEnEsteMes && (
                     <ReferenceLine
                       x={hoyEnEsteMes}
-                      stroke="#facc15"
+                      stroke="#8cf4ee"
                       strokeWidth={1.5}
                       label={{
                         value: "hoy",
                         position: "top",
-                        fill: "#facc15",
+                        fill: "#8cf4ee",
                         fontSize: 11,
                       }}
                     />
                   )}
-                  {/* Línea discontinua roja desde el nº de canceladas hasta el eje X */}
-                  {data.dias
-                    .filter((d) => d.cancelaciones > 0)
-                    .map((d) => (
-                      <ReferenceLine
-                        key={d.dia}
-                        segment={[
-                          { x: d.dia, y: d.cancelaciones },
-                          { x: d.dia, y: 0 },
-                        ]}
-                        stroke="#f07070"
-                        strokeDasharray="4 4"
-                        strokeWidth={1}
-                      />
-                    ))}
 
                   <Tooltip
                     content={() => null}
@@ -248,21 +223,22 @@ export default function OcupacionMes({ onData }) {
                   <Area
                     type="monotone"
                     dataKey="ocupacion"
-                    stroke="#22c55e"
+                    stroke="#8cf4ee"
                     strokeWidth={2}
                     fill="url(#omOcupacion)"
                     isAnimationActive={false}
-                    activeDot={{ r: 4, fill: "#22c55e", stroke: "#1f293d", strokeWidth: 1.5 }}
+                    activeDot={{ r: 4, fill: "#8cf4ee", stroke: "#1f293d", strokeWidth: 2 }}
                   />
                   <Line
                     type="monotone"
-                    dataKey="cancelMark"
-                    stroke="none"
+                    dataKey="cancelLinea"
+                    stroke="#f07070"
+                    strokeWidth={1.5}
+                    strokeDasharray="3 3"
                     legendType="none"
                     isAnimationActive={false}
                     dot={<CancelDot />}
                     activeDot={false}
-                    connectNulls={false}
                   />
                 </ComposedChart>
               </ResponsiveContainer>
@@ -272,19 +248,20 @@ export default function OcupacionMes({ onData }) {
           <div className="om-readout om-readout-dia">
             {activo ? (
               <>
-                <span className="om-day">{fechaLarga(activo.dia)}</span>
-                <span>
-                  Ocupación{" "}
-                  <b>
-                    {activo.ocupacion ?? 0}/{TOTAL_HABITACIONES}
-                  </b>{" "}
-                  · <b>{pct(activo.ocupacion)}%</b>
-                </span>
-                {activo.cancelaciones > 0 && (
-                  <span className="om-cancel">
-                    Canceladas <b>{activo.cancelaciones}</b>
+                <div className="om-readout-main">
+                  <span className="om-day">{fechaLarga(activo.dia)}</span>
+                  <span className="om-readout-ocup">
+                    Ocupación{" "}
+                    <b>
+                      {activo.ocupacion ?? 0}/{TOTAL_HABITACIONES} ·{" "}
+                      {pct(activo.ocupacion)}%
+                    </b>
                   </span>
-                )}
+                </div>
+                <div className="om-readout-canc">
+                  <span>Canceladas</span>
+                  <b>{activo.cancelaciones || 0}</b>
+                </div>
               </>
             ) : (
               <span className="om-hint">

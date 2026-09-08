@@ -82,12 +82,69 @@
 .om-cancel {
   color: var(--color-red);
 }
-.om-readout-dia .om-cancel {
-  flex-basis: 100%;
-  text-align: center;
-}
 .om-hint {
   opacity: 0.6;
+}
+
+/* Leyenda del gráfico */
+.om-leyenda {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin: 2px 0 6px;
+}
+.om-leyenda-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  color: var(--color-muted);
+}
+.om-leyenda-item::before {
+  content: "";
+  display: inline-block;
+}
+.om-leyenda-ocup::before {
+  width: 12px;
+  height: 2px;
+  background: var(--color-accent);
+}
+.om-leyenda-canc::before {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-red);
+}
+
+/* Readout tipo Figma: fecha + ocupación a la izquierda, canceladas a la derecha */
+.om-readout-dia {
+  flex-wrap: nowrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+}
+.om-readout-main {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.om-readout-ocup b {
+  color: var(--color-accent);
+  font-weight: 700;
+}
+.om-readout-canc {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  flex-shrink: 0;
+}
+.om-readout-canc b {
+  color: var(--color-red);
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.1;
 }
 
 /* Selector de periodo (trimestre / semestre / año) */

@@ -269,22 +269,32 @@ function App() {
                   <StatCard
                     value={`${occupancyRate}%`}
                     sub={`${occupancyWithCheckIn} / ${TOTAL_HABITACIONES} hab`}
-                    label="🛏️ Ocupación actual"
+                    label="Ocupación actual"
+                    icon="🛏️"
+                    tone="blue"
+                    progress={occupancyRate}
                   />
                   <StatCard
                     value={`${projectedOccupancy}%`}
                     sub={`${projectedOcupacionCheckIn} / ${TOTAL_HABITACIONES} hab`}
-                    label="📅 Ocupación proyectada"
+                    label="Ocupación proyectada"
+                    icon="📈"
+                    tone="positive"
+                    progress={projectedOccupancy}
                   />
                   <StatCard
                     value={personasEnHotel}
                     sub="en casa"
-                    label="👥 Huéspedes"
+                    label="Huéspedes"
+                    icon="👥"
+                    tone="amber"
                   />
                   <StatCard
                     value={cancelacionReservas}
                     sub="habitaciones"
-                    label="❌ Canceladas"
+                    label="Canceladas"
+                    icon="✕"
+                    tone="red"
                   />
                 </div>
               ),
@@ -295,20 +305,27 @@ function App() {
                 <div className="grupo-cards tres">
                   <StatCard
                     value={formatCOP(tarifaPromedio)}
-                    sub="ADR · por habitación vendida"
-                    label="💵 Tarifa media diaria"
+                    sub="ADR · por hab. vendida"
+                    label="Tarifa media diaria"
+                    icon="💰"
+                    tone="amber"
                   />
                   <StatCard
                     value={formatCOP(
                       Math.round(totalTarifas / TOTAL_HABITACIONES)
                     )}
-                    sub="RevPAR · venta ÷ 29 hab"
-                    label="📈 Tarifa promedio"
+                    sub="RevPAR · venta ÷ 29"
+                    label="Tarifa promedio"
+                    icon="📊"
+                    tone="blue"
                   />
                   <StatCard
                     value={formatCOP(totalTarifas)}
                     sub="alojamiento del día"
-                    label="📊 Total tarifas"
+                    label="Total tarifas"
+                    icon="🏆"
+                    tone="accent"
+                    wide
                   />
                 </div>
               ),
@@ -328,22 +345,31 @@ function App() {
                   <StatCard
                     value={metricasMes ? `${metricasMes.media}%` : "—"}
                     sub="promedio"
-                    label="📊 Ocupación media"
+                    label="Ocupación media"
+                    icon="📊"
+                    tone="blue"
+                    progress={metricasMes ? metricasMes.media : null}
                   />
                   <StatCard
                     value={metricasMes ? metricasMes.pico : "—"}
                     sub={`/ ${TOTAL_HABITACIONES} hab`}
-                    label="⬆️ Día pico"
+                    label="Día pico"
+                    icon="⬆️"
+                    tone="positive"
                   />
                   <StatCard
                     value={metricasMes ? metricasMes.llenos : "—"}
                     sub="días"
-                    label="🏨 Días llenos"
+                    label="Días llenos"
+                    icon="🏨"
+                    tone="amber"
                   />
                   <StatCard
                     value={metricasMes ? metricasMes.canceladas : "—"}
                     sub="habitaciones"
-                    label="❌ Canceladas"
+                    label="Canceladas"
+                    icon="✕"
+                    tone="red"
                   />
                 </div>
               ),
@@ -356,20 +382,27 @@ function App() {
                     value={
                       metricasMes ? formatCOP(metricasMes.tarifaPromedio) : "—"
                     }
-                    sub="ADR · por habitación-noche"
-                    label="💵 Tarifa media diaria"
+                    sub="ADR · por hab.-noche"
+                    label="Tarifa media diaria"
+                    icon="💰"
+                    tone="amber"
                   />
                   <StatCard
                     value={metricasMes ? formatCOP(metricasMes.revpar) : "—"}
-                    sub="RevPAR · venta ÷ 29 hab"
-                    label="📈 Tarifa promedio"
+                    sub="RevPAR · venta ÷ 29"
+                    label="Tarifa promedio"
+                    icon="📊"
+                    tone="blue"
                   />
                   <StatCard
                     value={
                       metricasMes ? formatCOP(metricasMes.totalTarifas) : "—"
                     }
                     sub="alojamiento del mes"
-                    label="📊 Total tarifas"
+                    label="Total tarifas"
+                    icon="🏆"
+                    tone="accent"
+                    wide
                   />
                 </div>
               ),
@@ -381,21 +414,29 @@ function App() {
                   <StatCard
                     value={metricasMes ? metricasMes.los.toFixed(1) : "—"}
                     sub="noches por reserva"
-                    label="🗓️ Estancia media"
+                    label="Estancia media"
+                    icon="🛏️"
+                    tone="blue"
                   />
                   <StatCard
                     value={
                       metricasMes ? `${metricasMes.antelacion} días` : "—"
                     }
                     sub="al hacer la reserva"
-                    label="⏱️ Antelación media"
+                    label="Antelación media"
+                    icon="📅"
+                    tone="positive"
                   />
                   <StatCard
                     value={
                       metricasMes ? `${metricasMes.tasaCancelacion}%` : "—"
                     }
                     sub="de las reservas del mes"
-                    label="🔴 Tasa de cancelación"
+                    label="Tasa de cancelación"
+                    icon="❌"
+                    tone="red"
+                    wide
+                    progress={metricasMes ? metricasMes.tasaCancelacion : null}
                   />
                 </div>
               ),
@@ -426,25 +467,34 @@ function App() {
                         value={p ? `${p.media}%` : "—"}
                         delta={pp && deltaPuntos(p.media, pp.media, true)}
                         sub="promedio del periodo"
-                        label="📊 Ocupación media"
+                        label="Ocupación media"
+                        icon="📊"
+                        tone="teal"
+                        progress={p ? p.media : null}
                       />
                       <StatCard
                         value={p ? p.checkin : "—"}
                         delta={pp && deltaPct(p.checkin, pp.checkin, true)}
                         sub="habitaciones"
-                        label="🟢 Con check-in"
+                        label="Con check-in"
+                        icon="✓"
+                        tone="accent"
                       />
                       <StatCard
                         value={p ? p.reservadas : "—"}
                         delta={pp && deltaPct(p.reservadas, pp.reservadas, true)}
                         sub="sin llegar"
-                        label="🔵 Reservadas"
+                        label="Reservadas"
+                        icon="📌"
+                        tone="blue"
                       />
                       <StatCard
                         value={p ? p.canceladas : "—"}
                         delta={pp && deltaPct(p.canceladas, pp.canceladas, false)}
                         sub="habitaciones"
-                        label="🔴 Canceladas"
+                        label="Canceladas"
+                        icon="✕"
+                        tone="red"
                       />
                     </div>
                   ),
@@ -458,14 +508,18 @@ function App() {
                         delta={
                           pp && deltaPct(p.tarifaPromedio, pp.tarifaPromedio, true)
                         }
-                        sub="ADR · por habitación-noche"
-                        label="💵 Tarifa media diaria"
+                        sub="ADR · por hab.-noche"
+                        label="Tarifa media diaria"
+                        icon="💰"
+                        tone="amber"
                       />
                       <StatCard
                         value={p ? formatCOP(p.revpar) : "—"}
                         delta={pp && deltaPct(p.revpar, pp.revpar, true)}
-                        sub="RevPAR · venta ÷ 29 hab"
-                        label="📈 Tarifa promedio"
+                        sub="RevPAR · venta ÷ 29"
+                        label="Tarifa promedio"
+                        icon="📊"
+                        tone="blue"
                       />
                       <StatCard
                         value={p ? formatCOP(p.totalTarifas) : "—"}
@@ -473,7 +527,10 @@ function App() {
                           pp && deltaPct(p.totalTarifas, pp.totalTarifas, true)
                         }
                         sub="alojamiento del periodo"
-                        label="📊 Total tarifas"
+                        label="Total tarifas"
+                        icon="🏆"
+                        tone="accent"
+                        wide
                       />
                     </div>
                   ),
@@ -486,7 +543,9 @@ function App() {
                         value={p ? p.los.toFixed(1) : "—"}
                         delta={pp && deltaPuntos(p.los, pp.los, true, 1)}
                         sub="noches por reserva"
-                        label="🗓️ Estancia media"
+                        label="Estancia media"
+                        icon="🛏️"
+                        tone="blue"
                       />
                       <StatCard
                         value={p ? `${p.antelacion} días` : "—"}
@@ -494,7 +553,9 @@ function App() {
                           pp && deltaPuntos(p.antelacion, pp.antelacion, true)
                         }
                         sub="al hacer la reserva"
-                        label="⏱️ Antelación media"
+                        label="Antelación media"
+                        icon="📅"
+                        tone="positive"
                       />
                       <StatCard
                         value={p ? `${p.tasaCancelacion}%` : "—"}
@@ -507,7 +568,11 @@ function App() {
                           )
                         }
                         sub="de las reservas del periodo"
-                        label="🔴 Tasa de cancelación"
+                        label="Tasa de cancelación"
+                        icon="❌"
+                        tone="red"
+                        wide
+                        progress={p ? p.tasaCancelacion : null}
                       />
                     </div>
                   ),
