@@ -4,7 +4,7 @@ import {
   BarChart,
   Bar,
   CartesianGrid,
-  ReferenceLine,
+  Legend,
   XAxis,
   YAxis,
   Tooltip,
@@ -94,8 +94,10 @@ export default function ResumenPeriodo({ onData }) {
   const datos = meses.map((M) => ({
     mes: M.mes,
     corto: MESES_CORTO[Number(M.mes.slice(5, 7)) - 1],
-    media: mediaMes(M),
-    canceladas: M.canceladas,
+    checkin: M.checkin || 0,
+    reservadas: M.reservadas || 0,
+    canceladas: M.canceladasLlegada || 0,
+    media: mediaMes(M), // % ocupación del mes (para el tooltip)
     tarifa: tarifaMes(M),
   }));
 
@@ -167,25 +169,39 @@ export default function ResumenPeriodo({ onData }) {
                 tickLine={false}
               />
               <YAxis
-                domain={[0, 100]}
+                allowDecimals={false}
                 width={34}
                 tick={{ fill: "#94a3b8", fontSize: 11 }}
                 axisLine={false}
                 tickLine={false}
-                unit="%"
-              />
-              <ReferenceLine
-                y={50}
-                strokeDasharray="3 3"
-                stroke="rgba(255,255,255,0.18)"
               />
               <Tooltip
                 content={() => null}
                 cursor={{ fill: "rgba(255,255,255,0.06)" }}
               />
+              <Legend
+                wrapperStyle={{ fontSize: 12, paddingTop: 4 }}
+                iconType="circle"
+              />
               <Bar
-                dataKey="media"
+                dataKey="checkin"
+                name="Con check-in"
+                stackId="a"
                 fill="#22C55E"
+                isAnimationActive={false}
+              />
+              <Bar
+                dataKey="reservadas"
+                name="Reservadas"
+                stackId="a"
+                fill="#3B82F6"
+                isAnimationActive={false}
+              />
+              <Bar
+                dataKey="canceladas"
+                name="Canceladas"
+                stackId="a"
+                fill="#EF4444"
                 radius={[4, 4, 0, 0]}
                 isAnimationActive={false}
               />
@@ -198,6 +214,12 @@ export default function ResumenPeriodo({ onData }) {
                 <span className="om-day">{detalleMes(activo)}</span>
                 <span>
                   Ocupación media <b>{activo.media}%</b>
+                </span>
+                <span style={{ color: "#22C55E" }}>
+                  Check-in <b>{activo.checkin}</b>
+                </span>
+                <span style={{ color: "#60A5FA" }}>
+                  Reservadas <b>{activo.reservadas}</b>
                 </span>
                 {activo.canceladas > 0 && (
                   <span className="om-cancel">

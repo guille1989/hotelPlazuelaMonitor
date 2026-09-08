@@ -6,7 +6,7 @@ import TopBar from "./components/top/TopBar";
 import StatCard from "./components/statcard/StatCard";
 import OcupacionMes from "./components/linechart/OcupacionMes";
 import ResumenPeriodo from "./components/linechart/ResumenPeriodo";
-import { TOTAL_HABITACIONES, formatCOP, MESES } from "./config";
+import { TOTAL_HABITACIONES, formatCOP } from "./config";
 
 function App() {
   const [actualizacionreserva, setActualizacionreserva] = useState([]);
@@ -55,23 +55,16 @@ function App() {
   let metricasPeriodo = null;
   if (periodoData && periodoData.meses.length) {
     const M = periodoData.meses;
-    const habNoche = M.reduce((a, x) => a + x.habNoche, 0);
-    const capacidad =
-      M.reduce((a, x) => a + x.dias, 0) * TOTAL_HABITACIONES;
-    const tarifas = M.reduce((a, x) => a + x.tarifas, 0);
-    const habsTarifa = M.reduce((a, x) => a + x.habsTarifa, 0);
-    const medias = M.map((x) => ({
-      mes: x.mes,
-      media: Math.round((x.habNoche * 100) / (x.dias * TOTAL_HABITACIONES)),
-    }));
-    const mejor = medias.reduce((a, b) => (b.media > a.media ? b : a), medias[0]);
-    const [my, mm] = mejor.mes.split("-").map(Number);
+    const sum = (f) => M.reduce((a, x) => a + (x[f] || 0), 0);
+    const capacidad = sum("dias") * TOTAL_HABITACIONES;
+    const habsTarifa = sum("habsTarifa");
     metricasPeriodo = {
-      media: capacidad > 0 ? Math.round((habNoche * 100) / capacidad) : 0,
-      mejorMesPct: `${mejor.media}%`,
-      mejorMesEtiqueta: `${MESES[mm - 1].slice(0, 3)} ${my}`,
-      canceladas: M.reduce((a, x) => a + x.canceladas, 0),
-      tarifaPromedio: habsTarifa > 0 ? Math.round(tarifas / habsTarifa) : 0,
+      media: capacidad > 0 ? Math.round((sum("habNoche") * 100) / capacidad) : 0,
+      checkin: sum("checkin"),
+      reservadas: sum("reservadas"),
+      canceladas: sum("canceladasLlegada"),
+      tarifaPromedio: habsTarifa > 0 ? Math.round(sum("tarifas") / habsTarifa) : 0,
+      totalTarifas: sum("tarifas"),
     };
   }
 
@@ -294,7 +287,7 @@ function App() {
         <>
           <section className="grupo">
             <div className="grupo-titulo">
-              Ocupación{periodoData ? ` · ${periodoData.titulo}` : ""}
+              Reservas{periodoData ? ` · ${periodoData.titulo}` : ""}
             </div>
             <div className="grupo-cards ocupacion">
               <StatCard
@@ -303,21 +296,39 @@ function App() {
                 label="📊 Ocupación media"
               />
               <StatCard
-                value={metricasPeriodo ? metricasPeriodo.mejorMesPct : "—"}
-                sub={metricasPeriodo ? metricasPeriodo.mejorMesEtiqueta : "más alto"}
-                label="⬆️ Mejor mes"
+                value={metricasPeriodo ? metricasPeriodo.checkin : "—"}
+                sub="habitaciones"
+                label="🟢 Con check-in"
+              />
+              <StatCard
+                value={metricasPeriodo ? metricasPeriodo.reservadas : "—"}
+                sub="sin llegar"
+                label="🔵 Reservadas"
               />
               <StatCard
                 value={metricasPeriodo ? metricasPeriodo.canceladas : "—"}
                 sub="habitaciones"
-                label="❌ Canceladas"
+                label="🔴 Canceladas"
               />
+            </div>
+          </section>
+
+          <section className="grupo">
+            <div className="grupo-titulo">Tarifas</div>
+            <div className="grupo-cards ingresos">
               <StatCard
                 value={
                   metricasPeriodo ? formatCOP(metricasPeriodo.tarifaPromedio) : "—"
                 }
                 sub="por habitación-noche"
                 label="💵 Tarifa promedio"
+              />
+              <StatCard
+                value={
+                  metricasPeriodo ? formatCOP(metricasPeriodo.totalTarifas) : "—"
+                }
+                sub="alojamiento del periodo"
+                label="📊 Total tarifas"
               />
             </div>
           </section>

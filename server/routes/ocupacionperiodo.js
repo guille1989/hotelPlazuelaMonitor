@@ -57,10 +57,14 @@ router.get("/", async (req, res) => {
       return {
         mes,
         dias: diasDelMes(y, m).length,
-        habNoche: 0,
-        canceladas: 0,
+        habNoche: 0, // Σ habitaciones ocupadas por día (para % ocupación)
+        canceladas: 0, // canceladas que se traslapan con el mes
         tarifas: 0,
         habsTarifa: 0,
+        // Conteos por MES DE LLEGADA (para la barra apilada):
+        checkin: 0, // reservas con check-in hecho (estado 31)
+        reservadas: 0, // reservadas sin llegar (estado 21/11...)
+        canceladasLlegada: 0, // canceladas cuya llegada cae en el mes
       };
     });
     const idx = new Map(meses.map((M, i) => [M.mes, i]));
@@ -82,6 +86,15 @@ router.get("/", async (req, res) => {
       const cancelada = estaCancelada(reserva);
       const habs = habitaciones(reserva);
       const valor = Number(reserva.valor_habitacion) || 0;
+
+      // Barra apilada: por MES DE LLEGADA, según estado.
+      const miLlegada = idx.get(llegada.slice(0, 7));
+      if (miLlegada !== undefined) {
+        const M = meses[miLlegada];
+        if (cancelada) M.canceladasLlegada += habs;
+        else if (String(reserva.estado_habitacion) === "31") M.checkin += habs;
+        else M.reservadas += habs;
+      }
 
       const d0 = llegada < inicioStr ? inicioStr : llegada;
       const d1 = salida < finExclusivo ? salida : finExclusivo;
