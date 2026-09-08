@@ -33,11 +33,19 @@ function App() {
   if (mesData && mesData.dias.length) {
     const ocup = mesData.dias.map((d) => d.ocupacion);
     const suma = ocup.reduce((a, b) => a + b, 0);
+    const totalTarifasMes = mesData.dias.reduce((a, d) => a + (d.tarifas || 0), 0);
+    const habsTarifaMes = mesData.dias.reduce(
+      (a, d) => a + (d.habsTarifa || 0),
+      0
+    );
     metricasMes = {
       media: Math.round((suma * 100) / (ocup.length * TOTAL_HABITACIONES)),
       pico: Math.max(...ocup),
       llenos: ocup.filter((o) => o >= TOTAL_HABITACIONES).length,
       canceladas: mesData.dias.reduce((a, d) => a + d.cancelaciones, 0),
+      totalTarifas: totalTarifasMes,
+      tarifaPromedio:
+        habsTarifaMes > 0 ? Math.round(totalTarifasMes / habsTarifaMes) : 0,
     };
   }
 
@@ -203,33 +211,51 @@ function App() {
       )}
 
       {vista === "mes" && (
-        <section className="grupo">
-          <div className="grupo-titulo">
-            Mes{mesData ? ` · ${mesData.titulo}` : ""}
-          </div>
-          <div className="grupo-cards ocupacion">
-            <StatCard
-              value={metricasMes ? `${metricasMes.media}%` : "—"}
-              sub="promedio"
-              label="📊 Ocupación media"
-            />
-            <StatCard
-              value={metricasMes ? metricasMes.pico : "—"}
-              sub={`/ ${TOTAL_HABITACIONES} hab`}
-              label="⬆️ Día pico"
-            />
-            <StatCard
-              value={metricasMes ? metricasMes.llenos : "—"}
-              sub="días"
-              label="🏨 Días llenos"
-            />
-            <StatCard
-              value={metricasMes ? metricasMes.canceladas : "—"}
-              sub="habitaciones"
-              label="❌ Canceladas"
-            />
-          </div>
-        </section>
+        <>
+          <section className="grupo">
+            <div className="grupo-titulo">
+              Ocupación{mesData ? ` · ${mesData.titulo}` : ""}
+            </div>
+            <div className="grupo-cards ocupacion">
+              <StatCard
+                value={metricasMes ? `${metricasMes.media}%` : "—"}
+                sub="promedio"
+                label="📊 Ocupación media"
+              />
+              <StatCard
+                value={metricasMes ? metricasMes.pico : "—"}
+                sub={`/ ${TOTAL_HABITACIONES} hab`}
+                label="⬆️ Día pico"
+              />
+              <StatCard
+                value={metricasMes ? metricasMes.llenos : "—"}
+                sub="días"
+                label="🏨 Días llenos"
+              />
+              <StatCard
+                value={metricasMes ? metricasMes.canceladas : "—"}
+                sub="habitaciones"
+                label="❌ Canceladas"
+              />
+            </div>
+          </section>
+
+          <section className="grupo">
+            <div className="grupo-titulo">Tarifas</div>
+            <div className="grupo-cards ingresos">
+              <StatCard
+                value={metricasMes ? formatCOP(metricasMes.tarifaPromedio) : "—"}
+                sub="por habitación-noche"
+                label="💵 Tarifa promedio"
+              />
+              <StatCard
+                value={metricasMes ? formatCOP(metricasMes.totalTarifas) : "—"}
+                sub="alojamiento del mes"
+                label="📊 Total tarifas"
+              />
+            </div>
+          </section>
+        </>
       )}
 
       <OcupacionMes onData={setMesData} />

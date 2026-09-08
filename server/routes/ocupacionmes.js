@@ -58,6 +58,8 @@ router.get("/", async (req, res) => {
       dia,
       ocupacion: 0,
       cancelaciones: 0,
+      tarifas: 0, // Σ (valor_habitacion × habitaciones) de las ocupadas ese día
+      habsTarifa: 0, // habitaciones con tarifa (para el promedio ponderado)
     }));
     const porDia = new Map(conteoPorDia.map((d) => [d.dia, d]));
 
@@ -68,12 +70,20 @@ router.get("/", async (req, res) => {
 
       const cancelada = estaCancelada(reserva);
       const habs = habitaciones(reserva);
+      const valor = Number(reserva.valor_habitacion) || 0;
 
       for (const dia of dias) {
         if (dia >= llegada && dia < salida) {
           const d = porDia.get(dia);
-          if (cancelada) d.cancelaciones += habs;
-          else d.ocupacion += habs;
+          if (cancelada) {
+            d.cancelaciones += habs;
+          } else {
+            d.ocupacion += habs;
+            if (valor > 0) {
+              d.tarifas += valor * habs;
+              d.habsTarifa += habs;
+            }
+          }
         }
       }
     }
