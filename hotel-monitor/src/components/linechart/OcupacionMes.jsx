@@ -101,7 +101,14 @@ export default function OcupacionMes({ onData }) {
         setData({ dias, hoy: r.data.hoy });
         setError(null);
         setLoading(false);
-        if (onData) onData({ mes: mesStr, titulo, dias, hoy: r.data.hoy });
+        if (onData)
+          onData({
+            mes: mesStr,
+            titulo,
+            dias,
+            hoy: r.data.hoy,
+            arribo: r.data.arribo || null,
+          });
       })
       .catch(() => {
         if (cancelado) return;
