@@ -1,6 +1,8 @@
 # Contrato de datos — colección `reservas`
 
-Fuente de verdad: el ETL `hotelTest/hotel/app.js` (Zeus SQL Server → MongoDB `hotellpmonitor`).
+Fuente de verdad: el ETL que corre en **`C:\scriptdb\hotel\app.js`** en el servidor
+(hay una copia de trabajo en `C:\proyectos\hotelTest\hotel`, que es el repo git del ETL).
+Zeus SQL Server → MongoDB Atlas `hotellpmonitor`.
 Consumidores: `server/routes/*.js` y `hotel-monitor/src/**`.
 
 Este documento fija los tipos y formatos que produce el ETL para que las queries
@@ -44,6 +46,18 @@ del backend y los cálculos del frontend puedan asumir un formato estable.
 Zeus usa fechas "vacías" como `1900-01-01` (y a veces `1899-12-30`, `1753-01-01`).
 El ETL las convierte a `null`. Regla: cualquier fecha con año `< 1990` → `null`.
 
+### Verificado con DRY_RUN sobre el rango completo (7958 filas, 2025-01-01 .. 2027-12-31)
+- `fecha_llegada` / `fecha_salida`: **0 nulls** en 7958 filas.
+- `fecha_cancelacion`: 6351 null (no canceladas) / 1607 con fecha real.
+- `fecha_llegada_habitacion` / `fecha_salida_habitacion` / `fecha_liquidacion`: ~1004
+  null (≈ los 1003 walk-ins).
+- `costo_01` / `cantid_reh`: 100% numéricos.
+- `linea_habitacion`: string con cero a la izquierda (`"01"`, `"02"`). El CSV exportado
+  la mostraba como `1`/`2` (Excel le quita el cero); el valor real vía tedious es `"01"`.
+- `estado_habitacion` llega como string (`"31"`); `estado_registro`/`estado_folio` llegan
+  como número (`32`) → Mongoose los castea a String. `prefijo_reserva` es texto libre de
+  observaciones (no un "prefijo"), a veces largo.
+
 ### Verificado con `testQuery.csv` (muestra de 30 días)
 - `fecha_llegada` / `fecha_salida`: sin nulls, todas a medianoche, año 2026. OK.
 - `fecha_cancelacion`: años 1900 (centinela → null), 2025 y 2026 (cancelaciones reales →
@@ -82,6 +96,14 @@ El ETL las convierte a `null`. Regla: cualquier fecha con año `< 1990` → `nul
 - **Sin reserva** (`codigo_reserva` null): `{ codigo_registro }`
 
 El ETL hace `updateOne(filtro, { $set }, { upsert: true })` vía `bulkWrite`.
+
+### Filas con llave repetida → se fusionan en JS (`deduplicar` / `fusionar`)
+La subconsulta "sin reserva" **no agrega**: un walk-in con varios folios produce varias
+filas con el mismo `codigo_registro`. En el rango completo (7958 filas) fueron 6 casos.
+Sin fusionar: el upsert las pisa (last-write-wins) y `reservasfuturas`/`reservaspasadas`
+las cuentan doble en ocupación (`diaObj.ocupacion++` por documento). El ETL las fusiona
+antes del `bulkWrite`: suma `costo_01/02`, concatena las listas, toma `fecha_ult_mod`
+más nueva. La subconsulta "con reserva" no repite llave (0 casos en 6955 filas).
 
 ### Índices (crear en Fase 2, después de deduplicar)
 ```js
