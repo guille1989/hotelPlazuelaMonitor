@@ -33,49 +33,80 @@ function TopBar() {
   };
   const formattedDate = today.toLocaleDateString("es-CO", options);
 
-  if (loading) return <div style={{ display: "flex", justifyContent: "center",
-     color: "white", marginTop: "20px" }}>Cargando...</div>;
-  if (error) return <div>{error}</div>;
-
-
-  if (!actualizacionreserva.length) return <div>No hay datos disponibles</div>;
-
-  const mostRecent = actualizacionreserva.reduce((latest, current) => {
-    const latestDate = new Date(latest.fecha);
-    const currentDate = new Date(current.fecha);
-    return currentDate > latestDate ? current : latest;
-  }, actualizacionreserva[0]);
-
   const formatearFecha = (fecha) => {
-    if (!fecha) return "Unknown Date";
+    if (!fecha) return "—";
     const date = new Date(fecha);
     return date.toLocaleString("es-CO", {
-      weekday: "short",
       day: "2-digit",
       month: "short",
-      year: "numeric",
       hour: "2-digit",
       minute: "2-digit",
     });
   };
 
+  const marca = (
+    <div className="topbar-brand">
+      <svg width="26" height="26" viewBox="0 0 28 28" fill="none">
+        <path
+          d="M6 22 L14 6 L22 22"
+          stroke="#8cf4ee"
+          strokeWidth="3"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M14 6 L18 14"
+          stroke="#59b2b0"
+          strokeWidth="3"
+          strokeLinejoin="round"
+        />
+      </svg>
+      <span className="marca">
+        Inno<span>App</span>
+      </span>
+      <span className="sector">HOTELERÍA</span>
+    </div>
+  );
+
+  if (loading)
+    return (
+      <div className="topbar">
+        {marca}
+        <div className="topbar-cargando">Cargando…</div>
+      </div>
+    );
+  if (error)
+    return (
+      <div className="topbar">
+        {marca}
+        <div className="topbar-cargando">{error}</div>
+      </div>
+    );
+
+  const mostRecent = actualizacionreserva.length
+    ? actualizacionreserva.reduce((latest, current) => {
+        const latestDate = new Date(latest.fecha);
+        const currentDate = new Date(current.fecha);
+        return currentDate > latestDate ? current : latest;
+      }, actualizacionreserva[0])
+    : null;
+
+  const ok = mostRecent?.estado === "éxito";
+
   return (
-    <div className="topbar-container">
-      <div className="topbar-content">
-        <div style={{ width: "70%", display: "flex", alignItems: "center", justifyContent: "left" }}>
-          <h1 className="title">Monitor de Ocupación <br /> {formattedDate}</h1>
+    <div className="topbar">
+      {marca}
+      <div className="topbar-row">
+        <div>
+          <div className="topbar-eyebrow">Monitor de Ocupación</div>
+          <h1 className="topbar-fecha">{formattedDate}</h1>
         </div>
-        <div style={{ width: "30%" }}>
-          <span className="last-update">
-            Última actualización: {formatearFecha(mostRecent?.fecha)}
-          </span>
-          <span
-            className="status-dot"
-            style={{
-              backgroundColor:
-                mostRecent?.estado === "éxito" ? "#38a169" : "#e53e3e",
-            }}
-          />
+        <div className="topbar-update">
+          <div className="lbl">Última actualización</div>
+          <div className="val">{formatearFecha(mostRecent?.fecha)}</div>
+          <div className={`topbar-estado ${ok ? "ok" : "err"}`}>
+            <span className="dot" />
+            <span className="txt">{ok ? "EN VIVO" : "REVISAR"}</span>
+          </div>
         </div>
       </div>
     </div>

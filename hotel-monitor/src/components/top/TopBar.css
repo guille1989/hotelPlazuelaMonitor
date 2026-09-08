@@ -1,35 +1,112 @@
-.topbar-container {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0.75rem 1rem;
-    background-color: #1a2a44;
-    height: 80px;
-  }
-  
-  .topbar-content {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 1rem;
-  }
-  
-  .title {
-    font-size: 1.25rem;
-    color: white;
-    font-weight: 600;
-  }
-  
-  .last-update {
-    font-size: 0.875rem;
-    color: white;
-    font-weight: 600;
-  }
-  
-  .status-dot {
-    display: inline-block;
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    margin-left: 5px;
-  }
+.topbar {
+  padding: 22px 20px 18px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.topbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.topbar-brand .marca {
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--color-text);
+  letter-spacing: -0.02em;
+}
+.topbar-brand .marca span {
+  color: var(--color-accent);
+}
+.topbar-brand .sector {
+  margin-left: auto;
+  font-size: 9px;
+  color: var(--color-muted);
+  letter-spacing: 0.08em;
+}
+
+.topbar-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.topbar-eyebrow {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-teal);
+  margin-bottom: 5px;
+}
+
+.topbar-fecha {
+  font-size: 1.15rem;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--color-text);
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+.topbar-fecha::first-letter {
+  text-transform: uppercase;
+}
+
+.topbar-update {
+  text-align: right;
+  flex-shrink: 0;
+}
+.topbar-update .lbl {
+  font-size: 9px;
+  color: var(--color-muted);
+  margin-bottom: 4px;
+}
+.topbar-update .val {
+  font-size: 11px;
+  color: var(--color-text);
+  font-weight: 500;
+}
+.topbar-estado {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 6px;
+  padding: 3px 8px;
+  border-radius: 20px;
+}
+.topbar-estado.ok {
+  background: var(--color-accent-dim);
+}
+.topbar-estado.err {
+  background: var(--color-red-dim);
+}
+.topbar-estado .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+.topbar-estado.ok .dot {
+  background: var(--color-accent);
+  box-shadow: 0 0 6px var(--color-accent);
+}
+.topbar-estado.err .dot {
+  background: var(--color-red);
+}
+.topbar-estado .txt {
+  font-size: 9px;
+  font-weight: 600;
+}
+.topbar-estado.ok .txt {
+  color: var(--color-accent);
+}
+.topbar-estado.err .txt {
+  color: var(--color-red);
+}
+
+.topbar-cargando {
+  color: var(--color-muted);
+  text-align: center;
+  padding: 24px 0;
+  font-size: 0.85rem;
+}

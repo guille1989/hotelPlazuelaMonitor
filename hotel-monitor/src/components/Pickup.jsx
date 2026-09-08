@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { MESES } from "../config";
 import "./linechart/OcupacionMes.css";
+import "./Pickup.css";
 
 const VENTANAS = [7, 14, 30];
 
@@ -44,12 +45,12 @@ export default function Pickup() {
   const neto = data ? data.totales.nuevas - data.totales.canceladas : 0;
 
   return (
-    <div className="om-card">
-      <div className="om-nav">
+    <div className="om-card pickup-card">
+      <div className="om-nav pickup-heading">
         <div className="om-month">Pickup · últimos {dias} días</div>
       </div>
 
-      <div className="om-periodo">
+      <div className="om-periodo pickup-periodo">
         {VENTANAS.map((v) => (
           <button
             key={v}
@@ -66,71 +67,46 @@ export default function Pickup() {
 
       {!loading && !error && data && (
         <>
-          <div
-            style={{
-              textAlign: "center",
-              color: "#cbd5e1",
-              fontSize: 14,
-              margin: "4px 0 12px",
-            }}
-          >
-            Neto{" "}
-            <b style={{ color: neto >= 0 ? "#22C55E" : "#f87171" }}>
+          <div className="pickup-summary">
+            <span>Neto</span>
+            <b className={neto >= 0 ? "positivo" : "negativo"}>
               {neto >= 0 ? "+" : ""}
               {neto} hab
-            </b>{" "}
-            <span style={{ opacity: 0.7 }}>
+            </b>
+            <span className="pickup-breakdown">
               ({data.totales.nuevas} nuevas · {data.totales.canceladas} canceladas)
             </span>
           </div>
 
           {meses.length === 0 && (
-            <div className="om-state" style={{ padding: "16px 0" }}>
+            <div className="om-state pickup-empty">
               Sin movimiento en la ventana.
             </div>
           )}
 
-          <div style={{ maxWidth: 560, margin: "0 auto" }}>
+          <div className="pickup-list">
             {meses.map((m) => {
               const n = m.nuevas - m.canceladas;
               const w = (Math.abs(n) / maxAbs) * 100;
               return (
-                <div key={m.mes} style={{ marginBottom: 12 }}>
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      fontSize: 13,
-                      color: "#cbd5e1",
-                      marginBottom: 3,
-                    }}
-                  >
-                    <span style={{ color: "#fff", fontWeight: 600 }}>
-                      {etiqueta(m.mes)}
-                    </span>
-                    <span>
-                      <b style={{ color: n >= 0 ? "#22C55E" : "#f87171" }}>
+                <div className="pickup-row" key={m.mes}>
+                  <div className="pickup-row-head">
+                    <span className="pickup-month">{etiqueta(m.mes)}</span>
+                    <span className="pickup-values">
+                      <b className={n >= 0 ? "positivo" : "negativo"}>
                         {n >= 0 ? "+" : ""}
                         {n} hab
                       </b>
-                      <span style={{ opacity: 0.6, marginLeft: 6 }}>
+                      <span className="pickup-breakdown">
                         ({m.nuevas} nvs · {m.canceladas} canc)
                       </span>
                     </span>
                   </div>
-                  <div
-                    style={{
-                      height: 8,
-                      borderRadius: 4,
-                      background: "rgba(255,255,255,0.06)",
-                    }}
-                  >
+                  <div className="pickup-track">
                     <div
+                      className={`pickup-fill ${n >= 0 ? "positivo" : "negativo"}`}
                       style={{
                         width: `${w}%`,
-                        height: "100%",
-                        borderRadius: 4,
-                        background: n >= 0 ? "#22C55E" : "#f87171",
                       }}
                     />
                   </div>

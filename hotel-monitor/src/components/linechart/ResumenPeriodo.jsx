@@ -26,7 +26,15 @@ const tarifaMes = (M) =>
 
 const MesTick = ({ x, y, payload }) => (
   <g transform={`translate(${x},${y})`}>
-    <text x={0} y={0} dy={12} textAnchor="middle" fill="#94a3b8" fontSize={11}>
+    <text
+      x={0}
+      y={0}
+      dy={12}
+      textAnchor="middle"
+      fill="#8fa4b8"
+      fontFamily="Poppins"
+      fontSize={10}
+    >
       {payload.value}
     </text>
   </g>
@@ -178,12 +186,13 @@ export default function ResumenPeriodo({ onData }) {
           <ResponsiveContainer width="100%" height={240}>
             <BarChart
               data={datos}
-              margin={{ top: 24, right: 16, left: -12, bottom: 0 }}
+              margin={{ top: 18, right: 8, left: 4, bottom: 0 }}
+              barCategoryGap="25%"
               onMouseMove={handleActivo}
               onClick={handleActivo}
               onMouseLeave={() => setActivo(null)}
             >
-              <CartesianGrid stroke="rgba(255,255,255,0.06)" vertical={false} />
+              <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
               <XAxis
                 dataKey="corto"
                 tick={<MesTick />}
@@ -192,8 +201,8 @@ export default function ResumenPeriodo({ onData }) {
               />
               <YAxis
                 allowDecimals={false}
-                width={34}
-                tick={{ fill: "#94a3b8", fontSize: 11 }}
+                width={40}
+                tick={{ fill: "#8fa4b8", fontSize: 10, fontFamily: "Poppins" }}
                 axisLine={false}
                 tickLine={false}
               />
@@ -202,28 +211,34 @@ export default function ResumenPeriodo({ onData }) {
                 cursor={{ fill: "rgba(255,255,255,0.06)" }}
               />
               <Legend
-                wrapperStyle={{ fontSize: 12, paddingTop: 4 }}
+                iconSize={8}
+                wrapperStyle={{
+                  color: "#8fa4b8",
+                  fontFamily: "Poppins",
+                  fontSize: 10,
+                  paddingTop: 6,
+                }}
                 iconType="circle"
               />
               <Bar
                 dataKey="checkin"
                 name="Con check-in"
                 stackId="a"
-                fill="#22C55E"
+                fill="#22c55e"
                 isAnimationActive={false}
               />
               <Bar
                 dataKey="reservadas"
                 name="Reservadas"
                 stackId="a"
-                fill="#3B82F6"
+                fill="#5b8ef0"
                 isAnimationActive={false}
               />
               <Bar
                 dataKey="canceladas"
                 name="Canceladas"
                 stackId="a"
-                fill="#EF4444"
+                fill="#f07070"
                 radius={[4, 4, 0, 0]}
                 isAnimationActive={false}
               />
@@ -237,10 +252,10 @@ export default function ResumenPeriodo({ onData }) {
                 <span>
                   Ocupación media <b>{activo.media}%</b>
                 </span>
-                <span style={{ color: "#22C55E" }}>
+                <span style={{ color: "#22c55e" }}>
                   Check-in <b>{activo.checkin}</b>
                 </span>
-                <span style={{ color: "#60A5FA" }}>
+                <span style={{ color: "#5b8ef0" }}>
                   Reservadas <b>{activo.reservadas}</b>
                 </span>
                 {activo.canceladas > 0 && (

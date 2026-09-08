@@ -19,10 +19,10 @@ export default function MixCanales({ canal, canalPrev }) {
       style={{
         maxWidth: 560,
         margin: "0 auto",
-        background: "#2a3654",
+        background: "rgba(25, 34, 58, 0.42)",
         borderRadius: 12,
         padding: "14px 16px",
-        boxShadow: "0 4px 14px rgba(0,0,0,.2)",
+        border: "1px solid rgba(140, 244, 238, 0.06)",
       }}
     >
       {filas.map((f) => {
@@ -42,17 +42,17 @@ export default function MixCanales({ canal, canalPrev }) {
                 display: "flex",
                 justifyContent: "space-between",
                 fontSize: 13,
-                color: "#cbd5e1",
+                color: "var(--color-muted)",
                 marginBottom: 3,
               }}
             >
-              <span style={{ color: "#fff", fontWeight: 600 }}>
+              <span style={{ color: "var(--color-text)", fontWeight: 600 }}>
                 {canalNombre(f.cod)}
               </span>
               <span>
                 {f.n} hab · {f.pct}%
                 {delta && (
-                  <span style={{ color: "#94a3b8", marginLeft: 6 }}>{delta}</span>
+                  <span style={{ color: "var(--color-muted)", marginLeft: 6 }}>{delta}</span>
                 )}
               </span>
             </div>

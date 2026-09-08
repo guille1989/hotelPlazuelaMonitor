@@ -48,15 +48,15 @@ export const etiquetaMes = (ym) => {
 // Códigos de MODO_RES de Zeus -> nombre y color para el mix de canales.
 // AJUSTAR según confirme recepción qué significa cada letra.
 export const CANALES = {
-  B: { nombre: "Booking", color: "#3B82F6" },
-  EM: { nombre: "Corporativo", color: "#8B5CF6" },
-  WP: { nombre: "WhatsApp", color: "#22C55E" },
-  T: { nombre: "Teléfono", color: "#F59E0B" },
-  E: { nombre: "Email", color: "#14B8A6" },
-  P: { nombre: "Presencial", color: "#EF4444" },
-  G: { nombre: "Grupos", color: "#EC4899" },
-  C: { nombre: "Convenio", color: "#64748B" },
-  WALKIN: { nombre: "Walk-in", color: "#F97316" },
+  B: { nombre: "Booking", color: "#5b8ef0" },
+  EM: { nombre: "Corporativo", color: "#a78bfa" },
+  WP: { nombre: "WhatsApp", color: "#8cf4ee" },
+  T: { nombre: "Teléfono", color: "#facc15" },
+  E: { nombre: "Email", color: "#59b2b0" },
+  P: { nombre: "Presencial", color: "#f07070" },
+  G: { nombre: "Grupos", color: "#ec4899" },
+  C: { nombre: "Convenio", color: "#64748b" },
+  WALKIN: { nombre: "Walk-in", color: "#fb923c" },
 };
 export const canalNombre = (cod) => (CANALES[cod] ? CANALES[cod].nombre : cod || "?");
 export const canalColor = (cod) => (CANALES[cod] ? CANALES[cod].color : "#64748B");

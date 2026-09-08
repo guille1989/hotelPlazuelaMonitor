@@ -39,12 +39,12 @@ const CancelDot = ({ cx, cy, payload }) => {
   if (cx == null || cy == null || !payload || !payload.cancelaciones) return null;
   return (
     <g>
-      <circle cx={cx} cy={cy} r={3} fill="#f87171" />
+      <circle cx={cx} cy={cy} r={3} fill="#f07070" />
       <text
         x={cx}
         y={cy - 8}
         textAnchor="middle"
-        fill="#f87171"
+        fill="#f07070"
         fontSize={11}
         fontWeight="bold"
       >
@@ -57,7 +57,7 @@ const CancelDot = ({ cx, cy, payload }) => {
 // Tick del eje X: solo el número de día ("2026-09-08" -> "8").
 const DiaTick = ({ x, y, payload }) => (
   <g transform={`translate(${x},${y})`}>
-    <text x={0} y={0} dy={12} textAnchor="middle" fill="#94a3b8" fontSize={11}>
+    <text x={0} y={0} dy={12} textAnchor="middle" fill="#8fa4b8" fontSize={11}>
       {parseInt(payload.value.slice(8, 10), 10)}
     </text>
   </g>
@@ -162,13 +162,13 @@ export default function OcupacionMes({ onData }) {
                 >
                   <defs>
                     <linearGradient id="omOcupacion" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#22C55E" stopOpacity={0.35} />
-                      <stop offset="100%" stopColor="#22C55E" stopOpacity={0} />
+                      <stop offset="0%" stopColor="#22c55e" stopOpacity={0.32} />
+                      <stop offset="100%" stopColor="#22c55e" stopOpacity={0} />
                     </linearGradient>
                   </defs>
 
                   <CartesianGrid
-                    stroke="rgba(255,255,255,0.06)"
+                    stroke="rgba(255,255,255,0.05)"
                     vertical={false}
                   />
                   <XAxis
@@ -181,7 +181,7 @@ export default function OcupacionMes({ onData }) {
                   <YAxis
                     domain={[0, TOTAL_HABITACIONES]}
                     width={34}
-                    tick={{ fill: "#94a3b8", fontSize: 11 }}
+                    tick={{ fill: "#8fa4b8", fontSize: 11, fontFamily: "Poppins" }}
                     axisLine={false}
                     tickLine={false}
                   />
@@ -193,7 +193,7 @@ export default function OcupacionMes({ onData }) {
                     label={{
                       value: "100%",
                       position: "right",
-                      fill: "#94a3b8",
+                      fill: "#8fa4b8",
                       fontSize: 10,
                     }}
                   />
@@ -204,19 +204,19 @@ export default function OcupacionMes({ onData }) {
                     label={{
                       value: "50%",
                       position: "right",
-                      fill: "#94a3b8",
+                      fill: "#8fa4b8",
                       fontSize: 10,
                     }}
                   />
                   {hoyEnEsteMes && (
                     <ReferenceLine
                       x={hoyEnEsteMes}
-                      stroke="#FBBF24"
+                      stroke="#facc15"
                       strokeWidth={1.5}
                       label={{
                         value: "hoy",
                         position: "top",
-                        fill: "#FBBF24",
+                        fill: "#facc15",
                         fontSize: 11,
                       }}
                     />
@@ -231,7 +231,7 @@ export default function OcupacionMes({ onData }) {
                           { x: d.dia, y: d.cancelaciones },
                           { x: d.dia, y: 0 },
                         ]}
-                        stroke="#f87171"
+                        stroke="#f07070"
                         strokeDasharray="4 4"
                         strokeWidth={1}
                       />
@@ -248,11 +248,11 @@ export default function OcupacionMes({ onData }) {
                   <Area
                     type="monotone"
                     dataKey="ocupacion"
-                    stroke="#22C55E"
+                    stroke="#22c55e"
                     strokeWidth={2}
                     fill="url(#omOcupacion)"
                     isAnimationActive={false}
-                    activeDot={{ r: 4, fill: "#22C55E", stroke: "#fff", strokeWidth: 1.5 }}
+                    activeDot={{ r: 4, fill: "#22c55e", stroke: "#1f293d", strokeWidth: 1.5 }}
                   />
                   <Line
                     type="monotone"
@@ -269,7 +269,7 @@ export default function OcupacionMes({ onData }) {
             </div>
           </div>
 
-          <div className="om-readout">
+          <div className="om-readout om-readout-dia">
             {activo ? (
               <>
                 <span className="om-day">{fechaLarga(activo.dia)}</span>

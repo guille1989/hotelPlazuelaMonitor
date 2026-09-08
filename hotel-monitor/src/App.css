@@ -1,15 +1,38 @@
-body, html {
+body,
+html {
   margin: 0;
   padding: 0;
   height: 100%;
-  background-color: #1a2a44;
+  background: var(--color-bg);
+}
+
+.App {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-bottom: 40px;
+}
+
+/* Contenedor central estilo móvil */
+.App > * {
+  width: 100%;
+  max-width: var(--app-max);
 }
 
 .title {
-  font-size: 1.25rem;
-  color: white;
+  font-size: 1rem;
+  color: var(--color-text);
   font-weight: 600;
-  margin-left: 10px;
-  margin-top: 10px;
-  margin-bottom: -5px;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+/* Eyebrow de sección (encabezados de grupo/carrusel) */
+.eyebrow {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-muted);
 }

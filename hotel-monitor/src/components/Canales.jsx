@@ -90,9 +90,9 @@ export default function Canales() {
           <div
             style={{
               textAlign: "center",
-              color: "#94a3b8",
-              fontSize: 13,
-              margin: "2px 0 12px",
+              color: "var(--color-muted)",
+              fontSize: 11,
+              margin: "4px 0 16px",
             }}
           >
             Habitaciones-noche por canal de reserva

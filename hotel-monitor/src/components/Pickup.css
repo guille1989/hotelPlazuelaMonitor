@@ -1,0 +1,143 @@
+.om-card.pickup-card {
+  width: calc(100% - 8px);
+  padding: 18px 14px 16px;
+}
+
+.pickup-heading {
+  justify-content: center;
+  margin-bottom: 6px;
+}
+
+.pickup-heading .om-month {
+  flex: 0 1 auto;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.pickup-periodo {
+  gap: 6px;
+  margin: 0 0 10px;
+}
+
+.pickup-periodo button {
+  min-width: 62px;
+  padding-inline: 12px;
+}
+
+.pickup-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: center;
+  gap: 2px 4px;
+  margin: 2px 0 14px;
+  color: var(--color-muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+  text-align: center;
+}
+
+.pickup-summary b,
+.pickup-values b {
+  font-weight: 700;
+}
+
+.pickup-summary .positivo,
+.pickup-values .positivo {
+  color: var(--color-positive);
+}
+
+.pickup-summary .negativo,
+.pickup-values .negativo {
+  color: var(--color-red);
+}
+
+.pickup-breakdown {
+  color: var(--color-muted);
+  font-size: 0.7rem;
+  opacity: 0.76;
+}
+
+.pickup-empty {
+  padding: 16px 0;
+}
+
+.pickup-list {
+  width: 100%;
+  margin: 0 auto;
+}
+
+.pickup-row {
+  margin-bottom: 11px;
+}
+
+.pickup-row:last-child {
+  margin-bottom: 0;
+}
+
+.pickup-row-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 4px;
+  font-size: 0.78rem;
+}
+
+.pickup-month {
+  flex-shrink: 0;
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.pickup-values {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 6px;
+  min-width: 0;
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.pickup-track {
+  height: 8px;
+  overflow: hidden;
+  background: rgba(143, 164, 184, 0.2);
+  border-radius: 999px;
+}
+
+.pickup-fill {
+  height: 100%;
+  min-width: 3px;
+  border-radius: inherit;
+}
+
+.pickup-fill.positivo {
+  background: var(--color-positive);
+}
+
+.pickup-fill.negativo {
+  background: var(--color-red);
+}
+
+@media (max-width: 360px) {
+  .om-card.pickup-card {
+    padding-inline: 12px;
+  }
+
+  .pickup-row-head {
+    flex-wrap: wrap;
+    gap: 1px 8px;
+  }
+
+  .pickup-values {
+    width: 100%;
+    justify-content: space-between;
+    margin-left: 0;
+  }
+
+  .pickup-summary .pickup-breakdown {
+    flex-basis: 100%;
+  }
+}
