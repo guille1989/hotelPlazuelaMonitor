@@ -1,13 +1,21 @@
 const express = require("express");
+const moment = require("moment-timezone");
 const router = express.Router();
 const { hoyBogota, fechaBogota } = require("../functions/fechas");
 const {
-  estaCancelada,
-  salidaEfectiva,
-  habitaciones,
-  noches,
-} = require("../functions/ocupacion");
+  agruparPickup,
+  combinarConHistorico,
+} = require("../functions/pickupCalculos");
+const {
+  evaluarRitmo,
+  objetivosPickup,
+} = require("../functions/objetivoPickup");
 const { getDb } = require("../db");
+
+const ANIOS_COMPARABLES = 1;
+
+const desplazarFecha = (fecha, anios) =>
+  moment(fecha, "YYYY-MM-DD").add(anios, "year").format("YYYY-MM-DD");
 
 // GET /api/pickup?dias=7
 // Reservas captadas (y perdidas) en los últimos `dias`, por mes de llegada.
@@ -15,66 +23,84 @@ const { getDb } = require("../db");
 router.get("/", async (req, res) => {
   try {
     const dias = Math.min(90, Math.max(1, parseInt(req.query.dias, 10) || 7));
+    const objetivoPct = Math.min(
+      100,
+      Math.max(1, parseInt(req.query.objetivo, 10) || 75)
+    );
     const hoy = hoyBogota();
-    const desde = fechaBogota(-dias);
+    // La ventana incluye hoy: 7 días = hoy + los 6 días anteriores.
+    const desde = fechaBogota(1 - dias);
+
+    const ventanasHistoricas = Array.from(
+      { length: ANIOS_COMPARABLES },
+      (_, indice) => {
+        const aniosAtras = indice + 1;
+        return {
+          aniosAtras,
+          desde: desplazarFecha(desde, -aniosAtras),
+          hasta: desplazarFecha(hoy, -aniosAtras),
+        };
+      }
+    );
+    const ventanas = [{ desde, hasta: hoy }, ...ventanasHistoricas];
+    const filtroEventos = ventanas.flatMap((ventana) => [
+      { fecha_reserva: { $gte: ventana.desde, $lte: ventana.hasta } },
+      { fecha_cancelacion: { $gte: ventana.desde, $lte: ventana.hasta } },
+    ]);
 
     const db = await getDb();
     const reservas = await db
       .collection("reservas")
-      .find({
-        $or: [
-          { fecha_reserva: { $gte: desde, $lte: hoy } },
-          {
-            fecha_cancelacion: { $gte: desde, $lte: hoy },
-          },
-        ],
-      })
+      .find({ $or: filtroEventos })
       .toArray();
 
-    const porMes = new Map();
-    const totales = { nuevas: 0, canceladas: 0, roomNoches: 0 };
-
-    for (const r of reservas) {
-      const llegada = r.fecha_llegada_habitacion || r.fecha_llegada;
-      const salida = salidaEfectiva(r);
-      if (!llegada || !salida) continue;
-
-      const reservadoEnVentana =
-        r.fecha_reserva && r.fecha_reserva >= desde && r.fecha_reserva <= hoy;
-      const canceladoEnVentana =
-        estaCancelada(r) &&
-        r.fecha_cancelacion >= desde &&
-        r.fecha_cancelacion <= hoy;
-
-      const nueva = reservadoEnVentana && !estaCancelada(r);
-      const cancel = canceladoEnVentana && !reservadoEnVentana;
-      if (!nueva && !cancel) continue;
-
-      const mes = llegada.slice(0, 7);
-      if (!porMes.has(mes)) {
-        porMes.set(mes, { mes, nuevas: 0, canceladas: 0, roomNoches: 0 });
-      }
-      const m = porMes.get(mes);
-      const habs = habitaciones(r);
-      const rn = noches(llegada, salida) * habs;
-
-      if (nueva) {
-        m.nuevas += habs;
-        m.roomNoches += rn;
-        totales.nuevas += habs;
-        totales.roomNoches += rn;
-      } else {
-        m.canceladas += habs;
-        m.roomNoches -= rn;
-        totales.canceladas += habs;
-        totales.roomNoches -= rn;
-      }
-    }
-
-    const meses = [...porMes.values()].sort((a, b) =>
-      a.mes.localeCompare(b.mes)
+    const actual = agruparPickup(reservas, { desde, hasta: hoy });
+    const muestrasHistoricas = ventanasHistoricas.map((ventana) => ({
+      ...agruparPickup(reservas, {
+        desde: ventana.desde,
+        hasta: ventana.hasta,
+        desplazarAnios: ventana.aniosAtras,
+      }),
+      periodo: ventana,
+    }));
+    const comparacion = combinarConHistorico(actual, muestrasHistoricas);
+    const objetivos = await objetivosPickup(
+      db,
+      comparacion.meses,
+      objetivoPct,
+      hoy,
+      ventanasHistoricas[0]?.hasta
     );
-    res.json({ dias, desde, hoy, totales, meses });
+    const meses = comparacion.meses.map((mes) => {
+      const objetivo = objetivos.porMes.get(mes.mes) || null;
+      return {
+        ...mes,
+        objetivo,
+        evaluacion: evaluarRitmo({
+          roomNoches: mes.roomNoches,
+          historico: mes.historico,
+          objetivo,
+        }),
+      };
+    });
+    const periodosHistoricos = muestrasHistoricas
+      .filter((muestra) => muestra.movimientos > 0)
+      .map((muestra) => muestra.periodo);
+
+    res.json({
+      dias,
+      desde,
+      hoy,
+      totales: actual.totales,
+      meses,
+      historico: comparacion.historico,
+      objetivo: objetivos.resumen,
+      referencia: {
+        tipo: comparacion.muestrasDisponibles > 1 ? "mediana" : "anio_anterior",
+        muestras: comparacion.muestrasDisponibles,
+        periodos: periodosHistoricos,
+      },
+    });
   } catch (error) {
     console.error("Error fetching pickup:", error);
     res.status(500).json({ error: "Internal Server Error" });
