@@ -1,17 +1,11 @@
 const express = require("express");
-const { MongoClient } = require("mongodb");
 const router = express.Router();
 const moment = require("moment-timezone");
-
-const uri =
-  "mongodb+srv://root:123@cluster0.jwxt0.mongodb.net/hotellpmonitor?retryWrites=true&w=majority";
-const client = new MongoClient(uri);
+const { getDb } = require("../db");
 
 router.get("/", async (req, res) => {
   try {
-    await client.connect();
-    const database = client.db("hotellpmonitor");
-    const collection = database.collection("reservas");
+    const collection = (await getDb()).collection("reservas");
 
     const hoy = moment().tz("America/Bogota").startOf("day");
     const inicioDelDiaLocal = hoy.toDate(); // 2025-05-01T00:00:00 GMT-0500
@@ -61,8 +55,6 @@ router.get("/", async (req, res) => {
   } catch (error) {
     console.error("Error fetching reservas:", error);
     res.status(500).json({ error: "Internal Server Error" });
-  } finally {
-    await client.close();
   }
 });
 
