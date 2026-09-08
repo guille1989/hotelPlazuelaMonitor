@@ -26,14 +26,22 @@ const MESES = [
   "Diciembre",
 ];
 
-// X roja en los días con reservas canceladas.
-const CancelXDot = ({ cx, cy, value }) => {
-  if (value == null || cx == null || cy == null) return null;
-  const s = 6;
+// Punto rojo con el número de habitaciones canceladas ese día.
+const CancelDot = ({ cx, cy, payload }) => {
+  if (cx == null || cy == null || !payload || !payload.cancelaciones) return null;
   return (
-    <g stroke="#EF4444" strokeWidth={2.5} strokeLinecap="round">
-      <line x1={cx - s} y1={cy - s} x2={cx + s} y2={cy + s} />
-      <line x1={cx - s} y1={cy + s} x2={cx + s} y2={cy - s} />
+    <g>
+      <circle cx={cx} cy={cy} r={5} fill="#EF4444" stroke="#fff" strokeWidth={1} />
+      <text
+        x={cx}
+        y={cy - 10}
+        textAnchor="middle"
+        fill="#EF4444"
+        fontSize={12}
+        fontWeight="bold"
+      >
+        {payload.cancelaciones}
+      </text>
     </g>
   );
 };
@@ -216,7 +224,7 @@ export default function OcupacionMes() {
               stroke="none"
               legendType="none"
               isAnimationActive={false}
-              dot={<CancelXDot />}
+              dot={<CancelDot />}
               activeDot={false}
               connectNulls={false}
             />
