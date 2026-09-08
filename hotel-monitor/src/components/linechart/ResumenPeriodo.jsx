@@ -10,7 +10,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { TOTAL_HABITACIONES, MESES, MESES_CORTO } from "../../config";
+import { TOTAL_HABITACIONES, MESES, MESES_CORTO, formatCOP } from "../../config";
 import "./OcupacionMes.css";
 
 const PERIODOS = [
@@ -98,7 +98,8 @@ export default function ResumenPeriodo({ onData }) {
     reservadas: M.reservadas || 0,
     canceladas: M.canceladasLlegada || 0,
     media: mediaMes(M), // % ocupación del mes (para el tooltip)
-    tarifa: tarifaMes(M),
+    tarifaPromedio: tarifaMes(M),
+    totalTarifas: M.tarifas || 0,
   }));
 
   const handleActivo = (state) => {
@@ -226,6 +227,12 @@ export default function ResumenPeriodo({ onData }) {
                     Canceladas <b>{activo.canceladas}</b>
                   </span>
                 )}
+                <span>
+                  Tarifa prom. <b>{formatCOP(activo.tarifaPromedio)}</b>
+                </span>
+                <span>
+                  Total tarifas <b>{formatCOP(activo.totalTarifas)}</b>
+                </span>
               </>
             ) : (
               <span className="om-hint">
