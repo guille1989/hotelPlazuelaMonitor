@@ -1,8 +1,6 @@
 import "./App.css";
 import React, { useState, useEffect } from "react";
-import Divider from "@mui/material/Divider";
 import Box from "@mui/material/Box";
-import InputLabel from "@mui/material/InputLabel";
 import MenuItem from "@mui/material/MenuItem";
 import FormControl from "@mui/material/FormControl";
 import Select from "@mui/material/Select";
@@ -10,11 +8,11 @@ import axios from "axios";
 
 import TopBar from "./components/top/TopBar";
 import StatCard from "./components/statcard/StatCard";
-import OccupancyForecast from "./components/statcard/OccupancyForecast";
 import OcupacionChart from "./components/linechart/OcupacionChart";
 import OcupacionPasadoChart from "./components/linechart/OcupacionPasadoChart";
-import GaugeUniversal from "./components/gauge/gaugeuniversal";
 
+// Total de habitaciones del hotel (denominador de todos los % de ocupación).
+const TOTAL_HABITACIONES = 29;
 
 function App() {
   const [actualizacionreserva, setActualizacionreserva] = useState([]);
@@ -82,29 +80,36 @@ function App() {
   //Parse the stats data to get the values for the cards
   useEffect(() => {
     if (actualizacionreserva.length > 0) {
-      //occupancyRate is elements with adultos > 0 and estado_habitacion = 31
-      const occupancyRate = actualizacionreserva
-        .filter(
-          (stat) =>
-            parseInt(stat.cantid_reh) > 0 &&
-            parseInt(stat.estado_habitacion) === 31
-        )
-        .reduce((acc, stat) => acc + parseInt(stat.cantid_reh, 10), 0);
-      //projectedOccupancy is length of stats * 100 / 30 with two decimal points
-      //30 is the number of rooms
-      const ocupacionConCheckIn = actualizacionreserva
-        .filter((stat) => parseInt(stat.estado_habitacion) !== "31")
-        .reduce(
-          (acc, stat) =>
-            acc + (stat.cantid_reh ? parseInt(stat.cantid_reh, 10) : 1),
-          0
-        );
-      setOccupancyRate(parseFloat(((occupancyRate * 100) / 29).toFixed(2)));
-      setOccupancyWithCheckIn(occupancyRate);
+      // Habitaciones que aporta una fila (walk-ins sin cantid_reh cuentan 1).
+      const habitaciones = (stat) =>
+        parseInt(stat.cantid_reh, 10) > 0 ? parseInt(stat.cantid_reh, 10) : 1;
 
-      setProjectedOcupacionCheckIn(ocupacionConCheckIn);
+      // "En casa" = check-in hecho (estado_habitacion 31) o walk-in ("sin reserva").
+      // Estados 21/11 = reserva de hoy confirmada que aún no llega.
+      const enCasa = (stat) =>
+        parseInt(stat.estado_habitacion, 10) === 31 ||
+        (stat.origen || "").toLowerCase().includes("sin reserva");
+
+      // Ocupación actual: habitaciones con huésped ya en casa ahora.
+      const ocupacionActual = actualizacionreserva
+        .filter(enCasa)
+        .reduce((acc, stat) => acc + habitaciones(stat), 0);
+
+      // Ocupación proyectada: actual + reservas de hoy sin llegar. /api/reservas
+      // ya viene sin canceladas, así que es la suma de todo lo que devuelve.
+      const ocupacionProyectada = actualizacionreserva.reduce(
+        (acc, stat) => acc + habitaciones(stat),
+        0
+      );
+
+      setOccupancyRate(
+        parseFloat(((ocupacionActual * 100) / TOTAL_HABITACIONES).toFixed(2))
+      );
+      setOccupancyWithCheckIn(ocupacionActual);
+
+      setProjectedOcupacionCheckIn(ocupacionProyectada);
       setProjectedOccupancy(
-        parseFloat(((ocupacionConCheckIn * 100) / 29).toFixed(2))
+        parseFloat(((ocupacionProyectada * 100) / TOTAL_HABITACIONES).toFixed(2))
       );
 
       //revPAR is the sum of valor_habitacion for all elements with estado_habitacion = 31 and cantid_reh > 0
@@ -120,7 +125,7 @@ function App() {
             stat.valor_habitacion * (stat.cantid_reh ? stat.cantid_reh : 1),
           0
         );
-      setRevPAR(revPAR / 29);
+      setRevPAR(revPAR / TOTAL_HABITACIONES);
 
       //Ingresos
       const ingresoPorReservaConchecking = actualizacionreserva
