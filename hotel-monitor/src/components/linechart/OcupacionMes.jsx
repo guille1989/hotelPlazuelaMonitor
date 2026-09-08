@@ -156,13 +156,7 @@ export default function OcupacionMes() {
 
       {!loading && !error && (
         <>
-          <div
-            style={{
-              overflowX: "auto",
-              WebkitOverflowScrolling: "touch",
-              width: "100%",
-            }}
-          >
+          <div className="om-scroll">
             <div style={{ minWidth: anchoMin }}>
               <ResponsiveContainer width="100%" height={240}>
                 <ComposedChart

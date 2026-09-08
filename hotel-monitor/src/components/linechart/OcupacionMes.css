@@ -79,6 +79,18 @@
   opacity: 0.5;
 }
 
+/* Scroll lateral del gráfico sin barra visible */
+.om-scroll {
+  overflow-x: auto;
+  width: 100%;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* Edge antiguo */
+}
+.om-scroll::-webkit-scrollbar {
+  display: none; /* Chrome, Safari */
+}
+
 .om-state {
   color: #cbd5e1;
   text-align: center;
