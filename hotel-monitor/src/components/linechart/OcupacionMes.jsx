@@ -170,6 +170,10 @@ export default function OcupacionMes() {
       )}
 
       {!loading && !error && (
+        <div
+          style={{ overflowX: "auto", WebkitOverflowScrolling: "touch", width: "100%" }}
+        >
+        <div style={{ minWidth: Math.max(640, (data.dias.length || 30) * 26) }}>
         <ResponsiveContainer width="100%" height={240}>
           <LineChart
             data={data.dias}
@@ -218,6 +222,8 @@ export default function OcupacionMes() {
             />
           </LineChart>
         </ResponsiveContainer>
+        </div>
+        </div>
       )}
     </div>
   );
