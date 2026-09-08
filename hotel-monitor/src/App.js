@@ -5,7 +5,7 @@ import axios from "axios";
 import TopBar from "./components/top/TopBar";
 import StatCard from "./components/statcard/StatCard";
 import OcupacionMes from "./components/linechart/OcupacionMes";
-import { TOTAL_HABITACIONES } from "./config";
+import { TOTAL_HABITACIONES, formatCOP } from "./config";
 
 function App() {
   const [actualizacionreserva, setActualizacionreserva] = useState([]);
@@ -157,88 +157,47 @@ function App() {
     <div className="App">
       <TopBar />
 
-      {/*   */}
-
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          flexWrap: "wrap", // Permite que las tarjetas se ajusten en varias filas si es necesario
-          gap: "5px", // Espaciado entre las tarjetas
-          //justifyContent: "space-between", // Distribuye las tarjetas uniformemente
-          width: "100%", // Asegura que ocupe todo el ancho del contenedor
-        }}
-      >
-        <div style={{ width: "48%" }}>
+      <section className="grupo">
+        <div className="grupo-titulo">Ocupación · hoy</div>
+        <div className="grupo-cards ocupacion">
           <StatCard
-            value={occupancyRate}
-            valueCheckIn={occupancyWithCheckIn}
+            value={`${occupancyRate}%`}
+            sub={`${occupancyWithCheckIn} / ${TOTAL_HABITACIONES} hab`}
             label="🛏️ Ocupación actual"
-            unit=""
-            maxvalue={100}
-            flag={"%"}
           />
-
           <StatCard
-            value={projectedOccupancy}
-            valueCheckIn={projectedOcupacionCheckIn}
+            value={`${projectedOccupancy}%`}
+            sub={`${projectedOcupacionCheckIn} / ${TOTAL_HABITACIONES} hab`}
             label="📅 Ocupación proyectada"
-            unit=""
-            maxvalue={100}
-            flag={"%"}
           />
-      
           <StatCard
             value={personasEnHotel}
-            label="👥 Total de Huéspedes"
-            unit="UNI"
-            maxvalue={100}
-            flag={"n"}
+            sub="en casa"
+            label="👥 Huéspedes"
           />
-       
-        </div>
-
-        <div style={{ width: "48%" }}>
-          <StatCard
-            value={revPAR}
-            label="💸 RevPAR"
-            unit="COP"
-            maxvalue={500000}
-            flag={"ocrev"}
-          />
-
-          <StatCard
-            value={ingreso}
-            label="💵 Ingresos actuales"
-            unit="COP"
-            maxvalue={10000000}
-            flag={"ocrev"}
-          />
-        
           <StatCard
             value={cancelacionReservas}
-            label="❌ Habitaciones canceladas"
-            unit="UNI"
-            maxvalue={100}
-            flag={"ocrev"}
+            sub="habitaciones"
+            label="❌ Canceladas"
           />
-       
         </div>
-      </div>
-     
+      </section>
 
-      {/* Ocupación por mes (día a día, navegable) */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          marginTop: "20px",
-        }}
-      >
-        <h1 className="title">Ocupación por mes</h1>
-      </div>
+      <section className="grupo">
+        <div className="grupo-titulo">Ingresos · hoy</div>
+        <div className="grupo-cards ingresos">
+          <StatCard
+            value={formatCOP(revPAR)}
+            sub="por habitación"
+            label="💸 RevPAR"
+          />
+          <StatCard
+            value={formatCOP(ingreso)}
+            sub="del día"
+            label="💵 Ingresos"
+          />
+        </div>
+      </section>
 
       <OcupacionMes />
     </div>

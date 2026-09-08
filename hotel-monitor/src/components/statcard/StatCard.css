@@ -1,28 +1,61 @@
+.grupo {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 12px;
+}
+
+.grupo-titulo {
+  color: #94a3b8;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  margin: 16px 0 8px 4px;
+}
+
+.grupo-cards {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(2, 1fr);
+}
+
+@media (min-width: 760px) {
+  .grupo-cards.ocupacion {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  .grupo-cards.ingresos {
+    grid-template-columns: repeat(2, 1fr);
+    max-width: 520px;
+  }
+}
+
 .stat-card {
+  background: #2a3654;
+  border-radius: 12px;
+  padding: 14px 12px;
+  text-align: center;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
   display: flex;
   flex-direction: column;
   justify-content: center;
-  align-items: center;
-  gap: 10px; /* Espaciado entre los elementos */
-  height: 5rem;
-  margin-top: 8px;
 }
 
-.card-title {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-weight: bold;
-  font-size: x-large;
-  margin-bottom: 0; 
+.stat-value {
+  color: #fff;
+  font-size: 1.6rem;
+  font-weight: 700;
+  line-height: 1.15;
 }
 
-.card-description {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  color: white;
-  margin-top: 0;
-  white-space: nowrap; /* Evita que el texto se divida en varias líneas */
+.stat-sub {
+  color: #94a3b8;
+  font-size: 0.78rem;
+  margin-top: 3px;
+}
 
+.stat-label {
+  color: #cbd5e1;
+  font-size: 0.85rem;
+  margin-top: 10px;
+  white-space: nowrap;
 }
