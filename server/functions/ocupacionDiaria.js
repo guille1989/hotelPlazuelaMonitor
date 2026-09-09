@@ -62,6 +62,11 @@ async function ocupacionPorDia(db, dias) {
     d.habsTarifa = set.size;
   }
 
+  // Días pasados que TODAVÍA no tienen folio (la auditoría nocturna de Zeus va con
+  // 1-2 días de retraso). Para esos días caemos a la proyección desde `reservas`
+  // en lugar de reportar 0 — igual que hacemos con hoy y el futuro.
+  const sinFolio = (dia) => dia < hoy && !habsPorDia.has(dia);
+
   // --- reservas: cancelaciones (siempre) + ocupación/ingreso de hoy en adelante ---
   const reservas = await db
     .collection("reservas")
@@ -81,7 +86,7 @@ async function ocupacionPorDia(db, dias) {
       const d = porDia.get(dia);
       if (cancelada) {
         d.cancelaciones += habs;
-      } else if (dia >= hoy) {
+      } else if (dia >= hoy || sinFolio(dia)) {
         d.ocupacion += habs;
         if (valor > 0) {
           d.tarifas += valor * habs;
