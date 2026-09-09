@@ -28,6 +28,9 @@ router.get("/", async (req, res) => {
       return {
         dia,
         ocupacion: o.ocupacion,
+        real: o.real,
+        proyectada: o.proyectada,
+        fuente: o.fuente,
         cancelaciones: o.cancelaciones,
         tarifas: o.tarifas,
         habsTarifa: o.habsTarifa,

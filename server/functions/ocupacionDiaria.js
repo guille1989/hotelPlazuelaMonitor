@@ -10,14 +10,28 @@ const {
 // habitación ocupada.
 const CONCEPTOS_ALOJAMIENTO = [1020, 1021, 33, 36];
 
+// "En casa": la reserva tiene check-in hecho (estado 31) o es un walk-in.
+const enCasa = (r) => {
+  const origen = (r.origen || "").trim().toLowerCase();
+  return String(r.estado_habitacion) === "31" || origen === "sin reserva";
+};
+
 // Ocupación e ingreso por día, HÍBRIDO:
 //   día < hoy  -> folio real (colección `noches_vendidas`), cuadra con el trasunto
 //   día >= hoy -> proyección desde `reservas` (tarifa planeada)
 // Las cancelaciones salen siempre de `reservas` (el folio no las registra).
 //
-// Devuelve { porDia: Map<dia, {ocupacion, tarifas, habsTarifa, cancelaciones, fuente}>,
-//            reservas: [...] }  — reservas se devuelve para que quien llame calcule
-//            los agregados por mes de llegada sin volver a consultar.
+// Cada día lleva tres cifras de ocupación:
+//   ocupacion  -> serie histórica para métricas: folio en el pasado, proyección
+//                 (todas las reservas no canceladas) de hoy en adelante. NO cambia.
+//   real       -> lo que de verdad ocurrió/ocurre: folio si ya está posteado; si no
+//                 (hoy, o "ayer" con la auditoría nocturna pendiente) las
+//                 habitaciones con check-in hecho. null en el futuro.
+//   proyectada -> de hoy en adelante, todas las reservas no canceladas del día.
+//   fuente     -> "folio" (consolidado) | "checkin" (real provisional) | "proyeccion".
+//
+// Devuelve { porDia: Map<dia, {...}>, reservas: [...] } — reservas se devuelve para
+// que quien llame calcule los agregados por mes de llegada sin volver a consultar.
 async function ocupacionPorDia(db, dias) {
   const hoy = hoyBogota();
   const inicio = dias[0];
@@ -29,6 +43,8 @@ async function ocupacionPorDia(db, dias) {
       {
         dia: d,
         ocupacion: 0,
+        real: null,
+        proyectada: null,
         tarifas: 0,
         habsTarifa: 0,
         cancelaciones: 0,
@@ -60,6 +76,7 @@ async function ocupacionPorDia(db, dias) {
     const d = porDia.get(dia);
     d.ocupacion = set.size;
     d.habsTarifa = set.size;
+    d.real = set.size;
   }
 
   // Días pasados que TODAVÍA no tienen folio (la auditoría nocturna de Zeus va con
@@ -88,12 +105,23 @@ async function ocupacionPorDia(db, dias) {
         d.cancelaciones += habs;
       } else if (dia >= hoy || sinFolio(dia)) {
         d.ocupacion += habs;
+        if (dia >= hoy) d.proyectada = (d.proyectada || 0) + habs;
+        if ((dia === hoy || sinFolio(dia)) && enCasa(r)) {
+          d.real = (d.real || 0) + habs;
+        }
         if (valor > 0) {
           d.tarifas += valor * habs;
           d.habsTarifa += habs;
         }
       }
     }
+  }
+
+  // Etiqueta de fuente por día (los días con folio ya quedaron marcados arriba).
+  for (const dia of dias) {
+    const d = porDia.get(dia);
+    if (d.fuente === "folio") continue;
+    d.fuente = dia === hoy || sinFolio(dia) ? "checkin" : "proyeccion";
   }
 
   return { porDia, reservas };

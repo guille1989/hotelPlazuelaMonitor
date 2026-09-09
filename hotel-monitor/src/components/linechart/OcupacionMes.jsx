@@ -11,7 +11,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { TOTAL_HABITACIONES, MESES } from "../../config";
+import { TOTAL_HABITACIONES, MESES, formatCOP } from "../../config";
 import "./OcupacionMes.css";
 
 const DIAS_SEMANA = [
@@ -137,7 +137,8 @@ export default function OcupacionMes({ onData }) {
       {!loading && !error && (
         <>
           <div className="om-leyenda">
-            <span className="om-leyenda-item om-leyenda-ocup">Ocupación</span>
+            <span className="om-leyenda-item om-leyenda-ocup">Real</span>
+            <span className="om-leyenda-item om-leyenda-proy">Proyectada</span>
             <span className="om-leyenda-item om-leyenda-canc">Canceladas</span>
           </div>
           <div className="om-scroll">
@@ -222,10 +223,24 @@ export default function OcupacionMes({ onData }) {
 
                   <Area
                     type="monotone"
-                    dataKey="ocupacion"
+                    dataKey="real"
                     stroke="#8cf4ee"
                     strokeWidth={2}
                     fill="url(#omOcupacion)"
+                    connectNulls={false}
+                    isAnimationActive={false}
+                    activeDot={{ r: 4, fill: "#8cf4ee", stroke: "#1f293d", strokeWidth: 2 }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="proyectada"
+                    stroke="#8cf4ee"
+                    strokeWidth={2}
+                    strokeDasharray="5 4"
+                    strokeOpacity={0.75}
+                    connectNulls={false}
+                    dot={false}
+                    legendType="none"
                     isAnimationActive={false}
                     activeDot={{ r: 4, fill: "#8cf4ee", stroke: "#1f293d", strokeWidth: 2 }}
                   />
@@ -247,22 +262,82 @@ export default function OcupacionMes({ onData }) {
 
           <div className="om-readout om-readout-dia">
             {activo ? (
-              <>
-                <div className="om-readout-main">
-                  <span className="om-day">{fechaLarga(activo.dia)}</span>
-                  <span className="om-readout-ocup">
-                    Ocupación{" "}
-                    <b>
-                      {activo.ocupacion ?? 0}/{TOTAL_HABITACIONES} ·{" "}
-                      {pct(activo.ocupacion)}%
-                    </b>
-                  </span>
-                </div>
-                <div className="om-readout-canc">
-                  <span>Canceladas</span>
-                  <b>{activo.cancelaciones || 0}</b>
-                </div>
-              </>
+              (() => {
+                const { real, proyectada: proy, fuente } = activo;
+                const filas = [];
+                if (real != null && proy != null) {
+                  filas.push(["Real ahora", real, false]);
+                  filas.push(["Proyectada", proy, true]);
+                } else if (real != null) {
+                  filas.push([
+                    fuente === "folio" ? "Ocupación real" : "Real",
+                    real,
+                    true,
+                  ]);
+                } else if (proy != null) {
+                  filas.push(["Proyectada", proy, true]);
+                } else {
+                  filas.push(["Ocupación", activo.ocupacion ?? 0, true]);
+                }
+                const nota =
+                  fuente === "folio"
+                    ? "folio consolidado"
+                    : fuente === "checkin" && proy == null
+                    ? "check-in · folio pendiente"
+                    : fuente === "checkin"
+                    ? "en casa ahora vs. reservas del día"
+                    : "proyección desde reservas";
+
+                const ingreso = activo.tarifas || 0;
+                const habsTarifa = activo.habsTarifa || 0;
+                const adr = habsTarifa > 0 ? Math.round(ingreso / habsTarifa) : 0;
+                const revpar = Math.round(ingreso / TOTAL_HABITACIONES);
+                const tarifas = ingreso
+                  ? [
+                      [formatCOP(adr), "Tarifa media · ADR"],
+                      [formatCOP(revpar), "Tarifa prom. · venta ÷ 29"],
+                      [formatCOP(ingreso), "Ingreso alojamiento"],
+                    ]
+                  : null;
+
+                return (
+                  <>
+                    <div className="om-readout-top">
+                      <div className="om-readout-main">
+                        <span className="om-day">{fechaLarga(activo.dia)}</span>
+                        {filas.map(([et, v, conPct]) => (
+                          <span className="om-readout-ocup" key={et}>
+                            {et}{" "}
+                            <b>
+                              {v}/{TOTAL_HABITACIONES}
+                              {conPct ? ` · ${pct(v)}%` : ""}
+                            </b>
+                          </span>
+                        ))}
+                        <span className="om-readout-fuente">{nota}</span>
+                      </div>
+                      <div className="om-readout-canc">
+                        <span>Canceladas</span>
+                        <b>{activo.cancelaciones || 0}</b>
+                      </div>
+                    </div>
+                    <div className="om-readout-tarifas">
+                      {tarifas ? (
+                        tarifas.map(([v, et]) => (
+                          <div className="om-tarifa" key={et}>
+                            <b>{v}</b>
+                            <span>{et}</span>
+                          </div>
+                        ))
+                      ) : (
+                        <span className="om-tarifa-vacio">
+                          Sin tarifas registradas este día
+                        </span>
+                      )}
+                    </div>
+                  </>
+                );
+              })()
             ) : (
               <span className="om-hint">
                 Pasa el cursor o toca un día para ver el detalle
