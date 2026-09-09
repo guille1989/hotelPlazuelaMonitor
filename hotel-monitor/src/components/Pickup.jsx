@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { MESES } from "../config";
+import Carrusel from "./Carrusel";
 import "./Pickup.css";
 
 const VENTANAS = [7, 14, 30];
@@ -27,22 +28,6 @@ const fechaCorta = (ymd) => {
 };
 
 const numeroConSigno = (valor) => `${valor >= 0 ? "+" : ""}${valor}`;
-
-const claseDiferencia = (valor) => {
-  if (valor > 0) return "positivo";
-  if (valor < 0) return "negativo";
-  return "neutro";
-};
-
-const textoDiferencia = (historico) => {
-  const diferencia = numeroConSigno(historico.diferenciaRoomNoches);
-  if (historico.diferenciaPct === null) {
-    return `${diferencia} frente a la referencia`;
-  }
-  if (historico.diferenciaRoomNoches === 0) return "Igual a la referencia";
-  const direccion = historico.diferenciaRoomNoches > 0 ? "por encima" : "por debajo";
-  return `${Math.abs(historico.diferenciaPct)}% ${direccion} de la referencia`;
-};
 
 export default function Pickup() {
   const [dias, setDias] = useState(7);
@@ -89,7 +74,6 @@ export default function Pickup() {
   );
   const neto = data ? data.totales.nuevas - data.totales.canceladas : 0;
   const netoRoomNoches = data ? data.totales.roomNoches || 0 : 0;
-  const anioReferencia = data?.referencia?.periodos?.[0]?.desde?.slice(0, 4);
 
   return (
     <div className="pickup">
@@ -151,43 +135,6 @@ export default function Pickup() {
             </div>
           </div>
 
-          {data.historico ? (
-            <section className="pickup-history" aria-label="Comparación histórica">
-              <div className="pickup-history-head">
-                <span>Comparación histórica</span>
-                <small>
-                  {anioReferencia ? `Mismo período de ${anioReferencia}` : "Período comparable"}
-                </small>
-              </div>
-              <div className="pickup-history-values">
-                <div>
-                  <small>Pickup actual</small>
-                  <b>{numeroConSigno(netoRoomNoches)}</b>
-                </div>
-                <span aria-hidden="true">vs</span>
-                <div>
-                  <small>Referencia</small>
-                  <b>{numeroConSigno(data.historico.referenciaRoomNoches)}</b>
-                </div>
-              </div>
-              <div
-                className={`pickup-history-result ${claseDiferencia(
-                  data.historico.diferenciaRoomNoches
-                )}`}
-              >
-                {textoDiferencia(data.historico)}
-              </div>
-              <p>
-                Comparación en habitaciones-noche para meses de llegada equivalentes.
-                Esta referencia describe el ritmo; todavía no lo califica como bueno o malo.
-              </p>
-            </section>
-          ) : (
-            <div className="pickup-history-empty">
-              Aún no hay un período histórico completo para comparar.
-            </div>
-          )}
-
           {data.objetivo && (
             <section className="pickup-goal-summary" aria-label="Resumen del objetivo">
               <div>
@@ -225,6 +172,9 @@ export default function Pickup() {
               <p><b>Objetivo:</b> porcentaje de la capacidad mensual que se quiere ocupar.</p>
               <p><b>Meta a esta fecha:</b> parte del objetivo final que normalmente ya estaba vendida con esta misma antelación.</p>
               <p><b>Ocupación:</b> noches ya registradas o reservadas dentro del mes calendario.</p>
+              <p><b>Ritmo mensual:</b> compara el total de habitaciones-noche del mes con su trayectoria histórica.</p>
+              <p><b>Ritmo diario:</b> compara cada fecha por separado con lo que su fecha equivalente histórica llevaba vendido a la misma antelación.</p>
+              <p><b>Día próximo en riesgo:</b> estancia a 14 días o menos cuya ocupación está por debajo de la meta esperada a día de hoy.</p>
             </div>
           </details>
 
@@ -236,18 +186,24 @@ export default function Pickup() {
             <div className="pickup-section-title">Desglose por mes de llegada</div>
           )}
 
-          <div className="pickup-list">
-            {meses.map((m) => {
+          {meses.length > 0 && (
+            <div className="pickup-list">
+              <Carrusel
+                reinicioClave={`${dias}-${objetivo}-${meses
+                  .map((mes) => mes.mes)
+                  .join("-")}`}
+                slides={meses.map((m) => {
               const n = m.nuevas - m.canceladas;
               const rn = m.roomNoches || 0;
               const w = (Math.abs(rn) / maxAbsRoomNoches) * 50;
               const pos = rn >= 0;
               const objetivoMes = m.objetivo;
               const ritmoMes = objetivoMes?.ritmo;
-              return (
-                <div className="pickup-row" key={m.mes}>
+              return {
+                titulo: etiqueta(m.mes),
+                contenido: (
+                <div className="pickup-row pickup-slide">
                   <div className="pickup-row-head">
-                    <span className="pickup-month">{etiqueta(m.mes)}</span>
                     <span className={`pickup-net ${pos ? "positivo" : "negativo"}`}>
                       {numeroConSigno(rn)} habitaciones-noche
                     </span>
@@ -256,20 +212,15 @@ export default function Pickup() {
                     {m.nuevas} habitaciones nuevas · {m.canceladas} canceladas ·{" "}
                     {numeroConSigno(n)} netas
                   </div>
-                  {m.historico && (
-                    <div className="pickup-row-history">
-                      Referencia: {numeroConSigno(m.historico.referenciaRoomNoches)} ·{" "}
-                      <span className={claseDiferencia(m.historico.diferenciaRoomNoches)}>
-                        {numeroConSigno(m.historico.diferenciaRoomNoches)} frente al año anterior
-                      </span>
-                    </div>
-                  )}
                   {objetivoMes && (
                     <div className="pickup-row-goal">
                       <div className="pickup-row-goal-head">
                         {m.evaluacion && (
-                          <span className={`pickup-status ${m.evaluacion.codigo}`}>
-                            {m.evaluacion.etiqueta}
+                          <span className="pickup-monthly-status">
+                            Ritmo mensual
+                            <span className={`pickup-status ${m.evaluacion.codigo}`}>
+                              {m.evaluacion.etiqueta}
+                            </span>
                           </span>
                         )}
                         <span>
@@ -302,6 +253,70 @@ export default function Pickup() {
                       </small>
                     </div>
                   )}
+                  {objetivoMes?.resumenDiario && (
+                    <section className="pickup-daily" aria-label={`Ritmo diario de ${etiqueta(m.mes)}`}>
+                      <div className="pickup-daily-summary">
+                        <div>
+                          <span>Bajo objetivo final diario</span>
+                          <b>{objetivoMes.resumenDiario.diasBajoObjetivoFinal}</b>
+                          <small>días</small>
+                        </div>
+                        <div>
+                          <span>Bajo ritmo esperado</span>
+                          <b>{objetivoMes.resumenDiario.diasBajoRitmoEsperado}</b>
+                          <small>días</small>
+                        </div>
+                        <div className={objetivoMes.resumenDiario.diasProximosEnRiesgo ? "riesgo" : ""}>
+                          <span>Próximos en riesgo</span>
+                          <b>{objetivoMes.resumenDiario.diasProximosEnRiesgo}</b>
+                          <small>≤ 14 días</small>
+                        </div>
+                      </div>
+                      {objetivoMes.resumenDiario.diasSinReferenciaHistorica > 0 && (
+                        <div className="pickup-daily-no-reference">
+                          <span className="pickup-status sin_referencia">
+                            Sin referencia histórica
+                          </span>
+                          {` para ${objetivoMes.resumenDiario.diasSinReferenciaHistorica} días; no se cuentan como días bajo ritmo.`}
+                        </div>
+                      )}
+                      {objetivoMes.resumenDiario.diasEnRiesgo.length > 0 && (
+                        <div className="pickup-risk-list">
+                          <div className="pickup-risk-title">Días próximos por debajo del ritmo</div>
+                          {objetivoMes.resumenDiario.diasEnRiesgo.map((dia) => (
+                            <div className="pickup-risk-day" key={dia.fecha}>
+                              <div className="pickup-risk-day-head">
+                                <b>{fechaCorta(dia.fecha)}</b>
+                                <span className={`pickup-status ${dia.evaluacion.codigo}`}>
+                                  {dia.evaluacion.etiqueta}
+                                </span>
+                              </div>
+                              <div className="pickup-risk-values">
+                                <span>
+                                  Ocupación actual
+                                  <b>{dia.habitacionesOcupadas} hab. · {dia.ocupacionPct}%</b>
+                                </span>
+                                <span>
+                                  Meta esperada hoy
+                                  <b>{dia.metaEsperadaHoyHabitaciones} hab. · {dia.metaEsperadaHoyPct}%</b>
+                                </span>
+                                <span>
+                                  Faltan para el ritmo
+                                  <b>{dia.faltantesMetaEsperadaHoyHabitaciones} hab.</b>
+                                </span>
+                              </div>
+                              <small>
+                                {dia.diasRestantes === 0
+                                  ? "Estancia hoy"
+                                  : `Faltan ${dia.diasRestantes} días para la estancia`}
+                                {` · objetivo final diario ${dia.objetivoFinalHabitaciones} hab. (${dia.objetivoFinalPct}%)`}
+                              </small>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </section>
+                  )}
                   <div className="pickup-track">
                     <div
                       className={`pickup-fill ${pos ? "positivo" : "negativo"}`}
@@ -313,9 +328,12 @@ export default function Pickup() {
                     <span className="pickup-zero" aria-hidden="true" />
                   </div>
                 </div>
-              );
+                ),
+              };
             })}
-          </div>
+              />
+            </div>
+          )}
         </>
       )}
     </div>

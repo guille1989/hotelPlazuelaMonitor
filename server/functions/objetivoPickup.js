@@ -8,6 +8,17 @@ const {
 
 const TOTAL_HABITACIONES = 29;
 
+function diferenciaDias(desde, hasta) {
+  return Math.round(
+    (Date.parse(`${hasta}T00:00:00Z`) - Date.parse(`${desde}T00:00:00Z`)) /
+      86400000
+  );
+}
+
+function objetivoDiarioHabitaciones(objetivoPct) {
+  return Math.ceil((TOTAL_HABITACIONES * objetivoPct) / 100);
+}
+
 function calcularObjetivoMes(mes, dias, porDia, objetivoPct) {
   const capacidadRoomNoches = dias.length * TOTAL_HABITACIONES;
   const ocupadasRoomNoches = dias.reduce(
@@ -42,30 +53,132 @@ function desplazarMes(mes, anios) {
 }
 
 function ocupacionHistoricaAlCorte(reservas, dias, porDiaFinal, fechaCorte) {
-  let roomNoches = 0;
+  return dias.reduce(
+    (total, dia) =>
+      total +
+      ocupacionDiaHistoricaAlCorte(reservas, dia, porDiaFinal, fechaCorte),
+    0
+  );
+}
 
-  for (const dia of dias) {
-    // Igual que la ocupación actual: noches anteriores al corte ya son reales;
-    // desde el día del corte se usa lo que estaba reservado en ese momento.
-    if (dia < fechaCorte) {
-      roomNoches += porDiaFinal.get(dia)?.ocupacion || 0;
-      continue;
-    }
+function ocupacionDiaHistoricaAlCorte(
+  reservas,
+  dia,
+  porDiaFinal,
+  fechaCorte
+) {
+  // Las noches anteriores al corte ya eran hechos consumados. Para el resto se
+  // reconstruye el inventario que seguía activo en la fecha del corte.
+  if (dia < fechaCorte) return porDiaFinal.get(dia)?.ocupacion || 0;
 
-    for (const reserva of reservas) {
-      const llegada =
-        reserva.fecha_llegada_habitacion || reserva.fecha_llegada;
-      const salida = salidaEfectiva(reserva);
-      if (!llegada || !salida || dia < llegada || dia >= salida) continue;
-      if (!reserva.fecha_reserva || reserva.fecha_reserva > fechaCorte) continue;
+  let ocupacion = 0;
+  for (const reserva of reservas) {
+    const llegada = reserva.fecha_llegada_habitacion || reserva.fecha_llegada;
+    const salida = salidaEfectiva(reserva);
+    if (!llegada || !salida || dia < llegada || dia >= salida) continue;
+    if (!reserva.fecha_reserva || reserva.fecha_reserva > fechaCorte) continue;
 
-      const canceladaAntesDelCorte =
-        estaCancelada(reserva) && reserva.fecha_cancelacion <= fechaCorte;
-      if (!canceladaAntesDelCorte) roomNoches += habitaciones(reserva);
-    }
+    const canceladaAntesDelCorte =
+      estaCancelada(reserva) && reserva.fecha_cancelacion <= fechaCorte;
+    if (!canceladaAntesDelCorte) ocupacion += habitaciones(reserva);
   }
+  return ocupacion;
+}
 
-  return roomNoches;
+function evaluarObjetivoDia({ habitacionesOcupadas, objetivoHabitaciones, metaHoy }) {
+  if (habitacionesOcupadas >= objetivoHabitaciones) {
+    return { codigo: "objetivo_alcanzado", etiqueta: "Objetivo alcanzado" };
+  }
+  if (metaHoy === null || metaHoy === undefined) {
+    return { codigo: "sin_referencia", etiqueta: "Sin referencia histórica" };
+  }
+  if (habitacionesOcupadas >= metaHoy) {
+    return { codigo: "ritmo_favorable", etiqueta: "Buen ritmo" };
+  }
+  if (metaHoy > 0 && habitacionesOcupadas / metaHoy >= 0.8) {
+    return { codigo: "atencion", etiqueta: "Atención" };
+  }
+  return { codigo: "ritmo_insuficiente", etiqueta: "Ritmo insuficiente" };
+}
+
+function calcularObjetivoDia({
+  fecha,
+  habitacionesOcupadas,
+  objetivoPct,
+  hoy,
+  referencia = null,
+}) {
+  const objetivoHabitaciones = objetivoDiarioHabitaciones(objetivoPct);
+  const referenciaValida = referencia && referencia.habitacionesFinales > 0;
+  const proporcionHistorica = referenciaValida
+    ? Math.min(
+        1,
+        Math.max(
+          0,
+          referencia.habitacionesAlCorte / referencia.habitacionesFinales
+        )
+      )
+    : null;
+  const metaHoy = referenciaValida
+    ? Math.ceil(objetivoHabitaciones * proporcionHistorica)
+    : null;
+  const evaluacion = evaluarObjetivoDia({
+    habitacionesOcupadas,
+    objetivoHabitaciones,
+    metaHoy,
+  });
+
+  return {
+    fecha,
+    habitacionesOcupadas,
+    ocupacionPct: Math.round(
+      (habitacionesOcupadas * 100) / TOTAL_HABITACIONES
+    ),
+    objetivoFinalPct: objetivoPct,
+    objetivoFinalHabitaciones: objetivoHabitaciones,
+    faltantesObjetivoFinalHabitaciones: Math.max(
+      0,
+      objetivoHabitaciones - habitacionesOcupadas
+    ),
+    diasRestantes: diferenciaDias(hoy, fecha),
+    metaEsperadaHoyHabitaciones: metaHoy,
+    metaEsperadaHoyPct:
+      metaHoy === null
+        ? null
+        : Math.round((metaHoy * 100) / TOTAL_HABITACIONES),
+    faltantesMetaEsperadaHoyHabitaciones:
+      metaHoy === null ? null : Math.max(0, metaHoy - habitacionesOcupadas),
+    referenciaHistorica: referenciaValida
+      ? {
+          ...referencia,
+          proporcionHistoricaPct: Math.round(proporcionHistorica * 100),
+        }
+      : null,
+    evaluacion,
+    porDebajoObjetivoFinal: habitacionesOcupadas < objetivoHabitaciones,
+    porDebajoRitmoEsperado:
+      metaHoy !== null && habitacionesOcupadas < metaHoy,
+  };
+}
+
+function resumirDias(dias, hoy) {
+  const diasEnRiesgo = dias.filter(
+    (dia) =>
+      dia.fecha >= hoy &&
+      dia.diasRestantes <= 14 &&
+      dia.porDebajoRitmoEsperado
+  );
+  return {
+    diasBajoObjetivoFinal: dias.filter((dia) => dia.porDebajoObjetivoFinal)
+      .length,
+    diasBajoRitmoEsperado: dias.filter((dia) => dia.porDebajoRitmoEsperado)
+      .length,
+    diasProximosEnRiesgo: diasEnRiesgo.length,
+    diasSinReferenciaHistorica: dias.filter(
+      (dia) => dia.evaluacion.codigo === "sin_referencia"
+    ).length,
+    diasEnRiesgo,
+  };
 }
 
 function calcularMetaRitmo(objetivo, historico) {
@@ -171,9 +284,10 @@ async function objetivosPickup(
 
   const porMes = new Map();
   for (const mes of claves) {
+    const diasMes = diasPorMes.get(mes);
     const objetivo = calcularObjetivoMes(
       mes,
-      diasPorMes.get(mes),
+      diasMes,
       porDia,
       objetivoPct
     );
@@ -196,6 +310,33 @@ async function objetivosPickup(
     } else {
       objetivo.ritmo = null;
     }
+    objetivo.dias = diasMes.map((dia, indice) => {
+      let referencia = null;
+      if (datosHistoricos) {
+        const diaHistorico = datosHistoricos.diasHistoricosPorMes.get(mes)[indice];
+        if (diaHistorico) {
+          referencia = {
+            fecha: diaHistorico,
+            habitacionesFinales:
+              datosHistoricos.porDia.get(diaHistorico)?.ocupacion || 0,
+            habitacionesAlCorte: ocupacionDiaHistoricaAlCorte(
+              datosHistoricos.reservas,
+              diaHistorico,
+              datosHistoricos.porDia,
+              fechaCorteHistorica
+            ),
+          };
+        }
+      }
+      return calcularObjetivoDia({
+        fecha: dia,
+        habitacionesOcupadas: porDia.get(dia)?.ocupacion || 0,
+        objetivoPct,
+        hoy,
+        referencia,
+      });
+    });
+    objetivo.resumenDiario = resumirDias(objetivo.dias, hoy);
     porMes.set(mes, objetivo);
   }
   const valores = [...porMes.values()];
@@ -222,9 +363,14 @@ async function objetivosPickup(
 
 module.exports = {
   TOTAL_HABITACIONES,
+  objetivoDiarioHabitaciones,
   calcularObjetivoMes,
+  calcularObjetivoDia,
   calcularMetaRitmo,
+  evaluarObjetivoDia,
   evaluarRitmo,
+  ocupacionDiaHistoricaAlCorte,
   ocupacionHistoricaAlCorte,
+  resumirDias,
   objetivosPickup,
 };

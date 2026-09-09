@@ -1,16 +1,16 @@
 {
   "files": {
-    "main.css": "/static/css/main.a6dadc61.css",
-    "main.js": "/static/js/main.471f79dd.js",
+    "main.css": "/static/css/main.9605a6f4.css",
+    "main.js": "/static/js/main.03cf5ad8.js",
     "static/js/453.75836257.chunk.js": "/static/js/453.75836257.chunk.js",
     "static/media/innoapp-logo.png": "/static/media/innoapp-logo.2025a64fb9cb5b0dc14a.png",
     "index.html": "/index.html",
-    "main.a6dadc61.css.map": "/static/css/main.a6dadc61.css.map",
-    "main.471f79dd.js.map": "/static/js/main.471f79dd.js.map",
+    "main.9605a6f4.css.map": "/static/css/main.9605a6f4.css.map",
+    "main.03cf5ad8.js.map": "/static/js/main.03cf5ad8.js.map",
     "453.75836257.chunk.js.map": "/static/js/453.75836257.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.a6dadc61.css",
-    "static/js/main.471f79dd.js"
+    "static/css/main.9605a6f4.css",
+    "static/js/main.03cf5ad8.js"
   ]
 }

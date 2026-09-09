@@ -138,86 +138,6 @@
   color: var(--color-muted);
 }
 
-.pickup-history {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: 12px;
-  margin: 10px 0;
-  padding: 11px 12px;
-}
-.pickup-history-head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 8px;
-}
-.pickup-history-head span {
-  color: var(--color-text);
-  font-size: 0.73rem;
-  font-weight: 600;
-}
-.pickup-history-head small,
-.pickup-history-values small {
-  color: var(--color-muted);
-  font-size: 0.59rem;
-}
-.pickup-history-values {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: end;
-  gap: 12px;
-  margin: 10px 0 8px;
-}
-.pickup-history-values > div {
-  display: flex;
-  flex-direction: column;
-}
-.pickup-history-values > span {
-  color: var(--color-muted);
-  font-size: 0.62rem;
-  padding-bottom: 2px;
-}
-.pickup-history-values b {
-  color: var(--color-text);
-  font-size: 1.05rem;
-}
-.pickup-history-result {
-  background: var(--color-accent-dim);
-  border-radius: 7px;
-  font-size: 0.68rem;
-  font-weight: 600;
-  padding: 6px 8px;
-}
-.pickup-history-result.positivo,
-.pickup-row-history .positivo {
-  color: var(--color-accent);
-}
-.pickup-history-result.negativo,
-.pickup-row-history .negativo {
-  color: var(--color-red);
-}
-.pickup-history-result.negativo {
-  background: var(--color-red-dim);
-}
-.pickup-history-result.neutro {
-  background: rgba(255, 255, 255, 0.05);
-}
-.pickup-history p {
-  color: var(--color-muted);
-  font-size: 0.59rem;
-  line-height: 1.45;
-  margin: 8px 0 0;
-}
-.pickup-history-empty {
-  background: var(--color-surface);
-  border-radius: 10px;
-  color: var(--color-muted);
-  font-size: 0.67rem;
-  margin: 10px 0;
-  padding: 9px 11px;
-  text-align: center;
-}
-
 .pickup-goal-summary {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -304,12 +224,36 @@
 }
 
 .pickup-list {
-  display: flex;
-  flex-direction: column;
+  margin-top: 5px;
+}
+.pickup-list .carrusel {
+  margin: 0;
+  padding: 0;
+}
+.pickup-list .carrusel-head {
+  margin-bottom: 7px;
+}
+.pickup-list .carrusel-titulo {
+  color: var(--color-text);
+  font-size: 0.76rem;
+  letter-spacing: 0.08em;
+}
+.pickup-list .carrusel-dots {
+  margin-top: 9px;
 }
 .pickup-row {
   padding: 10px 0 8px;
   border-bottom: 1px solid var(--color-border);
+}
+.pickup-row.pickup-slide {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.pickup-slide .pickup-row-head {
+  justify-content: flex-end;
 }
 
 .pickup-row-head {
@@ -318,11 +262,6 @@
   align-items: baseline;
   gap: 12px;
   margin-bottom: 2px;
-}
-.pickup-month {
-  font-size: 0.82rem;
-  font-weight: 500;
-  color: var(--color-text);
 }
 .pickup-net {
   font-size: 0.78rem;
@@ -337,11 +276,6 @@
   color: var(--color-muted);
   margin-bottom: 7px;
 }
-.pickup-row-history {
-  color: var(--color-muted);
-  font-size: 0.61rem;
-  margin: -2px 0 7px;
-}
 .pickup-row-goal {
   background: rgba(255, 255, 255, 0.025);
   border-radius: 8px;
@@ -355,6 +289,13 @@
   gap: 8px;
   color: var(--color-muted);
   font-size: 0.59rem;
+}
+.pickup-monthly-status {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--color-text);
+  font-weight: 600;
 }
 .pickup-status {
   border-radius: 99px;
@@ -414,6 +355,101 @@
   text-align: right;
 }
 
+.pickup-daily {
+  margin: 8px 0 10px;
+}
+.pickup-daily-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 5px;
+}
+.pickup-daily-summary > div {
+  min-width: 0;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 7px;
+}
+.pickup-daily-summary > div.riesgo {
+  background: var(--color-red-dim);
+  border-color: rgba(248, 113, 113, 0.2);
+}
+.pickup-daily-summary span,
+.pickup-daily-summary small {
+  display: block;
+  color: var(--color-muted);
+  font-size: 0.55rem;
+  line-height: 1.25;
+}
+.pickup-daily-summary b {
+  color: var(--color-text);
+  font-size: 0.92rem;
+}
+.pickup-daily-summary .riesgo b {
+  color: var(--color-red);
+}
+.pickup-daily-no-reference {
+  color: var(--color-muted);
+  font-size: 0.55rem;
+  line-height: 1.4;
+  margin-top: 7px;
+}
+.pickup-daily-no-reference .pickup-status {
+  display: inline-block;
+  margin-right: 4px;
+}
+.pickup-risk-list {
+  border-left: 2px solid rgba(248, 113, 113, 0.35);
+  margin-top: 7px;
+  padding-left: 8px;
+}
+.pickup-risk-title {
+  color: var(--color-muted);
+  font-size: 0.58rem;
+  font-weight: 600;
+  margin-bottom: 3px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.pickup-risk-day {
+  background: rgba(255, 255, 255, 0.025);
+  border-radius: 7px;
+  margin-bottom: 5px;
+  padding: 7px 8px;
+}
+.pickup-risk-day-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 7px;
+  color: var(--color-text);
+  font-size: 0.65rem;
+}
+.pickup-risk-values {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 7px;
+  margin-top: 6px;
+}
+.pickup-risk-values span {
+  color: var(--color-muted);
+  font-size: 0.52rem;
+  line-height: 1.3;
+}
+.pickup-risk-values b {
+  display: block;
+  color: var(--color-text);
+  font-size: 0.6rem;
+  margin-top: 1px;
+}
+.pickup-risk-day > small {
+  display: block;
+  color: var(--color-muted);
+  font-size: 0.52rem;
+  line-height: 1.35;
+  margin-top: 6px;
+}
+
 .pickup-track {
   position: relative;
   height: 5px;
@@ -464,5 +500,13 @@
   }
   .pickup-summary {
     grid-template-columns: 1.1fr 0.9fr;
+  }
+  .pickup-row-goal-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .pickup-risk-values {
+    grid-template-columns: 1fr;
+    gap: 4px;
   }
 }

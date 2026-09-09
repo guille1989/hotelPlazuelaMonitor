@@ -1,11 +1,122 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const {
+  objetivoDiarioHabitaciones,
   calcularObjetivoMes,
+  calcularObjetivoDia,
   calcularMetaRitmo,
+  evaluarObjetivoDia,
   evaluarRitmo,
   ocupacionHistoricaAlCorte,
+  resumirDias,
 } = require("./objetivoPickup");
+
+test("calcula el objetivo diario del 75 % con las 29 habitaciones del hotel", () => {
+  assert.equal(objetivoDiarioHabitaciones(75), 22);
+  const dia = calcularObjetivoDia({
+    fecha: "2026-10-10",
+    habitacionesOcupadas: 10,
+    objetivoPct: 75,
+    hoy: "2026-10-01",
+  });
+  assert.equal(dia.objetivoFinalHabitaciones, 22);
+  assert.equal(dia.faltantesObjetivoFinalHabitaciones, 12);
+  assert.equal(dia.diasRestantes, 9);
+});
+
+test("clasifica un día que ya alcanzó el objetivo final", () => {
+  const resultado = evaluarObjetivoDia({
+    habitacionesOcupadas: 22,
+    objetivoHabitaciones: 22,
+    metaHoy: 20,
+  });
+  assert.equal(resultado.etiqueta, "Objetivo alcanzado");
+});
+
+test("clasifica con buen ritmo un día bajo el objetivo que alcanza la meta de hoy", () => {
+  const resultado = evaluarObjetivoDia({
+    habitacionesOcupadas: 15,
+    objetivoHabitaciones: 22,
+    metaHoy: 15,
+  });
+  assert.equal(resultado.etiqueta, "Buen ritmo");
+});
+
+test("clasifica como Atención entre el 80 % y el 99 % de la meta esperada", () => {
+  const resultado = evaluarObjetivoDia({
+    habitacionesOcupadas: 9,
+    objetivoHabitaciones: 22,
+    metaHoy: 10,
+  });
+  assert.equal(resultado.etiqueta, "Atención");
+});
+
+test("clasifica como ritmo insuficiente por debajo del 80 % de la meta", () => {
+  const resultado = evaluarObjetivoDia({
+    habitacionesOcupadas: 7,
+    objetivoHabitaciones: 22,
+    metaHoy: 10,
+  });
+  assert.equal(resultado.etiqueta, "Ritmo insuficiente");
+});
+
+test("usa la etiqueta corregida cuando no existe referencia histórica", () => {
+  const dia = calcularObjetivoDia({
+    fecha: "2026-10-10",
+    habitacionesOcupadas: 7,
+    objetivoPct: 75,
+    hoy: "2026-10-01",
+    referencia: null,
+  });
+  assert.equal(dia.evaluacion.etiqueta, "Sin referencia histórica");
+  assert.equal(dia.metaEsperadaHoyHabitaciones, null);
+  assert.equal(dia.porDebajoRitmoEsperado, false);
+  assert.equal(resumirDias([dia], "2026-10-01").diasSinReferenciaHistorica, 1);
+});
+
+test("un mes con buen ritmo global conserva visibles sus días individuales en riesgo", () => {
+  const diasMes = ["2026-10-01", "2026-10-02"];
+  const objetivoMes = calcularObjetivoMes(
+    "2026-10",
+    diasMes,
+    new Map([
+      [diasMes[0], { ocupacion: 29 }],
+      [diasMes[1], { ocupacion: 11 }],
+    ]),
+    75
+  );
+  objetivoMes.ritmo = calcularMetaRitmo(objetivoMes, {
+    mes: "2025-10",
+    finalRoomNoches: 44,
+    alCorteRoomNoches: 38,
+  });
+  const evaluacionMes = evaluarRitmo({ objetivo: objetivoMes });
+  const diaEnRiesgo = calcularObjetivoDia({
+    fecha: diasMes[1],
+    habitacionesOcupadas: 11,
+    objetivoPct: 75,
+    hoy: "2026-10-01",
+    referencia: { habitacionesFinales: 22, habitacionesAlCorte: 20 },
+  });
+  const resumen = resumirDias([diaEnRiesgo], "2026-10-01");
+
+  assert.equal(evaluacionMes.etiqueta, "Buen ritmo");
+  assert.equal(resumen.diasProximosEnRiesgo, 1);
+  assert.equal(resumen.diasEnRiesgo[0].fecha, "2026-10-02");
+});
+
+test("recalcula el objetivo y la meta diaria con porcentajes distintos del 75 %", () => {
+  const dia = calcularObjetivoDia({
+    fecha: "2026-10-10",
+    habitacionesOcupadas: 12,
+    objetivoPct: 80,
+    hoy: "2026-10-01",
+    referencia: { habitacionesFinales: 20, habitacionesAlCorte: 10 },
+  });
+  assert.equal(dia.objetivoFinalHabitaciones, 24);
+  assert.equal(dia.metaEsperadaHoyHabitaciones, 12);
+  assert.equal(dia.evaluacion.etiqueta, "Buen ritmo");
+});
 
 test("calcula ocupación, objetivo y habitaciones-noche pendientes", () => {
   const dias = ["2026-10-01", "2026-10-02"];
@@ -98,4 +209,24 @@ test("reconstruye las reservas que estaban activas en el corte histórico", () =
     "2025-09-08"
   );
   assert.equal(resultado, 4);
+});
+
+test("cuenta todas las habitaciones y noches, excluyendo cancelaciones vigentes", () => {
+  const base = {
+    fecha_llegada: "2025-10-01",
+    fecha_salida: "2025-10-04",
+    cantid_reh: 3,
+    origen: "Con reserva",
+    fecha_reserva: "2025-09-01",
+  };
+  const resultado = ocupacionHistoricaAlCorte(
+    [
+      { ...base, fecha_cancelacion: null },
+      { ...base, cantid_reh: 2, fecha_cancelacion: "2025-09-05" },
+    ],
+    ["2025-10-01", "2025-10-02", "2025-10-03"],
+    new Map(),
+    "2025-09-08"
+  );
+  assert.equal(resultado, 9);
 });
