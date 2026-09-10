@@ -22,6 +22,8 @@ const mediaMes = (M) =>
   Math.round((M.habNoche * 100) / (M.dias * TOTAL_HABITACIONES));
 const tarifaMes = (M) =>
   M.habsTarifa > 0 ? Math.round(M.tarifas / M.habsTarifa) : 0;
+const revparMes = (M) =>
+  M.dias > 0 ? Math.round(M.tarifas / (M.dias * TOTAL_HABITACIONES)) : 0;
 
 const tituloPeriodo = (tipo, inicioTotal, finTotal) => {
   const ai = Math.floor(inicioTotal / 12);
@@ -104,6 +106,7 @@ export default function ResumenPeriodo({ onData }) {
     canceladas: M.canceladasLlegada || 0,
     media: mediaMes(M), // % ocupación del mes (para el tooltip)
     tarifaPromedio: tarifaMes(M),
+    revpar: revparMes(M),
     totalTarifas: M.tarifas || 0,
   }));
 
@@ -254,6 +257,9 @@ export default function ResumenPeriodo({ onData }) {
                 )}
                 <span>
                   Tarifa prom. <b>{formatCOP(activo.tarifaPromedio)}</b>
+                </span>
+                <span>
+                  RevPAR <b>{formatCOP(activo.revpar)}</b>
                 </span>
                 <span>
                   Total tarifas <b>{formatCOP(activo.totalTarifas)}</b>
