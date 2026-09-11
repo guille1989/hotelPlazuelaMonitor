@@ -8,7 +8,13 @@ import ResumenPeriodo from "./components/linechart/ResumenPeriodo";
 import Pickup from "./components/Pickup";
 import CanalesTorta from "./components/CanalesTorta";
 import Carrusel from "./components/Carrusel";
-import { TOTAL_HABITACIONES, formatCOP } from "./config";
+import { TOTAL_HABITACIONES, formatCOP, MESES } from "./config";
+
+// "2026-09-08" -> "8 de septiembre"
+const fechaCortaDia = (ymd) => {
+  const [, m, d] = ymd.split("-").map(Number);
+  return `${d} de ${MESES[m - 1].toLowerCase()}`;
+};
 
 // Suma el objeto `canal` de cada mes de un array de meses (vista Resumen).
 const sumarCanal = (meses) => {
@@ -24,6 +30,7 @@ const sumarCanal = (meses) => {
 function App() {
   const [vista, setVista] = useState("mes"); // "mes" | "resumen" | "pickup"
   const [mesData, setMesData] = useState(null); // datos del mes en la gráfica
+  const [diaActivo, setDiaActivo] = useState(null); // día seleccionado en la gráfica
   const [periodoData, setPeriodoData] = useState(null); // datos del periodo (resumen)
 
   // Métricas agregadas del mes seleccionado en la gráfica.
@@ -228,9 +235,17 @@ function App() {
               ),
             },
             {
-              titulo: `Canales${mesData ? ` · ${mesData.titulo}` : ""}`,
+              titulo: `Canales${
+                diaActivo
+                  ? ` · ${fechaCortaDia(diaActivo.dia)}`
+                  : mesData
+                    ? ` · ${mesData.titulo}`
+                    : ""
+              }`,
               contenido: (
-                <CanalesTorta canal={mesData?.arribo?.canal || {}} />
+                <CanalesTorta
+                  canal={(diaActivo ? diaActivo.canal : mesData?.arribo?.canal) || {}}
+                />
               ),
             },
           ]}
@@ -383,7 +398,9 @@ function App() {
 
       {vista === "pickup" && <Pickup />}
       {vista === "resumen" && <ResumenPeriodo onData={setPeriodoData} />}
-      {vista === "mes" && <OcupacionMes onData={setMesData} />}
+      {vista === "mes" && (
+        <OcupacionMes onData={setMesData} onDiaActivo={setDiaActivo} />
+      )}
     </div>
   );
 }

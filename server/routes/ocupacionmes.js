@@ -34,6 +34,7 @@ router.get("/", async (req, res) => {
         cancelaciones: o.cancelaciones,
         tarifas: o.tarifas,
         habsTarifa: o.habsTarifa,
+        canal: o.canal,
       };
     });
 

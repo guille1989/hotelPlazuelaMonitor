@@ -49,6 +49,7 @@ async function ocupacionPorDia(db, dias) {
         habsTarifa: 0,
         cancelaciones: 0,
         fuente: "reservas",
+        canal: {}, // habitaciones por canal (modo_reserva) ocupando ese día, solo no canceladas
       },
     ])
   );
@@ -103,7 +104,13 @@ async function ocupacionPorDia(db, dias) {
       const d = porDia.get(dia);
       if (cancelada) {
         d.cancelaciones += habs;
-      } else if (dia >= hoy || sinFolio(dia)) {
+        continue;
+      }
+      // Mix de canal: independiente del híbrido folio/reservas, así queda disponible
+      // también para días pasados que ya tienen folio.
+      const modo = r.modo_reserva || "?";
+      d.canal[modo] = (d.canal[modo] || 0) + habs;
+      if (dia >= hoy || sinFolio(dia)) {
         d.ocupacion += habs;
         if (dia >= hoy) d.proyectada = (d.proyectada || 0) + habs;
         if ((dia === hoy || sinFolio(dia)) && enCasa(r)) {

@@ -49,12 +49,17 @@ const DiaTick = ({ x, y, payload }) => (
   </g>
 );
 
-export default function OcupacionMes({ onData }) {
+export default function OcupacionMes({ onData, onDiaActivo }) {
   const [offset, setOffset] = useState(0); // 0 = mes actual
   const [data, setData] = useState({ dias: [], hoy: null });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [activo, setActivo] = useState(null); // día bajo el cursor/tap
+  const [activo, setActivoState] = useState(null); // día bajo el cursor/tap
+
+  const setActivo = (dia) => {
+    setActivoState(dia);
+    if (onDiaActivo) onDiaActivo(dia);
+  };
 
   const handleActivo = (state) => {
     const p = state && state.activePayload && state.activePayload[0];
