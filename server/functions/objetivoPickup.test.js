@@ -3,6 +3,8 @@ const assert = require("node:assert/strict");
 const {
   objetivoDiarioHabitaciones,
   calcularObjetivoMes,
+  capacidadLibreRestante,
+  calcularPresionMeta,
   calcularObjetivoDia,
   calcularMetaRitmo,
   evaluarObjetivoDia,
@@ -229,4 +231,37 @@ test("cuenta todas las habitaciones y noches, excluyendo cancelaciones vigentes"
     "2025-09-08"
   );
   assert.equal(resultado, 9);
+});
+
+test("capacidadLibreRestante ignora los días ya pasados y descuenta lo ya ocupado", () => {
+  const dias = ["2026-10-01", "2026-10-02", "2026-10-03"];
+  const porDia = new Map([
+    [dias[0], { ocupacion: 29 }], // ya pasó y quedó lleno: no cuenta ni suma ni resta
+    [dias[1], { ocupacion: 20 }], // hoy: quedan 9 libres
+    [dias[2], { ocupacion: 0 }], // futuro: 29 libres
+  ]);
+  const resultado = capacidadLibreRestante(dias, porDia, "2026-10-02");
+  assert.equal(resultado, 38);
+});
+
+test("calcularPresionMeta marca meta alcanzada sin importar la capacidad libre", () => {
+  const resultado = calcularPresionMeta({ faltantesRoomNoches: 0 }, 0);
+  assert.equal(resultado.semaforo.codigo, "meta_alcanzada");
+  assert.equal(resultado.presionPct, 0);
+});
+
+test("calcularPresionMeta marca alarma cuando ya no hay capacidad libre para cerrar la brecha", () => {
+  const resultado = calcularPresionMeta({ faltantesRoomNoches: 10 }, 0);
+  assert.equal(resultado.semaforo.codigo, "alarma");
+  assert.equal(resultado.presionPct, null);
+});
+
+test("calcularPresionMeta clasifica vas_bien, atencion y alarma según el % de capacidad libre requerido", () => {
+  const bien = calcularPresionMeta({ faltantesRoomNoches: 40 }, 100); // 40 %
+  const atencion = calcularPresionMeta({ faltantesRoomNoches: 80 }, 100); // 80 %
+  const alarma = calcularPresionMeta({ faltantesRoomNoches: 150 }, 100); // 150 %
+  assert.equal(bien.semaforo.codigo, "vas_bien");
+  assert.equal(atencion.semaforo.codigo, "atencion");
+  assert.equal(alarma.semaforo.codigo, "alarma");
+  assert.equal(alarma.presionPct, 150);
 });

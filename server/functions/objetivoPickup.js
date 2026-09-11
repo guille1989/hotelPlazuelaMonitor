@@ -1,4 +1,4 @@
-const { diasDelMes } = require("./fechas");
+const { diasDelMes, mesesSiguientes } = require("./fechas");
 const { ocupacionPorDia } = require("./ocupacionDiaria");
 const {
   estaCancelada,
@@ -7,6 +7,8 @@ const {
 } = require("./ocupacion");
 
 const TOTAL_HABITACIONES = 29;
+// Horizonte fijo del semáforo de metas: mes en curso + los 5 siguientes.
+const MESES_META = 6;
 
 function diferenciaDias(desde, hasta) {
   return Math.round(
@@ -45,6 +47,45 @@ function calcularObjetivoMes(mes, dias, porDia, objetivoPct) {
     faltantesRoomNoches,
     alcanzado: faltantesRoomNoches === 0,
   };
+}
+
+// Habitaciones-noche todavía vendibles de aquí a fin de mes: días desde `hoy` en
+// adelante, descontando lo que esos días ya tienen ocupado (real o reservado). Los
+// días anteriores a hoy que quedaron por debajo del objetivo ya no se pueden recuperar.
+function capacidadLibreRestante(dias, porDia, hoy) {
+  return dias
+    .filter((dia) => dia >= hoy)
+    .reduce((total, dia) => {
+      const ocupacion = porDia.get(dia)?.ocupacion || 0;
+      return total + Math.max(0, TOTAL_HABITACIONES - ocupacion);
+    }, 0);
+}
+
+// Semáforo de la meta basado solo en el año en curso: no compara contra el año
+// anterior, solo contra lo que falta y lo que aún es físicamente posible vender.
+// `presionPct` = % de la capacidad libre restante que hace falta vender para llegar
+// a la meta; por encima de 100 % ya no es posible alcanzarla con los días que quedan.
+function calcularPresionMeta(objetivo, libre) {
+  if (objetivo.faltantesRoomNoches <= 0) {
+    return {
+      presionPct: 0,
+      semaforo: { codigo: "meta_alcanzada", etiqueta: "Meta alcanzada" },
+    };
+  }
+  if (libre <= 0) {
+    return {
+      presionPct: null,
+      semaforo: { codigo: "alarma", etiqueta: "Alarma" },
+    };
+  }
+  const presionPct = Math.round((objetivo.faltantesRoomNoches * 100) / libre);
+  if (presionPct <= 50) {
+    return { presionPct, semaforo: { codigo: "vas_bien", etiqueta: "Vas bien" } };
+  }
+  if (presionPct <= 100) {
+    return { presionPct, semaforo: { codigo: "atencion", etiqueta: "Atención" } };
+  }
+  return { presionPct, semaforo: { codigo: "alarma", etiqueta: "Alarma" } };
 }
 
 function desplazarMes(mes, anios) {
@@ -250,12 +291,16 @@ async function objetivosPickup(
   fechaCorteHistorica
 ) {
   const mesActual = hoy.slice(0, 7);
-  const claves = [
-    ...new Set(meses.map((item) => item.mes).filter((mes) => mes >= mesActual)),
-  ].sort((a, b) => a.localeCompare(b));
-  if (!claves.length) {
-    return { porMes: new Map(), resumen: null };
-  }
+  // El semáforo de metas siempre cubre un horizonte fijo (mes en curso + 5 siguientes),
+  // exista o no movimiento de reservas reciente; se le suman los meses con pickup que
+  // caigan fuera de ese horizonte para no perder su objetivo/ritmo.
+  const clavesFijas = mesesSiguientes(mesActual, MESES_META);
+  const clavesConMovimiento = meses
+    .map((item) => item.mes)
+    .filter((mes) => mes >= mesActual);
+  const claves = [...new Set([...clavesFijas, ...clavesConMovimiento])].sort(
+    (a, b) => a.localeCompare(b)
+  );
 
   const diasPorMes = new Map(
     claves.map((mes) => {
@@ -291,6 +336,11 @@ async function objetivosPickup(
       porDia,
       objetivoPct
     );
+    const libre = capacidadLibreRestante(diasMes, porDia, hoy);
+    const presion = calcularPresionMeta(objetivo, libre);
+    objetivo.capacidadLibreRestante = libre;
+    objetivo.presionPct = presion.presionPct;
+    objetivo.semaforo = presion.semaforo;
     if (datosHistoricos) {
       const diasHistoricos = datosHistoricos.diasHistoricosPorMes.get(mes);
       const historico = {
@@ -341,6 +391,7 @@ async function objetivosPickup(
   }
   const valores = [...porMes.values()];
   const conRitmo = valores.filter((valor) => valor.ritmo);
+  const valoresHorizonte = clavesFijas.map((mes) => porMes.get(mes));
 
   return {
     porMes,
@@ -357,14 +408,31 @@ async function objetivosPickup(
         (total, valor) => total + valor.faltantesRoomNoches,
         0
       ),
+      mesActual,
+      mesActualSemaforo: porMes.get(mesActual)?.semaforo || null,
+      // Semáforo de metas del año en curso, sin comparar con el histórico: mes en
+      // curso + los 5 siguientes.
+      horizonteMeses: MESES_META,
+      mesesEnAlarma: valoresHorizonte.filter(
+        (valor) => valor.semaforo.codigo === "alarma"
+      ).length,
+      mesesEnAtencion: valoresHorizonte.filter(
+        (valor) => valor.semaforo.codigo === "atencion"
+      ).length,
+      mesesBien: valoresHorizonte.filter((valor) =>
+        ["vas_bien", "meta_alcanzada"].includes(valor.semaforo.codigo)
+      ).length,
     },
   };
 }
 
 module.exports = {
   TOTAL_HABITACIONES,
+  MESES_META,
   objetivoDiarioHabitaciones,
   calcularObjetivoMes,
+  capacidadLibreRestante,
+  calcularPresionMeta,
   calcularObjetivoDia,
   calcularMetaRitmo,
   evaluarObjetivoDia,

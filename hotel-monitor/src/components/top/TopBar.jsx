@@ -4,11 +4,9 @@ import logoInnoApp from "../../assets/innoapp-logo.png";
 import "./TopBar.css";
 
 const VISTAS = [
-  ["hoy", "Hoy"],
   ["mes", "Mes"],
   ["resumen", "Resumen"],
   ["pickup", "Pickup"],
-  ["canales", "Canales"],
 ];
 
 function TopBar({ vista, onVista }) {

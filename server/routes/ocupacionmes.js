@@ -46,6 +46,7 @@ router.get("/", async (req, res) => {
       roomNoches: 0,
       antelacionDias: 0,
       antelacionN: 0,
+      canal: {}, // habitaciones por canal (modo_reserva), solo no canceladas
     };
     for (const r of reservas) {
       const llegada = r.fecha_llegada_habitacion || r.fecha_llegada;
@@ -62,6 +63,8 @@ router.get("/", async (req, res) => {
           arribo.antelacionDias += noches(r.fecha_reserva, llegada);
           arribo.antelacionN += 1;
         }
+        const modo = r.modo_reserva || "?";
+        arribo.canal[modo] = (arribo.canal[modo] || 0) + habs;
       }
     }
 

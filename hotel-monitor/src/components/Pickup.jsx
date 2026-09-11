@@ -29,6 +29,29 @@ const fechaCorta = (ymd) => {
 
 const numeroConSigno = (valor) => `${valor >= 0 ? "+" : ""}${valor}`;
 
+const TITULO_SEMAFORO = {
+  meta_alcanzada: "Meta alcanzada",
+  vas_bien: "Vas bien",
+  atencion: "Atención",
+  alarma: "Alarma",
+};
+
+// Mensaje del semáforo de metas: solo compara este año contra el objetivo que
+// definiste, nunca contra el año pasado.
+const mensajeSemaforoMes = (mesLabel, objetivoMes) => {
+  const { semaforo, ocupacionPct, objetivoPct, presionPct } = objetivoMes;
+  switch (semaforo.codigo) {
+    case "meta_alcanzada":
+      return `${mesLabel} ya alcanzó su meta de ${objetivoPct}% de ocupación.`;
+    case "vas_bien":
+      return `${mesLabel} lleva ${ocupacionPct}% de ocupación (meta ${objetivoPct}%) y todavía hay margen de sobra para llegar.`;
+    case "atencion":
+      return `${mesLabel} lleva ${ocupacionPct}% de ocupación (meta ${objetivoPct}%): hace falta vender el ${presionPct}% de lo que queda libre para llegar.`;
+    default:
+      return `${mesLabel} lleva ${ocupacionPct}% de ocupación (meta ${objetivoPct}%) y con los días que quedan ya no alcanza a llegar a la meta.`;
+  }
+};
+
 export default function Pickup() {
   const [dias, setDias] = useState(7);
   const [objetivo, setObjetivo] = useState(objetivoGuardado);
@@ -74,6 +97,9 @@ export default function Pickup() {
   );
   const neto = data ? data.totales.nuevas - data.totales.canceladas : 0;
   const netoRoomNoches = data ? data.totales.roomNoches || 0 : 0;
+  const mesActualObjetivo = data
+    ? meses.find((m) => m.mes === data.objetivo?.mesActual)?.objetivo || null
+    : null;
 
   return (
     <div className="pickup">
@@ -109,6 +135,17 @@ export default function Pickup() {
 
       {!loading && !error && data && (
         <>
+          {mesActualObjetivo && (
+            <div className={`pickup-headline ${mesActualObjetivo.semaforo.codigo}`}>
+              <span className="pickup-headline-badge">
+                {TITULO_SEMAFORO[mesActualObjetivo.semaforo.codigo]}
+              </span>
+              <p>
+                {mensajeSemaforoMes(etiqueta(data.objetivo.mesActual), mesActualObjetivo)}
+              </p>
+            </div>
+          )}
+
           <p className="pickup-contexto">
             Reservas creadas y canceladas del {fechaCorta(data.desde)} al{" "}
             {fechaCorta(data.hoy)}, agrupadas por mes de llegada.
@@ -136,27 +173,26 @@ export default function Pickup() {
           </div>
 
           {data.objetivo && (
-            <section className="pickup-goal-summary" aria-label="Resumen del objetivo">
+            <section className="pickup-goal-summary" aria-label="Resumen de metas">
               <div>
                 <span>Objetivo final</span>
                 <b>{data.objetivo.objetivoPct}%</b>
               </div>
               <div>
-                <span>Meses al ritmo esperado</span>
-                <b>
-                  {data.objetivo.mesesEnRitmo} de {data.objetivo.mesesEvaluados}
+                <span>Meses en alarma</span>
+                <b className={data.objetivo.mesesEnAlarma > 0 ? "negativo" : "positivo"}>
+                  {data.objetivo.mesesEnAlarma} de {data.objetivo.horizonteMeses}
                 </b>
               </div>
               <p>
-                {data.objetivo.mesesEvaluados === 0
-                  ? "No existe una referencia histórica suficiente para calcular el ritmo esperado."
-                  : data.objetivo.faltantesRitmoRoomNoches > 0
-                    ? `Faltan ${data.objetivo.faltantesRitmoRoomNoches} habitaciones-noche para alcanzar el ritmo esperado a esta fecha.`
-                    : "Los meses evaluados están al día con el ritmo necesario."}
+                {data.objetivo.mesesEnAlarma > 0
+                  ? `${data.objetivo.mesesEnAlarma} de los próximos ${data.objetivo.horizonteMeses} meses ya no pueden alcanzar su meta con los días que les quedan.`
+                  : data.objetivo.mesesEnAtencion > 0
+                    ? `${data.objetivo.mesesEnAtencion} de los próximos ${data.objetivo.horizonteMeses} meses necesitan más reservas para llegar a la meta.`
+                    : `Los próximos ${data.objetivo.horizonteMeses} meses van bien hacia su meta.`}
               </p>
               <div className="pickup-goal-legend">
                 <span className="ocupacion">Ocupación actual</span>
-                <span className="ritmo">Meta de hoy</span>
                 <span className="final">Objetivo final</span>
               </div>
             </section>
@@ -170,9 +206,9 @@ export default function Pickup() {
               <p><b>Pickup neto:</b> nuevas menos canceladas.</p>
               <p><b>Habitación-noche:</b> una habitación ocupada durante una noche.</p>
               <p><b>Objetivo:</b> porcentaje de la capacidad mensual que se quiere ocupar.</p>
-              <p><b>Meta a esta fecha:</b> parte del objetivo final que normalmente ya estaba vendida con esta misma antelación.</p>
+              <p><b>Meta del mes:</b> compara lo que ya llevas vendido este año contra tu objetivo, usando solo lo que todavía es físicamente posible vender antes de que cierre el mes. No se compara con el año pasado.</p>
               <p><b>Ocupación:</b> noches ya registradas o reservadas dentro del mes calendario.</p>
-              <p><b>Ritmo mensual:</b> compara el total de habitaciones-noche del mes con su trayectoria histórica.</p>
+              <p><b>Meta a esta fecha (desglose diario):</b> parte del objetivo final que normalmente ya estaba vendida con esta misma antelación el año pasado.</p>
               <p><b>Ritmo diario:</b> compara cada fecha por separado con lo que su fecha equivalente histórica llevaba vendido a la misma antelación.</p>
               <p><b>Día próximo en riesgo:</b> estancia a 14 días o menos cuya ocupación está por debajo de la meta esperada a día de hoy.</p>
             </div>
@@ -198,7 +234,6 @@ export default function Pickup() {
               const w = (Math.abs(rn) / maxAbsRoomNoches) * 50;
               const pos = rn >= 0;
               const objetivoMes = m.objetivo;
-              const ritmoMes = objetivoMes?.ritmo;
               return {
                 titulo: etiqueta(m.mes),
                 contenido: (
@@ -215,18 +250,13 @@ export default function Pickup() {
                   {objetivoMes && (
                     <div className="pickup-row-goal">
                       <div className="pickup-row-goal-head">
-                        {m.evaluacion && (
-                          <span className="pickup-monthly-status">
-                            Ritmo mensual
-                            <span className={`pickup-status ${m.evaluacion.codigo}`}>
-                              {m.evaluacion.etiqueta}
-                            </span>
+                        <span className="pickup-monthly-status">
+                          Meta del mes
+                          <span className={`pickup-status ${objetivoMes.semaforo.codigo}`}>
+                            {objetivoMes.semaforo.etiqueta}
                           </span>
-                        )}
-                        <span>
-                          Ocupación a esta fecha {objetivoMes.ocupacionPct}%
-                          {ritmoMes ? ` · meta de hoy ${ritmoMes.metaHoyPct}%` : ""}
                         </span>
+                        <span>Ocupación a esta fecha {objetivoMes.ocupacionPct}%</span>
                       </div>
                       <div className="pickup-goal-track" aria-hidden="true">
                         <span
@@ -237,19 +267,13 @@ export default function Pickup() {
                           className="pickup-goal-marker final"
                           style={{ left: `${objetivoMes.objetivoPct}%` }}
                         />
-                        {ritmoMes && (
-                          <span
-                            className="pickup-goal-marker ritmo"
-                            style={{ left: `${ritmoMes.metaHoyPct}%` }}
-                          />
-                        )}
                       </div>
                       <small>
-                        {ritmoMes
-                          ? ritmoMes.enRitmo
-                            ? `${numeroConSigno(ritmoMes.diferenciaHoyRoomNoches)} habitaciones-noche sobre el ritmo · meta final ${objetivoMes.objetivoPct}%`
-                            : `Faltan ${ritmoMes.faltantesHoyRoomNoches} habitaciones-noche para el ritmo de hoy · meta final ${objetivoMes.objetivoPct}%`
-                          : `Meta final ${objetivoMes.objetivoPct}% · faltan ${objetivoMes.faltantesRoomNoches} habitaciones-noche`}
+                        {objetivoMes.semaforo.codigo === "meta_alcanzada"
+                          ? `Meta alcanzada · objetivo ${objetivoMes.objetivoPct}%`
+                          : objetivoMes.semaforo.codigo === "alarma"
+                            ? `Ya no alcanza la meta: faltan ${objetivoMes.faltantesRoomNoches} habitaciones-noche y solo quedan ${objetivoMes.capacidadLibreRestante} libres`
+                            : `Necesitas vender el ${objetivoMes.presionPct}% de lo que queda libre · faltan ${objetivoMes.faltantesRoomNoches} habitaciones-noche`}
                       </small>
                     </div>
                   )}

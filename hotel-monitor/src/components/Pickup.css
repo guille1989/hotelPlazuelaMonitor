@@ -71,6 +71,55 @@
   background-size: 3px 3px, 3px 3px;
 }
 
+.pickup-headline {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-radius: 12px;
+  padding: 10px 14px;
+  margin: 14px 0 10px;
+}
+.pickup-headline p {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: var(--color-text);
+}
+.pickup-headline-badge {
+  flex: 0 0 auto;
+  border-radius: 99px;
+  padding: 4px 10px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.pickup-headline.meta_alcanzada,
+.pickup-headline.vas_bien {
+  background: var(--color-accent-dim);
+  border: 1px solid rgba(140, 244, 238, 0.25);
+}
+.pickup-headline.meta_alcanzada .pickup-headline-badge,
+.pickup-headline.vas_bien .pickup-headline-badge {
+  background: var(--color-accent);
+  color: #1f293d;
+}
+.pickup-headline.atencion {
+  background: rgba(250, 204, 21, 0.08);
+  border: 1px solid rgba(250, 204, 21, 0.2);
+}
+.pickup-headline.atencion .pickup-headline-badge {
+  background: var(--color-amber);
+  color: #1f293d;
+}
+.pickup-headline.alarma {
+  background: var(--color-red-dim);
+  border: 1px solid rgba(248, 113, 113, 0.25);
+}
+.pickup-headline.alarma .pickup-headline-badge {
+  background: var(--color-red);
+  color: #1f293d;
+}
+
 .pickup-contexto {
   text-align: center;
   margin: 13px auto 14px;
@@ -190,9 +239,6 @@
 .pickup-goal-legend .ocupacion::before {
   background: var(--color-blue);
 }
-.pickup-goal-legend .ritmo::before {
-  background: var(--color-amber);
-}
 .pickup-goal-legend .final::before {
   background: rgba(238, 248, 248, 0.45);
 }
@@ -304,11 +350,13 @@
   font-weight: 600;
   padding: 3px 6px;
 }
-.pickup-status.objetivo_alcanzado {
+.pickup-status.objetivo_alcanzado,
+.pickup-status.meta_alcanzada {
   background: rgba(91, 142, 240, 0.15);
   color: var(--color-blue);
 }
-.pickup-status.ritmo_favorable {
+.pickup-status.ritmo_favorable,
+.pickup-status.vas_bien {
   background: var(--color-accent-dim);
   color: var(--color-accent);
 }
@@ -317,7 +365,8 @@
   background: rgba(250, 204, 21, 0.12);
   color: var(--color-amber);
 }
-.pickup-status.ritmo_insuficiente {
+.pickup-status.ritmo_insuficiente,
+.pickup-status.alarma {
   background: var(--color-red-dim);
   color: var(--color-red);
 }
@@ -343,10 +392,6 @@
 }
 .pickup-goal-marker.final {
   background: rgba(238, 248, 248, 0.45);
-}
-.pickup-goal-marker.ritmo {
-  background: var(--color-amber);
-  box-shadow: 0 0 0 1px var(--color-surface);
 }
 .pickup-row-goal small {
   display: block;

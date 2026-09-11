@@ -1,35 +1,28 @@
 import "./App.css";
-import React, { useState, useEffect } from "react";
-import axios from "axios";
+import React, { useState } from "react";
 
 import TopBar from "./components/top/TopBar";
 import StatCard from "./components/statcard/StatCard";
 import OcupacionMes from "./components/linechart/OcupacionMes";
 import ResumenPeriodo from "./components/linechart/ResumenPeriodo";
 import Pickup from "./components/Pickup";
-import Canales from "./components/Canales";
+import CanalesTorta from "./components/CanalesTorta";
 import Carrusel from "./components/Carrusel";
 import { TOTAL_HABITACIONES, formatCOP } from "./config";
 
+// Suma el objeto `canal` de cada mes de un array de meses (vista Resumen).
+const sumarCanal = (meses) => {
+  const c = {};
+  for (const m of meses || []) {
+    for (const [k, v] of Object.entries(m.canal || {})) {
+      c[k] = (c[k] || 0) + v;
+    }
+  }
+  return c;
+};
+
 function App() {
-  const [actualizacionreserva, setActualizacionreserva] = useState([]);
-  const [
-    actualizacionreservacancelaciones,
-    setActualizacionreservacancelaciones,
-  ] = useState([]);
-
-  const [occupancyRate, setOccupancyRate] = useState(0);
-  const [occupancyWithCheckIn, setOccupancyWithCheckIn] = useState(0);
-  const [projectedOccupancy, setProjectedOccupancy] = useState(0);
-  const [projectedOcupacionCheckIn, setProjectedOcupacionCheckIn] = useState(0);
-  // const [revPAR, setRevPAR] = useState(0);      // Ingresos oculto por ahora
-  // const [ingreso, setIngreso] = useState(0);
-  const [tarifaPromedio, setTarifaPromedio] = useState(0);
-  const [totalTarifas, setTotalTarifas] = useState(0);
-  const [personasEnHotel, setPersonasEnHotel] = useState(0);
-  const [cancelacionReservas, setCancelacionReservas] = useState(0);
-
-  const [vista, setVista] = useState("hoy"); // "hoy" | "mes" | "resumen"
+  const [vista, setVista] = useState("mes"); // "mes" | "resumen" | "pickup"
   const [mesData, setMesData] = useState(null); // datos del mes en la gráfica
   const [periodoData, setPeriodoData] = useState(null); // datos del periodo (resumen)
 
@@ -123,183 +116,9 @@ function App() {
     };
   };
 
-  useEffect(() => {
-    const base = `http://${process.env.REACT_APP_URL_PRODUCCION}`;
-
-    axios
-      .get(`${base}/api/reservas`)
-      .then((r) => setActualizacionreserva(r.data))
-      .catch((e) => console.error("Error cargando reservas:", e.message));
-
-    axios
-      .get(`${base}/api/reservascanceladas`)
-      .then((r) => setActualizacionreservacancelaciones(r.data))
-      .catch((e) => console.error("Error cargando cancelaciones:", e.message));
-  }, []);
-
-  //Parse the stats data to get the values for the cards
-  useEffect(() => {
-    if (actualizacionreserva.length > 0) {
-      // Habitaciones que aporta una fila (walk-ins sin cantid_reh cuentan 1).
-      const habitaciones = (stat) =>
-        parseInt(stat.cantid_reh, 10) > 0 ? parseInt(stat.cantid_reh, 10) : 1;
-
-      // "En casa" = check-in hecho (estado_habitacion 31) o walk-in ("sin reserva").
-      // Estados 21/11 = reserva de hoy confirmada que aún no llega.
-      const enCasa = (stat) =>
-        parseInt(stat.estado_habitacion, 10) === 31 ||
-        (stat.origen || "").toLowerCase().includes("sin reserva");
-
-      // Ocupación actual: habitaciones con huésped ya en casa ahora.
-      const ocupacionActual = actualizacionreserva
-        .filter(enCasa)
-        .reduce((acc, stat) => acc + habitaciones(stat), 0);
-
-      // Ocupación proyectada: actual + reservas de hoy sin llegar. /api/reservas
-      // ya viene sin canceladas, así que es la suma de todo lo que devuelve.
-      const ocupacionProyectada = actualizacionreserva.reduce(
-        (acc, stat) => acc + habitaciones(stat),
-        0
-      );
-
-      setOccupancyRate(
-        parseFloat(((ocupacionActual * 100) / TOTAL_HABITACIONES).toFixed(2))
-      );
-      setOccupancyWithCheckIn(ocupacionActual);
-
-      setProjectedOcupacionCheckIn(ocupacionProyectada);
-      setProjectedOccupancy(
-        parseFloat(((ocupacionProyectada * 100) / TOTAL_HABITACIONES).toFixed(2))
-      );
-
-      // Tarifas: basadas en valor_habitacion de la reserva (los walk-ins no traen
-      // tarifa, se excluyen del cálculo).
-      const conTarifa = actualizacionreserva.filter(
-        (stat) => Number(stat.valor_habitacion) > 0
-      );
-      const habsConTarifa = conTarifa.reduce(
-        (acc, stat) => acc + habitaciones(stat),
-        0
-      );
-      const sumaTarifas = conTarifa.reduce(
-        (acc, stat) => acc + Number(stat.valor_habitacion) * habitaciones(stat),
-        0
-      );
-      setTotalTarifas(sumaTarifas);
-      setTarifaPromedio(
-        habsConTarifa > 0 ? Math.round(sumaTarifas / habsConTarifa) : 0
-      );
-
-      // --- Ingresos oculto por ahora (RevPAR / Ingresos del día) ---
-    }
-
-    //Calculo de total personas en el hotel
-    const totalPersonasHotel = actualizacionreserva
-      .filter(
-        (stat) =>
-          parseInt(stat.cantid_reh) > 0 &&
-          parseInt(stat.estado_habitacion) === 31
-      )
-      .reduce(
-        (acc, stat) =>
-          acc + (parseInt(stat.adultos, 10) || 0) + (parseInt(stat.ninos, 10) || 0),
-        0
-      );
-    setPersonasEnHotel(totalPersonasHotel);
-  }, [actualizacionreserva]);
-
-  // Cancelaciones: total de HABITACIONES canceladas (consistente con el gráfico).
-  // Efecto propio: depende solo de las cancelaciones, así no hay carrera con la
-  // otra petición (antes se calculaba en el efecto de [actualizacionreserva] y si
-  // esta respuesta llegaba después, el contador se quedaba en 0).
-  useEffect(() => {
-    const habitacionesCanceladas = actualizacionreservacancelaciones.reduce(
-      (acc, stat) =>
-        acc + (parseInt(stat.cantid_reh, 10) > 0 ? parseInt(stat.cantid_reh, 10) : 1),
-      0
-    );
-    setCancelacionReservas(habitacionesCanceladas);
-  }, [actualizacionreservacancelaciones]);
-
   return (
     <div className="App">
       <TopBar vista={vista} onVista={setVista} />
-
-      {vista === "hoy" && (
-        <Carrusel
-          reinicioClave="hoy"
-          slides={[
-            {
-              titulo: "Ocupación",
-              contenido: (
-                <div className="grupo-cards ocupacion">
-                  <StatCard
-                    value={`${occupancyRate}%`}
-                    sub={`${occupancyWithCheckIn} / ${TOTAL_HABITACIONES} hab`}
-                    label="Ocupación actual"
-                    icon="🛏️"
-                    tone="blue"
-                    progress={occupancyRate}
-                  />
-                  <StatCard
-                    value={`${projectedOccupancy}%`}
-                    sub={`${projectedOcupacionCheckIn} / ${TOTAL_HABITACIONES} hab`}
-                    label="Ocupación proyectada"
-                    icon="📈"
-                    tone="positive"
-                    progress={projectedOccupancy}
-                  />
-                  <StatCard
-                    value={personasEnHotel}
-                    sub="en casa"
-                    label="Huéspedes"
-                    icon="👥"
-                    tone="amber"
-                  />
-                  <StatCard
-                    value={cancelacionReservas}
-                    sub="habitaciones"
-                    label="Canceladas"
-                    icon="✕"
-                    tone="red"
-                  />
-                </div>
-              ),
-            },
-            {
-              titulo: "Tarifas e ingresos",
-              contenido: (
-                <div className="grupo-cards tres">
-                  <StatCard
-                    value={formatCOP(tarifaPromedio)}
-                    sub="ADR · por hab. vendida"
-                    label="Tarifa media diaria"
-                    icon="💰"
-                    tone="amber"
-                  />
-                  <StatCard
-                    value={formatCOP(
-                      Math.round(totalTarifas / TOTAL_HABITACIONES)
-                    )}
-                    sub="RevPAR · venta ÷ 29"
-                    label="Tarifa promedio"
-                    icon="📊"
-                    tone="blue"
-                  />
-                  <StatCard
-                    value={formatCOP(totalTarifas)}
-                    sub="alojamiento del día"
-                    label="Total tarifas"
-                    icon="🏆"
-                    tone="accent"
-                    wide
-                  />
-                </div>
-              ),
-            },
-          ]}
-        />
-      )}
 
       {vista === "mes" && (
         <Carrusel
@@ -408,6 +227,12 @@ function App() {
                 </div>
               ),
             },
+            {
+              titulo: `Canales${mesData ? ` · ${mesData.titulo}` : ""}`,
+              contenido: (
+                <CanalesTorta canal={mesData?.arribo?.canal || {}} />
+              ),
+            },
           ]}
         />
       )}
@@ -420,6 +245,7 @@ function App() {
             periodoData && periodoData.tituloPrev
               ? ` · vs ${periodoData.tituloPrev}`
               : "";
+          const canalPeriodo = periodoData ? sumarCanal(periodoData.meses) : {};
           return (
             <Carrusel
               reinicioClave="resumen"
@@ -544,17 +370,20 @@ function App() {
                     </div>
                   ),
                 },
+                {
+                  titulo: `Canales${
+                    periodoData ? ` · ${periodoData.titulo}` : ""
+                  }`,
+                  contenido: <CanalesTorta canal={canalPeriodo} />,
+                },
               ]}
             />
           );
         })()}
 
       {vista === "pickup" && <Pickup />}
-      {vista === "canales" && <Canales />}
       {vista === "resumen" && <ResumenPeriodo onData={setPeriodoData} />}
-      {(vista === "hoy" || vista === "mes") && (
-        <OcupacionMes onData={setMesData} />
-      )}
+      {vista === "mes" && <OcupacionMes onData={setMesData} />}
     </div>
   );
 }

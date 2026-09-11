@@ -37,6 +37,19 @@ function diasDelMes(anio, mes) {
   return dias;
 }
 
+// Array de "YYYY-MM" empezando en `mes` ("YYYY-MM"), `cantidad` meses (incluye `mes`).
+function mesesSiguientes(mes, cantidad) {
+  const [anioIni, mesIni] = mes.split("-").map(Number);
+  const lista = [];
+  for (let i = 0; i < cantidad; i++) {
+    const total = (mesIni - 1) + i;
+    const anio = anioIni + Math.floor(total / 12);
+    const numeroMes = (total % 12) + 1;
+    lista.push(`${anio}-${String(numeroMes).padStart(2, "0")}`);
+  }
+  return lista;
+}
+
 module.exports = {
   TZ,
   hoyBogota,
@@ -44,4 +57,5 @@ module.exports = {
   rangoDias,
   mesActualBogota,
   diasDelMes,
+  mesesSiguientes,
 };

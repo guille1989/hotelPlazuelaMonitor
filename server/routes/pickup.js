@@ -5,6 +5,7 @@ const { hoyBogota, fechaBogota } = require("../functions/fechas");
 const {
   agruparPickup,
   combinarConHistorico,
+  totalesVacios,
 } = require("../functions/pickupCalculos");
 const {
   evaluarRitmo,
@@ -71,14 +72,26 @@ router.get("/", async (req, res) => {
       hoy,
       ventanasHistoricas[0]?.hasta
     );
-    const meses = comparacion.meses.map((mes) => {
-      const objetivo = objetivos.porMes.get(mes.mes) || null;
+    // El semáforo de metas siempre trae un horizonte fijo de meses (objetivosPickup),
+    // que puede incluir meses sin movimiento reciente de reservas; se completan con
+    // ceros para que igual aparezcan en el desglose.
+    const movimientoPorMes = new Map(comparacion.meses.map((mes) => [mes.mes, mes]));
+    const clavesFinales = [
+      ...new Set([...movimientoPorMes.keys(), ...objetivos.porMes.keys()]),
+    ].sort((a, b) => a.localeCompare(b));
+    const meses = clavesFinales.map((clave) => {
+      const movimiento = movimientoPorMes.get(clave) || {
+        mes: clave,
+        ...totalesVacios(),
+        historico: null,
+      };
+      const objetivo = objetivos.porMes.get(clave) || null;
       return {
-        ...mes,
+        ...movimiento,
         objetivo,
         evaluacion: evaluarRitmo({
-          roomNoches: mes.roomNoches,
-          historico: mes.historico,
+          roomNoches: movimiento.roomNoches,
+          historico: movimiento.historico,
           objetivo,
         }),
       };

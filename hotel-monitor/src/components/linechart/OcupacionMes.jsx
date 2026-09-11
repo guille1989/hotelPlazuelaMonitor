@@ -85,6 +85,9 @@ export default function OcupacionMes({ onData }) {
           cancelLinea: d.cancelaciones > 0 ? d.cancelaciones : 0,
         }));
         setData({ dias, hoy: r.data.hoy });
+        setActivo(
+          r.data.hoy ? dias.find((d) => d.dia === r.data.hoy) || null : null
+        );
         setError(null);
         setLoading(false);
         if (onData)
@@ -266,7 +269,7 @@ export default function OcupacionMes({ onData }) {
                 const { real, proyectada: proy, fuente } = activo;
                 const filas = [];
                 if (real != null && proy != null) {
-                  filas.push(["Real ahora", real, false]);
+                  filas.push(["Real ahora", real, true]);
                   filas.push(["Proyectada", proy, true]);
                 } else if (real != null) {
                   filas.push([
