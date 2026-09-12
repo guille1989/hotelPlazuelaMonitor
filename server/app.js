@@ -1,9 +1,11 @@
+require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const { getDb } = require("./db");
 
 const app = express();
-const port = 5002;
+// Cloud Run inyecta PORT (normalmente 8080); en local usamos el 5002 de siempre.
+const port = process.env.PORT || 5002;
 
 // Rutas
 const reservasRouter = require("./routes/reservas");
@@ -14,6 +16,7 @@ const reservasPasadas = require("./routes/reservaspasadas");
 const ocupacionMesRouter = require("./routes/ocupacionmes");
 const ocupacionPeriodoRouter = require("./routes/ocupacionperiodo");
 const pickupRouter = require("./routes/pickup");
+const whatsappRouter = require("./routes/whatsapp");
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -27,6 +30,7 @@ app.use("/api/reservaspasadas", reservasPasadas);
 app.use("/api/ocupacionmes", ocupacionMesRouter);
 app.use("/api/ocupacionperiodo", ocupacionPeriodoRouter);
 app.use("/api/pickup", pickupRouter);
+app.use("/webhooks/whatsapp", whatsappRouter);
 
 // Calienta la conexión a Mongo al arrancar (no bloquea el listen; las rutas la reutilizan).
 getDb()

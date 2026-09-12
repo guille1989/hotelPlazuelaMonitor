@@ -1,5 +1,6 @@
 import "./App.css";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import axios from "axios";
 
 import TopBar from "./components/top/TopBar";
 import StatCard from "./components/statcard/StatCard";
@@ -28,10 +29,89 @@ const sumarCanal = (meses) => {
 };
 
 function App() {
-  const [vista, setVista] = useState("mes"); // "mes" | "resumen" | "pickup"
+  const [reservasHoy, setReservasHoy] = useState([]);
+  const [reservasCanceladasHoy, setReservasCanceladasHoy] = useState([]);
+  const [vista, setVista] = useState("hoy"); // "hoy" | "mes" | "resumen" | "pickup"
   const [mesData, setMesData] = useState(null); // datos del mes en la gráfica
   const [diaActivo, setDiaActivo] = useState(null); // día seleccionado en la gráfica
   const [periodoData, setPeriodoData] = useState(null); // datos del periodo (resumen)
+
+  useEffect(() => {
+    let cancelado = false;
+    const base = `http://${process.env.REACT_APP_URL_PRODUCCION}`;
+
+    axios
+      .get(`${base}/api/reservas`)
+      .then((r) => {
+        if (!cancelado) setReservasHoy(r.data);
+      })
+      .catch((e) => console.error("Error cargando reservas de hoy:", e.message));
+
+    axios
+      .get(`${base}/api/reservascanceladas`)
+      .then((r) => {
+        if (!cancelado) setReservasCanceladasHoy(r.data);
+      })
+      .catch((e) =>
+        console.error("Error cargando cancelaciones de hoy:", e.message)
+      );
+
+    return () => {
+      cancelado = true;
+    };
+  }, []);
+
+  // Habitaciones que aporta una fila (los walk-ins sin cantid_reh cuentan como 1).
+  const habitaciones = (reserva) => {
+    const cantidad = parseInt(reserva.cantid_reh, 10);
+    return cantidad > 0 ? cantidad : 1;
+  };
+  const enCasa = (reserva) =>
+    parseInt(reserva.estado_habitacion, 10) === 31 ||
+    (reserva.origen || "").toLowerCase().includes("sin reserva");
+
+  const ocupacionActual = reservasHoy
+    .filter(enCasa)
+    .reduce((total, reserva) => total + habitaciones(reserva), 0);
+  const ocupacionProyectada = reservasHoy.reduce(
+    (total, reserva) => total + habitaciones(reserva),
+    0
+  );
+  const ocupacionActualPct = Number(
+    ((ocupacionActual * 100) / TOTAL_HABITACIONES).toFixed(2)
+  );
+  const ocupacionProyectadaPct = Number(
+    ((ocupacionProyectada * 100) / TOTAL_HABITACIONES).toFixed(2)
+  );
+  const personasEnHotel = reservasHoy
+    .filter(enCasa)
+    .reduce(
+      (total, reserva) =>
+        total +
+        (parseInt(reserva.adultos, 10) || 0) +
+        (parseInt(reserva.ninos, 10) || 0),
+      0
+    );
+  const cancelacionesHoy = reservasCanceladasHoy.reduce(
+    (total, reserva) => total + habitaciones(reserva),
+    0
+  );
+  const reservasConTarifa = reservasHoy.filter(
+    (reserva) => Number(reserva.valor_habitacion) > 0
+  );
+  const habitacionesConTarifa = reservasConTarifa.reduce(
+    (total, reserva) => total + habitaciones(reserva),
+    0
+  );
+  const totalTarifasHoy = reservasConTarifa.reduce(
+    (total, reserva) =>
+      total + Number(reserva.valor_habitacion) * habitaciones(reserva),
+    0
+  );
+  const tarifaPromedioHoy =
+    habitacionesConTarifa > 0
+      ? Math.round(totalTarifasHoy / habitacionesConTarifa)
+      : 0;
 
   // Métricas agregadas del mes seleccionado en la gráfica.
   let metricasMes = null;
@@ -126,6 +206,82 @@ function App() {
   return (
     <div className="App">
       <TopBar vista={vista} onVista={setVista} />
+
+      {vista === "hoy" && (
+        <Carrusel
+          reinicioClave="hoy"
+          slides={[
+            {
+              titulo: "Ocupación",
+              contenido: (
+                <div className="grupo-cards ocupacion">
+                  <StatCard
+                    value={`${ocupacionActualPct}%`}
+                    sub={`${ocupacionActual} / ${TOTAL_HABITACIONES} hab`}
+                    label="Ocupación actual"
+                    icon="🛏️"
+                    tone="blue"
+                    progress={ocupacionActualPct}
+                  />
+                  <StatCard
+                    value={`${ocupacionProyectadaPct}%`}
+                    sub={`${ocupacionProyectada} / ${TOTAL_HABITACIONES} hab`}
+                    label="Ocupación proyectada"
+                    icon="📈"
+                    tone="positive"
+                    progress={ocupacionProyectadaPct}
+                  />
+                  <StatCard
+                    value={personasEnHotel}
+                    sub="en casa"
+                    label="Huéspedes"
+                    icon="👥"
+                    tone="amber"
+                  />
+                  <StatCard
+                    value={cancelacionesHoy}
+                    sub="habitaciones"
+                    label="Canceladas"
+                    icon="✕"
+                    tone="red"
+                  />
+                </div>
+              ),
+            },
+            {
+              titulo: "Tarifas e ingresos",
+              contenido: (
+                <div className="grupo-cards tres">
+                  <StatCard
+                    value={formatCOP(tarifaPromedioHoy)}
+                    sub="ADR · por hab. vendida"
+                    label="Tarifa media diaria"
+                    icon="💰"
+                    tone="amber"
+                  />
+                  <StatCard
+                    value={formatCOP(
+                      Math.round(totalTarifasHoy / TOTAL_HABITACIONES)
+                    )}
+                    sub="RevPAR · venta ÷ 29"
+                    label="Tarifa promedio"
+                    icon="📊"
+                    tone="blue"
+                  />
+                  <StatCard
+                    value={formatCOP(totalTarifasHoy)}
+                    sub="alojamiento del día"
+                    label="Total tarifas"
+                    icon="🏆"
+                    tone="accent"
+                    wide
+                  />
+                </div>
+              ),
+            },
+          ]}
+        />
+      )}
 
       {vista === "mes" && (
         <Carrusel
@@ -398,7 +554,7 @@ function App() {
 
       {vista === "pickup" && <Pickup />}
       {vista === "resumen" && <ResumenPeriodo onData={setPeriodoData} />}
-      {vista === "mes" && (
+      {(vista === "hoy" || vista === "mes") && (
         <OcupacionMes onData={setMesData} onDiaActivo={setDiaActivo} />
       )}
     </div>

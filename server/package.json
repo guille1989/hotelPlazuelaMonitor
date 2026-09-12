@@ -1,8 +1,9 @@
 {
   "name": "server",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "app.js",
   "scripts": {
+    "start": "node app.js",
     "test": "node --test"
   },
   "keywords": [],
@@ -11,6 +12,7 @@
   "description": "",
   "dependencies": {
     "cors": "^2.8.5",
+    "dotenv": "^17.4.2",
     "express": "^4.21.2",
     "moment-timezone": "^0.5.47",
     "mongoose": "^8.12.1"
