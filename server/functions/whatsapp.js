@@ -1,4 +1,6 @@
-const GRAPH_VERSION = "v20.0";
+const crypto = require("node:crypto");
+
+const GRAPH_VERSION = process.env.WHATSAPP_GRAPH_VERSION || "v26.0";
 
 function urlMensajes() {
   return `https://graph.facebook.com/${GRAPH_VERSION}/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`;
@@ -35,4 +37,24 @@ function numerosAutorizados() {
     .filter(Boolean);
 }
 
-module.exports = { enviarMensajeTexto, numerosAutorizados };
+function verificarFirmaWebhook(cuerpoCrudo, firma, appSecret) {
+  if (!Buffer.isBuffer(cuerpoCrudo) || !firma || !appSecret) return false;
+
+  const esperada = `sha256=${crypto
+    .createHmac("sha256", appSecret)
+    .update(cuerpoCrudo)
+    .digest("hex")}`;
+  const recibida = Buffer.from(String(firma));
+  const calculada = Buffer.from(esperada);
+  return (
+    recibida.length === calculada.length &&
+    crypto.timingSafeEqual(recibida, calculada)
+  );
+}
+
+module.exports = {
+  GRAPH_VERSION,
+  enviarMensajeTexto,
+  numerosAutorizados,
+  verificarFirmaWebhook,
+};

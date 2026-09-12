@@ -18,7 +18,14 @@ const ocupacionPeriodoRouter = require("./routes/ocupacionperiodo");
 const pickupRouter = require("./routes/pickup");
 const whatsappRouter = require("./routes/whatsapp");
 
-app.use(express.json());
+app.use(
+  express.json({
+    // Meta firma los bytes originales, antes de que express los convierta a objeto.
+    verify: (req, _res, buffer) => {
+      req.rawBody = Buffer.from(buffer);
+    },
+  })
+);
 app.use(express.urlencoded({ extended: true }));
 app.use(cors()); // TODO (aparcado): restringir al origen del frontend
 
