@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { MESES } from "../config";
+import { apiUrl } from "../api";
 import Carrusel from "./Carrusel";
 import "./Pickup.css";
 
@@ -63,9 +64,7 @@ export default function Pickup() {
     let cancelado = false;
     setLoading(true);
     axios
-      .get(
-        `http://${process.env.REACT_APP_URL_PRODUCCION}/api/pickup?dias=${dias}&objetivo=${objetivo}`
-      )
+      .get(apiUrl(`/api/pickup?dias=${dias}&objetivo=${objetivo}`))
       .then((r) => {
         if (cancelado) return;
         setData(r.data);

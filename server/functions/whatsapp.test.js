@@ -3,6 +3,7 @@ const assert = require("node:assert/strict");
 const crypto = require("node:crypto");
 const {
   GRAPH_VERSION,
+  enviarMensajePlantilla,
   verificarFirmaWebhook,
 } = require("./whatsapp");
 const {
@@ -26,6 +27,39 @@ test("verificarFirmaWebhook acepta solo el HMAC correcto", () => {
   assert.equal(verificarFirmaWebhook(cuerpo, firma, secreto), true);
   assert.equal(verificarFirmaWebhook(cuerpo, `${firma}0`, secreto), false);
   assert.equal(verificarFirmaWebhook(cuerpo, "sha256=incorrecta", secreto), false);
+});
+
+test("enviarMensajePlantilla construye el payload esperado por Meta", async (t) => {
+  const fetchOriginal = global.fetch;
+  let solicitud;
+  global.fetch = async (url, opciones) => {
+    solicitud = { url, opciones };
+    return {
+      ok: true,
+      async json() {
+        return { messages: [{ id: "wamid.prueba" }] };
+      },
+    };
+  };
+  t.after(() => {
+    global.fetch = fetchOriginal;
+  });
+
+  await enviarMensajePlantilla(
+    "573001234567",
+    "resumen_ocupacion_diaria_po",
+    ["14/09/2026", "18/29"],
+    "es_CO"
+  );
+
+  const cuerpo = JSON.parse(solicitud.opciones.body);
+  assert.equal(cuerpo.type, "template");
+  assert.equal(cuerpo.template.name, "resumen_ocupacion_diaria_po");
+  assert.equal(cuerpo.template.language.code, "es_CO");
+  assert.deepEqual(cuerpo.template.components[0].parameters, [
+    { type: "text", text: "14/09/2026" },
+    { type: "text", text: "18/29" },
+  ]);
 });
 
 test("extraerMensajes recorre todas las entradas y cambios", () => {

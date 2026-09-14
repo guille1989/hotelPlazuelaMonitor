@@ -10,6 +10,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { TOTAL_HABITACIONES, MESES, MESES_CORTO, formatCOP } from "../../config";
+import { apiUrl } from "../../api";
 import "./OcupacionMes.css";
 
 const PERIODOS = [
@@ -66,7 +67,7 @@ export default function ResumenPeriodo({ onData }) {
     let cancelado = false;
     setLoading(true);
     setActivo(null);
-    const base = `http://${process.env.REACT_APP_URL_PRODUCCION}/api/ocupacionperiodo`;
+    const base = apiUrl("/api/ocupacionperiodo");
     const reqs = [axios.get(`${base}?desde=${desde}&hasta=${hasta}`)];
     if (comparar) reqs.push(axios.get(`${base}?desde=${desdePrev}&hasta=${hastaPrev}`));
 

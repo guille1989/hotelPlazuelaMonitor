@@ -4,7 +4,9 @@
   "main": "app.js",
   "scripts": {
     "start": "node app.js",
-    "test": "node --test"
+    "test": "node --test",
+    "notificaciones:run": "node jobs/notificacionesOcupacion.js",
+    "notificaciones:dry-run": "node jobs/notificacionesOcupacion.js --dry-run"
   },
   "keywords": [],
   "author": "",

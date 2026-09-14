@@ -134,4 +134,4 @@ async function ocupacionPorDia(db, dias) {
   return { porDia, reservas };
 }
 
-module.exports = { ocupacionPorDia, CONCEPTOS_ALOJAMIENTO };
+module.exports = { ocupacionPorDia, CONCEPTOS_ALOJAMIENTO, enCasa };

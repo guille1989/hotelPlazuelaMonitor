@@ -10,6 +10,7 @@ import Pickup from "./components/Pickup";
 import CanalesTorta from "./components/CanalesTorta";
 import Carrusel from "./components/Carrusel";
 import { TOTAL_HABITACIONES, formatCOP, MESES } from "./config";
+import { apiUrl } from "./api";
 
 // "2026-09-08" -> "8 de septiembre"
 const fechaCortaDia = (ymd) => {
@@ -38,17 +39,15 @@ function App() {
 
   useEffect(() => {
     let cancelado = false;
-    const base = `http://${process.env.REACT_APP_URL_PRODUCCION}`;
-
     axios
-      .get(`${base}/api/reservas`)
+      .get(apiUrl("/api/reservas"))
       .then((r) => {
         if (!cancelado) setReservasHoy(r.data);
       })
       .catch((e) => console.error("Error cargando reservas de hoy:", e.message));
 
     axios
-      .get(`${base}/api/reservascanceladas`)
+      .get(apiUrl("/api/reservascanceladas"))
       .then((r) => {
         if (!cancelado) setReservasCanceladasHoy(r.data);
       })

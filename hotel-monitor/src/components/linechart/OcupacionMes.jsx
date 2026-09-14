@@ -12,6 +12,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { TOTAL_HABITACIONES, MESES, formatCOP } from "../../config";
+import { apiUrl } from "../../api";
 import "./OcupacionMes.css";
 
 const DIAS_SEMANA = [
@@ -79,9 +80,7 @@ export default function OcupacionMes({ onData, onDiaActivo }) {
     setLoading(true);
     setActivo(null);
     axios
-      .get(
-        `http://${process.env.REACT_APP_URL_PRODUCCION}/api/ocupacionmes?mes=${mesStr}`
-      )
+      .get(apiUrl(`/api/ocupacionmes?mes=${mesStr}`))
       .then((r) => {
         if (cancelado) return;
         const dias = r.data.dias.map((d) => ({

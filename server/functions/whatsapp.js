@@ -28,10 +28,61 @@ async function enviarMensajeTexto(destino, texto) {
   return respuesta.json();
 }
 
+// Envía una plantilla aprobada. Los mensajes automáticos iniciados por el hotel
+// deben usar plantillas porque normalmente se envían fuera de la ventana de 24 h.
+async function enviarMensajePlantilla(
+  destino,
+  nombre,
+  parametros = [],
+  codigoIdioma = process.env.WHATSAPP_PLANTILLAS_IDIOMA || "es"
+) {
+  const respuesta = await fetch(urlMensajes(), {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${process.env.WHATSAPP_ACCESS_TOKEN}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      messaging_product: "whatsapp",
+      to: destino,
+      type: "template",
+      template: {
+        name: nombre,
+        language: { code: codigoIdioma },
+        components: [
+          {
+            type: "body",
+            parameters: parametros.map((valor) => ({
+              type: "text",
+              text: String(valor),
+            })),
+          },
+        ],
+      },
+    }),
+  });
+  if (!respuesta.ok) {
+    const detalle = await respuesta.text();
+    throw new Error(`WhatsApp API ${respuesta.status}: ${detalle}`);
+  }
+  return respuesta.json();
+}
+
 // Números (formato internacional sin "+", ej. "573001234567") con permiso de
 // hablar con el agente. Vacío = nadie autorizado (falla cerrado, no abierto).
 function numerosAutorizados() {
   return (process.env.WHATSAPP_NUMEROS_AUTORIZADOS || "")
+    .split(",")
+    .map((n) => n.trim())
+    .filter(Boolean);
+}
+
+// Por defecto se notifica a los mismos socios autorizados a hablar con el agente.
+// La lista puede separarse si algunos socios no desean recibir alertas automáticas.
+function numerosNotificaciones() {
+  const configurados = process.env.WHATSAPP_NUMEROS_NOTIFICACIONES;
+  if (!configurados) return numerosAutorizados();
+  return configurados
     .split(",")
     .map((n) => n.trim())
     .filter(Boolean);
@@ -54,7 +105,9 @@ function verificarFirmaWebhook(cuerpoCrudo, firma, appSecret) {
 
 module.exports = {
   GRAPH_VERSION,
+  enviarMensajePlantilla,
   enviarMensajeTexto,
   numerosAutorizados,
+  numerosNotificaciones,
   verificarFirmaWebhook,
 };

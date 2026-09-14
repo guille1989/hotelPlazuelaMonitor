@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import logoInnoApp from "../../assets/innoapp-logo.png";
+import { apiUrl } from "../../api";
 import "./TopBar.css";
 
 const VISTAS = [
@@ -19,7 +20,7 @@ function TopBar({ vista, onVista }) {
     const fetchData = async () => {
       try {
         const response = await axios.get(
-          `http://${process.env.REACT_APP_URL_PRODUCCION}/api/reservasactualizacioncontrol`
+          apiUrl("/api/reservasactualizacioncontrol")
         );
         setActualizacionreserva(response.data);
         setLoading(false);
