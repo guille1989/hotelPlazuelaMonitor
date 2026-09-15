@@ -1,6 +1,8 @@
 const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
 const ANTHROPIC_VERSION = "2023-06-01";
 const MODELO_POR_DEFECTO = "claude-sonnet-5";
+const MAX_TOKENS_POR_DEFECTO = 3000;
+const TIMEOUT_MS_POR_DEFECTO = 45000;
 
 class ClaudeApiError extends Error {
   constructor(mensaje, status) {
@@ -8,6 +10,31 @@ class ClaudeApiError extends Error {
     this.name = "ClaudeApiError";
     this.status = status;
   }
+}
+
+function enteroConfigurado(valor, predeterminado, minimo, maximo) {
+  const numero = Number(valor);
+  return Number.isInteger(numero) && numero >= minimo && numero <= maximo
+    ? numero
+    : predeterminado;
+}
+
+function resolverMaxTokens(opciones = {}) {
+  return enteroConfigurado(
+    opciones.maxTokens ?? process.env.ANTHROPIC_MAX_TOKENS,
+    MAX_TOKENS_POR_DEFECTO,
+    256,
+    4096
+  );
+}
+
+function resolverTimeoutMs(opciones = {}) {
+  return enteroConfigurado(
+    opciones.timeoutMs ?? process.env.ANTHROPIC_TIMEOUT_MS,
+    TIMEOUT_MS_POR_DEFECTO,
+    5000,
+    120000
+  );
 }
 
 async function crearMensajeClaude(parametros, opciones = {}) {
@@ -21,7 +48,7 @@ async function crearMensajeClaude(parametros, opciones = {}) {
     throw new ClaudeApiError("Este entorno no dispone de fetch");
   }
 
-  const timeoutMs = opciones.timeoutMs || 18000;
+  const timeoutMs = resolverTimeoutMs(opciones);
   const signal = opciones.signal || AbortSignal.timeout(timeoutMs);
   const respuesta = await fetchImpl(opciones.url || ANTHROPIC_URL, {
     method: "POST",
@@ -33,7 +60,9 @@ async function crearMensajeClaude(parametros, opciones = {}) {
     body: JSON.stringify({
       model:
         opciones.model || process.env.ANTHROPIC_MODEL || MODELO_POR_DEFECTO,
-      max_tokens: 600,
+      // Los tokens de razonamiento también cuentan. Con 600, algunas preguntas
+      // comerciales agotaban todo el presupuesto antes de producir texto.
+      max_tokens: resolverMaxTokens(opciones),
       ...parametros,
     }),
     signal,
@@ -58,6 +87,10 @@ module.exports = {
   ANTHROPIC_URL,
   ANTHROPIC_VERSION,
   MODELO_POR_DEFECTO,
+  MAX_TOKENS_POR_DEFECTO,
+  TIMEOUT_MS_POR_DEFECTO,
   ClaudeApiError,
+  resolverMaxTokens,
+  resolverTimeoutMs,
   crearMensajeClaude,
 };

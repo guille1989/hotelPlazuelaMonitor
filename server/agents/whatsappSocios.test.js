@@ -232,3 +232,52 @@ test("el agente consulta números de habitación sin pedir datos de huéspedes",
     { desde: "2026-09-15", hasta: "2026-09-15" },
   ]);
 });
+
+test("el agente usa el plan comercial para una meta de ingresos", async () => {
+  const consultas = [];
+  const respuestas = [
+    {
+      stop_reason: "tool_use",
+      content: [
+        {
+          type: "tool_use",
+          id: "toolu_meta",
+          name: "calcular_meta_ingresos",
+          input: { mes: "2026-09", metaIngresoCOP: 100000000 },
+        },
+      ],
+    },
+    {
+      stop_reason: "end_turn",
+      content: [
+        {
+          type: "text",
+          text: "Para llegar a $100 millones, al 75% necesitas un ADR de $153.257.",
+        },
+      ],
+    },
+  ];
+
+  const salida = await responderPreguntaSocio(
+    "En septiembre, ¿qué ocupación y ADR necesitamos para llegar a 100 millones?",
+    {
+      fechaActual: "2026-09-15",
+      crearMensaje: async () => respuestas.shift(),
+      calcularMetaIngresos: async (input) => {
+        consultas.push(input);
+        return {
+          mes: input.mes,
+          meta: { ingresoCOP: input.metaIngresoCOP },
+          escenarios: [
+            { ocupacionPct: 75, adrPromedioTotalRequeridoCOP: 153257 },
+          ],
+        };
+      },
+    }
+  );
+
+  assert.match(salida, /153\.257/);
+  assert.deepEqual(consultas, [
+    { mes: "2026-09", metaIngresoCOP: 100000000 },
+  ]);
+});
