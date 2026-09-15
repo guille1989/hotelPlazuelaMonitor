@@ -281,3 +281,52 @@ test("el agente usa el plan comercial para una meta de ingresos", async () => {
     { mes: "2026-09", metaIngresoCOP: 100000000 },
   ]);
 });
+
+test("el agente compara facturación mensual de dos años en una consulta", async () => {
+  const consultas = [];
+  const respuestas = [
+    {
+      stop_reason: "tool_use",
+      content: [
+        {
+          type: "tool_use",
+          id: "toolu_facturacion",
+          name: "comparar_facturacion_mensual",
+          input: { desdeMes: "2025-01", hastaMes: "2026-12" },
+        },
+      ],
+    },
+    {
+      stop_reason: "end_turn",
+      content: [
+        {
+          type: "text",
+          text: "El mayor fue julio de 2026 con $110 millones.",
+        },
+      ],
+    },
+  ];
+
+  const salida = await responderPreguntaSocio(
+    "¿Cuál fue el mes que más facturó por tarifa en 2025 y 2026?",
+    {
+      fechaActual: "2026-09-15",
+      crearMensaje: async () => respuestas.shift(),
+      compararFacturacionMensual: async (input) => {
+        consultas.push(input);
+        return {
+          mayorGeneral: { mes: "2026-07", ingresoCOP: 110000000 },
+          porAnio: {
+            2025: { mes: "2025-08", ingresoCOP: 95000000 },
+            2026: { mes: "2026-07", ingresoCOP: 110000000 },
+          },
+        };
+      },
+    }
+  );
+
+  assert.match(salida, /julio de 2026/);
+  assert.deepEqual(consultas, [
+    { desdeMes: "2025-01", hastaMes: "2026-12" },
+  ]);
+});
