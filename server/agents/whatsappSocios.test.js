@@ -180,3 +180,55 @@ test("resumirOcupacionParaClaude calcula métricas sin datos personales", () => 
   assert.equal(resumen.resumen.arribos.antelacionMediaDias, 30);
   assert.equal(JSON.stringify(resumen).includes("nombre_cliente"), false);
 });
+
+test("el agente consulta números de habitación sin pedir datos de huéspedes", async () => {
+  const consultas = [];
+  const respuestas = [
+    {
+      stop_reason: "tool_use",
+      content: [
+        {
+          type: "tool_use",
+          id: "toolu_habitaciones",
+          name: "consultar_habitaciones",
+          input: { desde: "2026-09-15", hasta: "2026-09-15" },
+        },
+      ],
+    },
+    {
+      stop_reason: "end_turn",
+      content: [
+        {
+          type: "text",
+          text: "Hoy están ocupadas las habitaciones 101 y 217.",
+        },
+      ],
+    },
+  ];
+
+  const salida = await responderPreguntaSocio(
+    "¿Qué habitaciones están ocupadas hoy?",
+    {
+      fechaActual: "2026-09-15",
+      crearMensaje: async () => respuestas.shift(),
+      consultarHabitaciones: async (input) => {
+        consultas.push(input);
+        return {
+          desde: input.desde,
+          hasta: input.hasta,
+          dias: [
+            {
+              fecha: input.desde,
+              habitacionesOcupadas: ["101", "217"],
+            },
+          ],
+        };
+      },
+    }
+  );
+
+  assert.match(salida, /101 y 217/);
+  assert.deepEqual(consultas, [
+    { desde: "2026-09-15", hasta: "2026-09-15" },
+  ]);
+});

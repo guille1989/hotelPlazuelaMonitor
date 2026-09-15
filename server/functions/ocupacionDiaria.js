@@ -131,7 +131,9 @@ async function ocupacionPorDia(db, dias) {
     d.fuente = dia === hoy || sinFolio(dia) ? "checkin" : "proyeccion";
   }
 
-  return { porDia, reservas };
+  // `cargos` se conserva para consumidores operativos que necesitan identificar
+  // las habitaciones reales del folio, sin tener que repetir la consulta.
+  return { porDia, reservas, cargos };
 }
 
 module.exports = { ocupacionPorDia, CONCEPTOS_ALOJAMIENTO, enCasa };
