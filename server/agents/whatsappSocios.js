@@ -3,12 +3,13 @@ const { hoyBogota } = require("../functions/fechas");
 const { TOTAL_HABITACIONES } = require("../functions/objetivoPickup");
 const { getDb } = require("../db");
 const { obtenerOcupacionMes } = require("../services/ocupacionMes");
+const { obtenerOcupacionPeriodo } = require("../services/ocupacionPeriodo");
 
 const HERRAMIENTAS = [
   {
     name: "consultar_ocupacion",
     description:
-      "Consulta datos agregados y de solo lectura de ocupación, ingresos y reservas del hotel para un mes. Debes usarla antes de afirmar cualquier cifra del hotel.",
+      "Consulta datos agregados y el detalle diario de ocupación, ingresos y reservas del hotel para un mes completo. Úsala para preguntas mensuales; para semanas o rangos usa consultar_ocupacion_periodo.",
     input_schema: {
       type: "object",
       properties: {
@@ -22,11 +23,34 @@ const HERRAMIENTAS = [
       additionalProperties: false,
     },
   },
+  {
+    name: "consultar_ocupacion_periodo",
+    description:
+      "Consulta datos agregados y el detalle diario para un rango inclusivo de hasta 92 días. Úsala siempre para preguntas sobre esta semana, otra semana, fin de semana, quincena, días específicos o cualquier rango que no sea un mes completo.",
+    input_schema: {
+      type: "object",
+      properties: {
+        desde: {
+          type: "string",
+          pattern: "^\\d{4}-(0[1-9]|1[0-2])-([0-2]\\d|3[01])$",
+          description: "Primer día incluido, en formato YYYY-MM-DD.",
+        },
+        hasta: {
+          type: "string",
+          pattern: "^\\d{4}-(0[1-9]|1[0-2])-([0-2]\\d|3[01])$",
+          description: "Último día incluido, en formato YYYY-MM-DD.",
+        },
+      },
+      required: ["desde", "hasta"],
+      additionalProperties: false,
+    },
+  },
 ];
 
 const redondear = (valor) => Math.round(Number(valor) || 0);
 
 function resumirOcupacionParaClaude(datos) {
+  const cantidadDias = datos.dias.length;
   const capacidadRoomNoches = datos.dias.length * TOTAL_HABITACIONES;
   const ocupadasRoomNoches = datos.dias.reduce(
     (total, dia) => total + (Number(dia.ocupacion) || 0),
@@ -43,16 +67,26 @@ function resumirOcupacionParaClaude(datos) {
   const totalArribos =
     datos.arribo.checkin + datos.arribo.reservadas + datos.arribo.canceladas;
 
+  const ocupacionPromedioPct = capacidadRoomNoches
+    ? redondear((ocupadasRoomNoches * 100) / capacidadRoomNoches)
+    : 0;
+
   return {
     hotel: { habitaciones: TOTAL_HABITACIONES },
     mes: datos.mes,
+    periodo:
+      datos.desde && datos.hasta
+        ? { desde: datos.desde, hasta: datos.hasta, cantidadDias }
+        : undefined,
     fechaCorte: datos.hoy,
     resumen: {
       ocupadasRoomNoches,
       capacidadRoomNoches,
-      ocupacionPct: capacidadRoomNoches
-        ? redondear((ocupadasRoomNoches * 100) / capacidadRoomNoches)
+      promedioHabitacionesOcupadas: cantidadDias
+        ? Number((ocupadasRoomNoches / cantidadDias).toFixed(1))
         : 0,
+      ocupacionPromedioPct,
+      ocupacionPct: ocupacionPromedioPct,
       ingresoCOP: redondear(ingreso),
       tarifaMediaCOP: habitacionesConTarifa
         ? redondear(ingreso / habitacionesConTarifa)
@@ -96,6 +130,7 @@ function resumirOcupacionParaClaude(datos) {
       tarifaMediaCOP: dia.habsTarifa
         ? redondear(dia.tarifas / dia.habsTarifa)
         : 0,
+      revParCOP: redondear(dia.tarifas / TOTAL_HABITACIONES),
       canales: dia.canal,
     })),
   };
@@ -105,9 +140,11 @@ function instrucciones(fechaActual) {
   return `Eres el asistente privado de WhatsApp para los socios del Hotel La Plazuela.
 La fecha actual del hotel en Bogotá es ${fechaActual}.
 
-Tu alcance en esta primera versión es responder preguntas sobre ocupación, ingresos de alojamiento, tarifa, cancelaciones, arribos y canales. Para cualquier cifra del hotel debes usar consultar_ocupacion; nunca calcules ni inventes datos que no estén en su resultado.
+Tu alcance en esta primera versión es responder preguntas sobre ocupación, ingresos de alojamiento, tarifa, cancelaciones, arribos y canales, tanto por día como por semana, rango o mes. Para cualquier cifra del hotel debes usar una de las herramientas; nunca inventes datos.
 
 Interpreta nombres de meses y expresiones como "este mes" usando la fecha actual. Si no indican año, usa el año más razonable respecto de la fecha actual. Distingue los datos pasados (folio), el dato real provisional de hoy (check-in) y la proyección futura. Al resumir un mes que combina pasado y futuro, di "ocupación registrada/proyectada".
+
+Para una semana o un rango usa consultar_ocupacion_periodo. "Esta semana" significa de lunes a domingo e incluye la fecha actual; no significa los próximos siete días. El campo resumen.ocupacionPromedioPct ya contiene el promedio correcto del periodo. Indica siempre las fechas inicial y final utilizadas. No rechaces una pregunta semanal o por fechas porque ambas herramientas entregan detalle diario.
 
 En arribos, "checkin" y "reservadas" son cifras distintas: checkin son llegadas con entrada registrada y reservadas son llegadas aún en reserva. No llames proyectados a los check-ins. Si das un detalle de arribos, muestra ambos valores por separado. Los ingresos de un mes que incluye fechas futuras también deben llamarse registrados/proyectados.
 
@@ -119,6 +156,12 @@ Responde en español claro, natural y conciso, adecuado para WhatsApp. No uses t
 async function consultarOcupacion(input) {
   const db = await getDb();
   const datos = await obtenerOcupacionMes(db, input.mes);
+  return resumirOcupacionParaClaude(datos);
+}
+
+async function consultarOcupacionPeriodo(input) {
+  const db = await getDb();
+  const datos = await obtenerOcupacionPeriodo(db, input.desde, input.hasta);
   return resumirOcupacionParaClaude(datos);
 }
 
@@ -138,6 +181,8 @@ async function responderPreguntaSocio(texto, opciones = {}) {
 
   const crearMensaje = opciones.crearMensaje || crearMensajeClaude;
   const ejecutarOcupacion = opciones.consultarOcupacion || consultarOcupacion;
+  const ejecutarPeriodo =
+    opciones.consultarOcupacionPeriodo || consultarOcupacionPeriodo;
   const fechaActual = opciones.fechaActual || hoyBogota();
   const mensajes = [{ role: "user", content: pregunta }];
 
@@ -161,7 +206,10 @@ async function responderPreguntaSocio(texto, opciones = {}) {
     mensajes.push({ role: "assistant", content: respuesta.content });
     const resultados = [];
     for (const uso of usos) {
-      if (uso.name !== "consultar_ocupacion") {
+      if (
+        uso.name !== "consultar_ocupacion" &&
+        uso.name !== "consultar_ocupacion_periodo"
+      ) {
         resultados.push({
           type: "tool_result",
           tool_use_id: uso.id,
@@ -172,7 +220,10 @@ async function responderPreguntaSocio(texto, opciones = {}) {
       }
 
       try {
-        const resultado = await ejecutarOcupacion(uso.input);
+        const resultado =
+          uso.name === "consultar_ocupacion_periodo"
+            ? await ejecutarPeriodo(uso.input)
+            : await ejecutarOcupacion(uso.input);
         resultados.push({
           type: "tool_result",
           tool_use_id: uso.id,
@@ -197,5 +248,6 @@ module.exports = {
   HERRAMIENTAS,
   instrucciones,
   resumirOcupacionParaClaude,
+  consultarOcupacionPeriodo,
   responderPreguntaSocio,
 };

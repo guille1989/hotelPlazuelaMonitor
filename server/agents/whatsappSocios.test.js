@@ -77,6 +77,58 @@ test("el agente puede rechazar una pregunta fuera de alcance sin consultar datos
   assert.match(salida, /No puedo revelar credenciales/);
 });
 
+test("el agente consulta un rango para responder la ocupación promedio semanal", async () => {
+  const llamadas = [];
+  const rangos = [];
+  const respuestas = [
+    {
+      stop_reason: "tool_use",
+      content: [
+        {
+          type: "tool_use",
+          id: "toolu_semana",
+          name: "consultar_ocupacion_periodo",
+          input: { desde: "2026-09-14", hasta: "2026-09-20" },
+        },
+      ],
+    },
+    {
+      stop_reason: "end_turn",
+      content: [
+        {
+          type: "text",
+          text: "Del 14 al 20 de septiembre la ocupación promedio registrada/proyectada es 62%.",
+        },
+      ],
+    },
+  ];
+
+  const salida = await responderPreguntaSocio(
+    "¿Cuál será la ocupación promedio de esta semana?",
+    {
+      fechaActual: "2026-09-15",
+      crearMensaje: async (parametros) => {
+        llamadas.push(parametros);
+        return respuestas.shift();
+      },
+      consultarOcupacionPeriodo: async (input) => {
+        rangos.push(input);
+        return {
+          periodo: { ...input, cantidadDias: 7 },
+          resumen: { ocupacionPromedioPct: 62 },
+        };
+      },
+    }
+  );
+
+  assert.match(salida, /62%/);
+  assert.deepEqual(rangos, [
+    { desde: "2026-09-14", hasta: "2026-09-20" },
+  ]);
+  assert.match(llamadas[0].system, /lunes a domingo/);
+  assert.equal(llamadas[0].tools[1].name, "consultar_ocupacion_periodo");
+});
+
 test("resumirOcupacionParaClaude calcula métricas sin datos personales", () => {
   const resumen = resumirOcupacionParaClaude({
     mes: "2026-10",
@@ -119,7 +171,10 @@ test("resumirOcupacionParaClaude calcula métricas sin datos personales", () => 
   assert.equal(resumen.resumen.ocupadasRoomNoches, 29);
   assert.equal(resumen.resumen.capacidadRoomNoches, 58);
   assert.equal(resumen.resumen.ocupacionPct, 50);
+  assert.equal(resumen.resumen.ocupacionPromedioPct, 50);
+  assert.equal(resumen.resumen.promedioHabitacionesOcupadas, 14.5);
   assert.equal(resumen.resumen.tarifaMediaCOP, 113103);
+  assert.equal(resumen.dias[0].revParCOP, 34483);
   assert.equal(resumen.resumen.arribos.tasaCancelacionPct, 20);
   assert.equal(resumen.resumen.arribos.estanciaMediaNoches, 3);
   assert.equal(resumen.resumen.arribos.antelacionMediaDias, 30);
