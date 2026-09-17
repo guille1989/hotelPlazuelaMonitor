@@ -65,6 +65,11 @@ actual calcula:
 - RevPAR: ingreso de alojamiento / 29 habitaciones disponibles;
 - meta: por defecto 75 %, redondeada hacia arriba a 22 habitaciones.
 
+La meta comercial del resumen y las alertas de ocupación baja se evalúa contra la
+ocupación proyectada. El aviso `objetivo_ocupacion_alcanzado_po` se dispara solo
+cuando las habitaciones realmente en casa alcanzan la meta (22 por defecto). Que
+las reservas proyectadas ya superen el 75 % no cubre ni adelanta ese aviso.
+
 Los valores predeterminados son:
 
 ```dotenv

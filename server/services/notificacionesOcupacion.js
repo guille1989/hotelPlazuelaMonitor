@@ -109,6 +109,7 @@ function calcularLlegadasDia(reservas = [], fecha) {
 
 function calcularMetricasDia(dia, objetivoPct, llegadas = {}) {
   const ocupadas = redondear(dia?.proyectada ?? dia?.ocupacion);
+  const enCasa = redondear(dia?.real);
   const ingreso = Number(dia?.tarifas) || 0;
   const habitacionesConTarifa = Number(dia?.habsTarifa) || 0;
   const objetivoHabitaciones = objetivoDiarioHabitaciones(objetivoPct);
@@ -116,7 +117,8 @@ function calcularMetricasDia(dia, objetivoPct, llegadas = {}) {
   return {
     ocupadas,
     ocupacionPct: redondear((ocupadas * 100) / TOTAL_HABITACIONES),
-    enCasa: redondear(dia?.real),
+    enCasa,
+    ocupacionRealPct: redondear((enCasa * 100) / TOTAL_HABITACIONES),
     llegadasHoy: redondear(llegadas.llegadasHoy),
     checkinsHoy: redondear(llegadas.checkinsHoy),
     llegadasPendientes: redondear(llegadas.llegadasPendientes),
@@ -126,7 +128,9 @@ function calcularMetricasDia(dia, objetivoPct, llegadas = {}) {
     objetivoPct,
     objetivoHabitaciones,
     faltantes: Math.max(0, objetivoHabitaciones - ocupadas),
-    objetivoAlcanzado: ocupadas >= objetivoHabitaciones,
+    faltantesCheckin: Math.max(0, objetivoHabitaciones - enCasa),
+    objetivoProyectadoAlcanzado: ocupadas >= objetivoHabitaciones,
+    objetivoAlcanzado: enCasa >= objetivoHabitaciones,
     totalHabitaciones: TOTAL_HABITACIONES,
   };
 }
@@ -143,6 +147,22 @@ function fechaVisible(fecha) {
 
 function metaVisible(metricas) {
   return `${metricas.objetivoHabitaciones}/${metricas.totalHabitaciones} (${metricas.objetivoPct}%)`;
+}
+
+function habitacionesVisible(cantidad, sufijo = "") {
+  const plural = cantidad === 1 ? "habitación" : "habitaciones";
+  return `${cantidad} ${plural}${sufijo}`;
+}
+
+function estadoResumen(metricas) {
+  if (metricas.objetivoAlcanzado) return "objetivo real alcanzado";
+  if (metricas.objetivoProyectadoAlcanzado) {
+    return `proyección en meta; faltan ${habitacionesVisible(
+      metricas.faltantesCheckin,
+      " en casa"
+    )}`;
+  }
+  return `faltan ${habitacionesVisible(metricas.faltantes, " proyectadas")}`;
 }
 
 function crearEventos({ fecha, horaActual, configuracion, metricas }) {
@@ -167,9 +187,7 @@ function crearEventos({ fecha, horaActual, configuracion, metricas }) {
       formatoCOP(metricas.adr),
       formatoCOP(metricas.revpar),
       metaVisible(metricas),
-      metricas.objetivoAlcanzado
-        ? "objetivo alcanzado"
-        : `faltan ${metricas.faltantes} habitaciones`,
+      estadoResumen(metricas),
     ],
   };
 
@@ -180,7 +198,10 @@ function crearEventos({ fecha, horaActual, configuracion, metricas }) {
     eventos.push({
       ...comun,
       tipo: "objetivo",
-      clave: "objetivo",
+      // La versión anterior reservaba `objetivo` con la ocupación proyectada.
+      // Una clave nueva evita que esos registros cubiertos bloqueen el aviso
+      // basado en habitaciones realmente en casa.
+      clave: "objetivo-checkin",
       plantilla: configuracion.plantillas.objetivo,
       idioma: configuracion.idiomasPlantilla.objetivo,
       parametros: [
@@ -193,7 +214,7 @@ function crearEventos({ fecha, horaActual, configuracion, metricas }) {
         metaVisible(metricas),
       ],
     });
-  } else {
+  } else if (!metricas.objetivoProyectadoAlcanzado) {
     // Si el proceso estuvo detenido, solo se envía el corte más reciente para no
     // inundar WhatsApp con todas las alertas atrasadas al reiniciar.
     const horaAlerta = configuracion.horasAlerta

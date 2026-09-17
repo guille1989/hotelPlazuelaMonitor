@@ -83,6 +83,7 @@ test("calcula ADR, RevPAR y meta con la misma base del dashboard", () => {
     ocupadas: 18,
     ocupacionPct: 62,
     enCasa: 0,
+    ocupacionRealPct: 0,
     llegadasHoy: 10,
     checkinsHoy: 7,
     llegadasPendientes: 3,
@@ -92,6 +93,8 @@ test("calcula ADR, RevPAR y meta con la misma base del dashboard", () => {
     objetivoPct: 75,
     objetivoHabitaciones: 22,
     faltantes: 4,
+    faltantesCheckin: 22,
+    objetivoProyectadoAlcanzado: false,
     objetivoAlcanzado: false,
     totalHabitaciones: 29,
   });
@@ -164,8 +167,8 @@ test("planifica resumen, último corte vencido y aviso de objetivo", () => {
   assert.equal(aLasQuince[0].parametros[7], "$185.000");
   assert.equal(aLasQuince[0].parametros[8], "$114.828");
 
-  const meta = calcularMetricasDia(
-    { proyectada: 22, tarifas: 4400000, habsTarifa: 22 },
+  const metaProyectada = calcularMetricasDia(
+    { proyectada: 22, real: 20, tarifas: 4400000, habsTarifa: 22 },
     75
   );
   assert.deepEqual(
@@ -173,18 +176,32 @@ test("planifica resumen, último corte vencido y aviso de objetivo", () => {
       fecha: "2026-09-14",
       horaActual: "16:00",
       configuracion,
-      metricas: meta,
+      metricas: metaProyectada,
     }).map((evento) => evento.clave),
-    ["resumen", "objetivo"]
+    ["resumen"]
+  );
+
+  const metaReal = calcularMetricasDia(
+    { proyectada: 23, real: 22, tarifas: 4400000, habsTarifa: 23 },
+    75
   );
   assert.equal(
     crearEventos({
       fecha: "2026-09-14",
       horaActual: "16:00",
       configuracion,
-      metricas: meta,
+      metricas: metaReal,
     })[1].idioma,
     "es_CO"
+  );
+  assert.deepEqual(
+    crearEventos({
+      fecha: "2026-09-14",
+      horaActual: "16:00",
+      configuracion,
+      metricas: metaReal,
+    }).map((evento) => evento.clave),
+    ["resumen", "objetivo-checkin"]
   );
 
   const pendientes = calcularMetricasDia(
@@ -258,12 +275,12 @@ test("persiste cada envío y no repite resumen ni alertas", async () => {
   );
 });
 
-test("si el resumen se envía con la meta cumplida, cubre el aviso adicional", async () => {
+test("si el resumen se envía con la meta real cumplida, cubre el aviso adicional", async () => {
   const coleccion = coleccionEnMemoria();
   const db = { collection: () => coleccion };
   const envios = [];
   const metricas = calcularMetricasDia(
-    { proyectada: 23, tarifas: 4600000, habsTarifa: 23 },
+    { proyectada: 23, real: 23, tarifas: 4600000, habsTarifa: 23 },
     75
   );
 
@@ -281,7 +298,64 @@ test("si el resumen se envía con la meta cumplida, cubre el aviso adicional", a
 
   assert.deepEqual(envios, ["resumen_ocupacion_diaria_po"]);
   assert.equal(
-    coleccion.documentos.get("2026-09-14:objetivo:573001234567").estado,
+    coleccion.documentos.get("2026-09-14:objetivo-checkin:573001234567")
+      .estado,
     "cubierto"
+  );
+});
+
+test("envía la meta cuando los check-ins alcanzan 75 % después del resumen", async () => {
+  const coleccion = coleccionEnMemoria();
+  const db = { collection: () => coleccion };
+  const envios = [];
+  let metricas = calcularMetricasDia(
+    { proyectada: 24, real: 13, tarifas: 4800000, habsTarifa: 24 },
+    75
+  );
+  const base = {
+    db,
+    configuracion,
+    destinos: ["573001234567"],
+    obtenerMetricas: async () => metricas,
+    enviar: async (_destino, plantilla) => {
+      envios.push(plantilla);
+      return { messages: [{ id: `wamid.${envios.length}` }] };
+    },
+  };
+
+  await ejecutarNotificacionesOcupacion({
+    ...base,
+    ahora: "2026-09-14T07:00:00-05:00",
+  });
+  assert.deepEqual(envios, ["resumen_ocupacion_diaria_po"]);
+  assert.equal(
+    coleccion.documentos.has(
+      "2026-09-14:objetivo-checkin:573001234567"
+    ),
+    false
+  );
+
+  metricas = calcularMetricasDia(
+    { proyectada: 24, real: 22, tarifas: 4800000, habsTarifa: 24 },
+    75
+  );
+  await ejecutarNotificacionesOcupacion({
+    ...base,
+    ahora: "2026-09-14T16:00:00-05:00",
+  });
+  await ejecutarNotificacionesOcupacion({
+    ...base,
+    ahora: "2026-09-14T16:05:00-05:00",
+  });
+
+  assert.deepEqual(envios, [
+    "resumen_ocupacion_diaria_po",
+    "objetivo_ocupacion_alcanzado_po",
+  ]);
+  assert.equal(
+    coleccion.documentos.get(
+      "2026-09-14:objetivo-checkin:573001234567"
+    ).estado,
+    "enviado"
   );
 });
