@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useLayoutEffect, useRef } from "react";
 import axios from "axios";
 import {
   ComposedChart,
@@ -56,6 +56,7 @@ export default function OcupacionMes({ onData, onDiaActivo }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activo, setActivoState] = useState(null); // día bajo el cursor/tap
+  const scrollGraficaRef = useRef(null);
 
   const setActivo = (dia) => {
     setActivoState(dia);
@@ -118,6 +119,47 @@ export default function OcupacionMes({ onData, onDiaActivo }) {
     data.hoy && data.dias.some((d) => d.dia === data.hoy) ? data.hoy : null;
   const anchoMin = Math.max(640, (data.dias.length || 30) * 26);
 
+  useLayoutEffect(() => {
+    if (loading || error || !hoyEnEsteMes) return undefined;
+
+    const centrarHoy = () => {
+      const contenedor = scrollGraficaRef.current;
+      const indiceHoy = data.dias.findIndex((dia) => dia.dia === hoyEnEsteMes);
+      if (!contenedor || indiceHoy < 0 || contenedor.clientWidth <= 0) return;
+
+      const anchoDia = anchoMin / data.dias.length;
+      const rellenoLateral = Math.max(
+        0,
+        contenedor.clientWidth / 2 - anchoDia / 2
+      );
+      const posicionHoy =
+        rellenoLateral + anchoDia * (indiceHoy + 0.5);
+      const maximo = Math.max(
+        0,
+        contenedor.scrollWidth - contenedor.clientWidth
+      );
+      const izquierda = Math.min(
+        Math.max(0, posicionHoy - contenedor.clientWidth / 2),
+        maximo
+      );
+
+      if (typeof contenedor.scrollTo === "function") {
+        contenedor.scrollTo({ left: izquierda, behavior: "auto" });
+      } else {
+        contenedor.scrollLeft = izquierda;
+      }
+    };
+
+    centrarHoy();
+    const frame = window.requestAnimationFrame(centrarHoy);
+    window.addEventListener("resize", centrarHoy);
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener("resize", centrarHoy);
+    };
+  }, [anchoMin, data.dias, error, hoyEnEsteMes, loading]);
+
   return (
     <div className="om-card">
       <div className="om-nav">
@@ -148,8 +190,11 @@ export default function OcupacionMes({ onData, onDiaActivo }) {
             <span className="om-leyenda-item om-leyenda-proy">Proyectada</span>
             <span className="om-leyenda-item om-leyenda-canc">Canceladas</span>
           </div>
-          <div className="om-scroll">
-            <div style={{ minWidth: anchoMin }}>
+          <div className="om-scroll" ref={scrollGraficaRef}>
+            <div
+              className={hoyEnEsteMes ? "om-scroll-centrado" : ""}
+              style={{ minWidth: anchoMin }}
+            >
               <ResponsiveContainer width="100%" height={240}>
                 <ComposedChart
                   data={data.dias}

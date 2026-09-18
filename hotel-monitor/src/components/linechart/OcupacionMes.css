@@ -38,7 +38,8 @@
   background: rgba(255, 255, 255, 0.16);
 }
 .om-arrow:focus-visible,
-.om-periodo button:focus-visible {
+.om-periodo button:focus-visible,
+.om-modo label:has(input:focus-visible) {
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;
 }
@@ -120,6 +121,17 @@
   height: 6px;
   border-radius: 50%;
   background: var(--color-red);
+}
+.om-leyenda-adr::before,
+.om-leyenda-revpar::before {
+  width: 14px;
+  height: 2px;
+}
+.om-leyenda-adr::before {
+  background: var(--color-amber);
+}
+.om-leyenda-revpar::before {
+  background: var(--color-blue);
 }
 /* Marcador cuadrado (leyenda de barras del Resumen) */
 .om-leyenda-sq::before {
@@ -230,6 +242,53 @@
   color: #1f293d;
   font-weight: 600;
 }
+.om-periodo button:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+/* Selector de la métrica dentro de la gráfica de resumen. */
+.om-modo {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  padding: 0;
+  margin: 2px 0 14px;
+  border: 0;
+}
+.om-modo label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: var(--color-surface);
+  color: var(--color-muted);
+  cursor: pointer;
+  font-size: 0.72rem;
+  font-weight: 500;
+  transition: background 0.18s ease, color 0.18s ease;
+}
+.om-modo label.activo {
+  background: var(--color-accent-dim);
+  color: var(--color-accent);
+}
+.om-modo input {
+  width: 12px;
+  height: 12px;
+  margin: 0;
+  accent-color: var(--color-accent);
+}
+
+.om-readout-tendencia {
+  gap: 6px 18px;
+}
+.om-valor-adr b {
+  color: var(--color-amber);
+}
+.om-valor-revpar b {
+  color: var(--color-blue);
+}
 
 .recharts-cartesian-axis-tick text,
 .recharts-legend-item-text {
@@ -246,6 +305,15 @@
 }
 .om-scroll::-webkit-scrollbar {
   display: none;
+}
+
+/*
+ * Deja medio viewport libre a cada lado del mes actual. Así cualquier día,
+ * incluidos los últimos, puede desplazarse hasta el centro de la gráfica.
+ */
+.om-scroll-centrado {
+  box-sizing: content-box;
+  padding-inline: calc(50% - 13px);
 }
 
 .om-state {

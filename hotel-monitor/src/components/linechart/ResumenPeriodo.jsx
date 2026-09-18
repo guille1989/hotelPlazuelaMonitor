@@ -3,6 +3,8 @@ import axios from "axios";
 import {
   BarChart,
   Bar,
+  ComposedChart,
+  Line,
   CartesianGrid,
   XAxis,
   YAxis,
@@ -26,6 +28,11 @@ const tarifaMes = (M) =>
 const revparMes = (M) =>
   M.dias > 0 ? Math.round(M.tarifas / (M.dias * TOTAL_HABITACIONES)) : 0;
 
+const formatoEjeCOP = (valor) => {
+  const miles = Number(valor) / 1000;
+  return `$${Number.isInteger(miles) ? miles : miles.toFixed(1)}k`;
+};
+
 const tituloPeriodo = (tipo, inicioTotal, finTotal) => {
   const ai = Math.floor(inicioTotal / 12);
   const af = Math.floor(finTotal / 12);
@@ -37,6 +44,7 @@ const tituloPeriodo = (tipo, inicioTotal, finTotal) => {
 
 export default function ResumenPeriodo({ onData }) {
   const [tipo, setTipo] = useState("trimestre");
+  const [tipoGrafica, setTipoGrafica] = useState("reservas");
   const [offset, setOffset] = useState(0);
   const [comparar, setComparar] = useState(false);
   const [meses, setMeses] = useState([]);
@@ -99,17 +107,37 @@ export default function ResumenPeriodo({ onData }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [desde, hasta, tipo, comparar]);
 
-  const datos = meses.map((M) => ({
-    mes: M.mes,
-    corto: MESES_CORTO[Number(M.mes.slice(5, 7)) - 1],
-    checkin: M.checkin || 0,
-    reservadas: M.reservadas || 0,
-    canceladas: M.canceladasLlegada || 0,
-    media: mediaMes(M), // % ocupación del mes (para el tooltip)
-    tarifaPromedio: tarifaMes(M),
-    revpar: revparMes(M),
-    totalTarifas: M.tarifas || 0,
-  }));
+  const datosBase = meses.map((M) => {
+    const adr = tarifaMes(M);
+    return {
+      mes: M.mes,
+      corto: MESES_CORTO[Number(M.mes.slice(5, 7)) - 1],
+      checkin: M.checkin || 0,
+      reservadas: M.reservadas || 0,
+      canceladas: M.canceladasLlegada || 0,
+      media: mediaMes(M), // % ocupación del mes (para el tooltip)
+      adr,
+      tarifaPromedio: adr,
+      revpar: revparMes(M),
+      totalTarifas: M.tarifas || 0,
+    };
+  });
+  const mesActual = ym(totalHoy);
+  const primerFuturo = datosBase.findIndex((dato) => dato.mes > mesActual);
+  const datos = datosBase.map((dato, indice) => {
+    const perteneceAlReal = primerFuturo === -1 || indice < primerFuturo;
+    // El último punto real también abre el tramo discontinuo para que las
+    // líneas queden conectadas al pasar del mes actual al primer mes futuro.
+    const perteneceAlFuturo =
+      primerFuturo !== -1 && indice >= Math.max(0, primerFuturo - 1);
+    return {
+      ...dato,
+      adrReal: perteneceAlReal ? dato.adr : null,
+      revparReal: perteneceAlReal ? dato.revpar : null,
+      adrFuturo: perteneceAlFuturo ? dato.adr : null,
+      revparFuturo: perteneceAlFuturo ? dato.revpar : null,
+    };
+  });
 
   const handleActivo = (state) => {
     const p = state && state.activePayload && state.activePayload[0];
@@ -119,6 +147,12 @@ export default function ResumenPeriodo({ onData }) {
   const cambiarTipo = (t) => {
     setTipo(t);
     setOffset(0);
+  };
+
+  const cambiarGrafica = (grafica) => {
+    setTipoGrafica(grafica);
+    if (grafica === "tarifas") setComparar(false);
+    setActivo(grafica === "tarifas" ? datos[datos.length - 1] || null : null);
   };
 
   const detalleMes = (d) => {
@@ -159,116 +193,253 @@ export default function ResumenPeriodo({ onData }) {
         <button
           className={comparar ? "activo" : ""}
           onClick={() => setComparar((c) => !c)}
+          disabled={tipoGrafica === "tarifas"}
+          title={
+            tipoGrafica === "tarifas"
+              ? "La comparación está disponible en la gráfica de reservas"
+              : undefined
+          }
           style={{ marginLeft: 8 }}
         >
           ⇄ Comparar {comparar ? `con ${tituloPrev}` : ""}
         </button>
       </div>
 
+      <fieldset className="om-modo" aria-label="Métrica de la gráfica">
+        <label className={tipoGrafica === "reservas" ? "activo" : ""}>
+          <input
+            type="radio"
+            name="tipo-grafica-resumen"
+            value="reservas"
+            checked={tipoGrafica === "reservas"}
+            onChange={() => cambiarGrafica("reservas")}
+          />
+          Reservas
+        </label>
+        <label className={tipoGrafica === "tarifas" ? "activo" : ""}>
+          <input
+            type="radio"
+            name="tipo-grafica-resumen"
+            value="tarifas"
+            checked={tipoGrafica === "tarifas"}
+            onChange={() => cambiarGrafica("tarifas")}
+          />
+          ADR / RevPAR
+        </label>
+      </fieldset>
+
       {loading && <div className="om-state">Cargando…</div>}
       {error && !loading && <div className="om-state err">{error}</div>}
 
       {!loading && !error && (
         <>
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart
-              data={datos}
-              margin={{ top: 8, right: 6, left: -4, bottom: 0 }}
-              barCategoryGap="25%"
-              onMouseMove={handleActivo}
-              onClick={handleActivo}
-              onMouseLeave={() => setActivo(null)}
-            >
-              <CartesianGrid
-                strokeDasharray="3 3"
-                stroke="rgba(255,255,255,0.05)"
-                vertical={false}
-              />
-              <XAxis
-                dataKey="corto"
-                tick={{ fill: "#8fa4b8", fontSize: 9, fontFamily: "Poppins" }}
-                axisLine={false}
-                tickLine={false}
-              />
-              <YAxis
-                allowDecimals={false}
-                width={40}
-                tick={{ fill: "#8fa4b8", fontSize: 9, fontFamily: "Poppins" }}
-                axisLine={false}
-                tickLine={false}
-              />
-              <Tooltip
-                content={() => null}
-                cursor={{ fill: "rgba(255,255,255,0.04)" }}
-              />
-              <Bar
-                dataKey="checkin"
-                name="Con check-in"
-                stackId="a"
-                fill="#8cf4ee"
-                isAnimationActive={false}
-              />
-              <Bar
-                dataKey="reservadas"
-                name="Reservadas"
-                stackId="a"
-                fill="#5b8ef0"
-                isAnimationActive={false}
-              />
-              <Bar
-                dataKey="canceladas"
-                name="Canceladas"
-                stackId="a"
-                fill="#f07070"
-                radius={[3, 3, 0, 0]}
-                isAnimationActive={false}
-              />
-            </BarChart>
-          </ResponsiveContainer>
+          {tipoGrafica === "reservas" ? (
+            <>
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart
+                  data={datos}
+                  margin={{ top: 8, right: 6, left: -4, bottom: 0 }}
+                  barCategoryGap="25%"
+                  onMouseMove={handleActivo}
+                  onClick={handleActivo}
+                  onMouseLeave={() => setActivo(null)}
+                >
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke="rgba(255,255,255,0.05)"
+                    vertical={false}
+                  />
+                  <XAxis
+                    dataKey="corto"
+                    tick={{ fill: "#8fa4b8", fontSize: 9, fontFamily: "Poppins" }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    allowDecimals={false}
+                    width={40}
+                    tick={{ fill: "#8fa4b8", fontSize: 9, fontFamily: "Poppins" }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <Tooltip
+                    content={() => null}
+                    cursor={{ fill: "rgba(255,255,255,0.04)" }}
+                  />
+                  <Bar
+                    dataKey="checkin"
+                    name="Con check-in"
+                    stackId="a"
+                    fill="#8cf4ee"
+                    isAnimationActive={false}
+                  />
+                  <Bar
+                    dataKey="reservadas"
+                    name="Reservadas"
+                    stackId="a"
+                    fill="#5b8ef0"
+                    isAnimationActive={false}
+                  />
+                  <Bar
+                    dataKey="canceladas"
+                    name="Canceladas"
+                    stackId="a"
+                    fill="#f07070"
+                    radius={[3, 3, 0, 0]}
+                    isAnimationActive={false}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
 
-          <div className="om-leyenda">
-            <span className="om-leyenda-item om-leyenda-sq" style={{ "--m": "#8cf4ee" }}>
-              Con check-in
-            </span>
-            <span className="om-leyenda-item om-leyenda-sq" style={{ "--m": "#5b8ef0" }}>
-              Reservadas
-            </span>
-            <span className="om-leyenda-item om-leyenda-sq" style={{ "--m": "#f07070" }}>
-              Canceladas
-            </span>
-          </div>
+              <div className="om-leyenda">
+                <span className="om-leyenda-item om-leyenda-sq" style={{ "--m": "#8cf4ee" }}>
+                  Con check-in
+                </span>
+                <span className="om-leyenda-item om-leyenda-sq" style={{ "--m": "#5b8ef0" }}>
+                  Reservadas
+                </span>
+                <span className="om-leyenda-item om-leyenda-sq" style={{ "--m": "#f07070" }}>
+                  Canceladas
+                </span>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="om-leyenda">
+                <span className="om-leyenda-item om-leyenda-adr">ADR</span>
+                <span className="om-leyenda-item om-leyenda-revpar">RevPAR</span>
+              </div>
 
-          <div className="om-readout">
+              <ResponsiveContainer width="100%" height={250}>
+                <ComposedChart
+                  data={datos}
+                  margin={{ top: 14, right: 8, left: 2, bottom: 0 }}
+                  onMouseMove={handleActivo}
+                  onClick={handleActivo}
+                  onMouseLeave={() => setActivo(null)}
+                >
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke="rgba(255,255,255,0.05)"
+                    vertical={false}
+                  />
+                  <XAxis
+                    dataKey="corto"
+                    interval={0}
+                    tick={{ fill: "#8fa4b8", fontSize: 9, fontFamily: "Poppins" }}
+                    axisLine={{ stroke: "rgba(255,255,255,0.15)" }}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    width={52}
+                    tickFormatter={formatoEjeCOP}
+                    tick={{ fill: "#8fa4b8", fontSize: 9, fontFamily: "Poppins" }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <Tooltip
+                    content={() => null}
+                    cursor={{
+                      stroke: "rgba(255,255,255,0.25)",
+                      strokeDasharray: "3 3",
+                    }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="adrReal"
+                    stroke="#facc15"
+                    strokeWidth={2.5}
+                    dot={{ r: 2.5, fill: "#facc15", strokeWidth: 0 }}
+                    activeDot={{ r: 5, fill: "#facc15", stroke: "#1f293d", strokeWidth: 2 }}
+                    isAnimationActive={false}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="adrFuturo"
+                    stroke="#facc15"
+                    strokeWidth={2.5}
+                    strokeDasharray="5 4"
+                    strokeOpacity={0.75}
+                    dot={{ r: 2.5, fill: "#facc15", strokeWidth: 0 }}
+                    activeDot={{ r: 5, fill: "#facc15", stroke: "#1f293d", strokeWidth: 2 }}
+                    connectNulls={false}
+                    isAnimationActive={false}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="revparReal"
+                    stroke="#5b8ef0"
+                    strokeWidth={2.5}
+                    dot={{ r: 2.5, fill: "#5b8ef0", strokeWidth: 0 }}
+                    activeDot={{ r: 5, fill: "#5b8ef0", stroke: "#1f293d", strokeWidth: 2 }}
+                    isAnimationActive={false}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="revparFuturo"
+                    stroke="#5b8ef0"
+                    strokeWidth={2.5}
+                    strokeDasharray="5 4"
+                    strokeOpacity={0.75}
+                    dot={{ r: 2.5, fill: "#5b8ef0", strokeWidth: 0 }}
+                    activeDot={{ r: 5, fill: "#5b8ef0", stroke: "#1f293d", strokeWidth: 2 }}
+                    connectNulls={false}
+                    isAnimationActive={false}
+                  />
+                </ComposedChart>
+              </ResponsiveContainer>
+            </>
+          )}
+
+          <div
+            className={`om-readout${
+              tipoGrafica === "tarifas" ? " om-readout-tendencia" : ""
+            }`}
+          >
             {activo ? (
-              <>
-                <span className="om-day">{detalleMes(activo)}</span>
-                <span>
-                  Ocupación media <b>{activo.media}%</b>
-                </span>
-                <span style={{ color: "#8cf4ee" }}>
-                  Check-in <b>{activo.checkin}</b>
-                </span>
-                <span style={{ color: "#5b8ef0" }}>
-                  Reservadas <b>{activo.reservadas}</b>
-                </span>
-                {activo.canceladas > 0 && (
-                  <span className="om-cancel">
-                    Canceladas <b>{activo.canceladas}</b>
+              tipoGrafica === "tarifas" ? (
+                <>
+                  <span className="om-day">{detalleMes(activo)}</span>
+                  <span className="om-valor-adr">
+                    ADR <b>{formatCOP(activo.adr)}</b>
                   </span>
-                )}
-                <span>
-                  Tarifa prom. <b>{formatCOP(activo.tarifaPromedio)}</b>
-                </span>
-                <span>
-                  RevPAR <b>{formatCOP(activo.revpar)}</b>
-                </span>
-                <span>
-                  Total tarifas <b>{formatCOP(activo.totalTarifas)}</b>
-                </span>
-              </>
+                  <span className="om-valor-revpar">
+                    RevPAR <b>{formatCOP(activo.revpar)}</b>
+                  </span>
+                </>
+              ) : (
+                <>
+                  <span className="om-day">{detalleMes(activo)}</span>
+                  <span>
+                    Ocupación media <b>{activo.media}%</b>
+                  </span>
+                  <span style={{ color: "#8cf4ee" }}>
+                    Check-in <b>{activo.checkin}</b>
+                  </span>
+                  <span style={{ color: "#5b8ef0" }}>
+                    Reservadas <b>{activo.reservadas}</b>
+                  </span>
+                  {activo.canceladas > 0 && (
+                    <span className="om-cancel">
+                      Canceladas <b>{activo.canceladas}</b>
+                    </span>
+                  )}
+                  <span>
+                    Tarifa prom. <b>{formatCOP(activo.tarifaPromedio)}</b>
+                  </span>
+                  <span>
+                    RevPAR <b>{formatCOP(activo.revpar)}</b>
+                  </span>
+                  <span>
+                    Total tarifas <b>{formatCOP(activo.totalTarifas)}</b>
+                  </span>
+                </>
+              )
             ) : (
               <span className="om-hint">
-                Pasa el cursor o toca un mes para ver el detalle
+                {tipoGrafica === "tarifas"
+                  ? "Pasa el cursor o toca un mes para ver las tarifas"
+                  : "Pasa el cursor o toca un mes para ver el detalle"}
               </span>
             )}
           </div>
