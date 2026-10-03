@@ -15,6 +15,24 @@
         "process.env.DNS_SERVERS='8.8.8.8,1.1.1.1'; process.chdir('server'); require(require('path').resolve('app.js'))"
       ],
       "port": 5002
+    },
+    {
+      "name": "api-alt",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "-e",
+        "process.env.DNS_SERVERS='8.8.8.8,1.1.1.1'; process.env.PORT='5012'; process.chdir('server'); require(require('path').resolve('app.js'))"
+      ],
+      "port": 5012
+    },
+    {
+      "name": "hotel-monitor-alt",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "-e",
+        "process.env.REACT_APP_API_URL='http://localhost:5012'; process.env.PORT='3012'; process.env.BROWSER='none'; process.chdir('hotel-monitor'); require(require('path').resolve('node_modules/react-scripts/scripts/start'))"
+      ],
+      "port": 3012
     }
   ]
 }
