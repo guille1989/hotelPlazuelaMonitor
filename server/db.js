@@ -7,11 +7,19 @@ if (process.env.DNS_SERVERS) {
   require("dns").setServers(process.env.DNS_SERVERS.split(",").map((s) => s.trim()));
 }
 
-const URI =
-  process.env.MONGO_URI ||
-  "mongodb+srv://root:123@cluster0.jwxt0.mongodb.net/hotellpmonitor?retryWrites=true&w=majority";
-
 let conexion = null;
+
+function mongoUri(env = process.env) {
+  const uri = String(env.MONGO_URI || "").trim();
+  if (!uri) {
+    const error = new Error(
+      "MONGO_URI no está configurada. Defínela como variable de entorno o en server/.env"
+    );
+    error.codigo = "MONGO_URI_FALTANTE";
+    throw error;
+  }
+  return uri;
+}
 
 // Devuelve el Db nativo de MongoDB reutilizando UNA sola conexión para todo el proceso.
 // Antes cada ruta hacía client.connect()/client.close() por request, lo que bajo
@@ -19,10 +27,10 @@ let conexion = null;
 async function getDb() {
   if (mongoose.connection.readyState === 1) return mongoose.connection.db;
   if (!conexion) {
-    conexion = mongoose.connect(URI, { serverSelectionTimeoutMS: 15000 });
+    conexion = mongoose.connect(mongoUri(), { serverSelectionTimeoutMS: 15000 });
   }
   await conexion;
   return mongoose.connection.db;
 }
 
-module.exports = { getDb };
+module.exports = { getDb, mongoUri };

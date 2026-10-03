@@ -6,7 +6,11 @@
     "start": "node app.js",
     "test": "node --test",
     "notificaciones:run": "node jobs/notificacionesOcupacion.js",
-    "notificaciones:dry-run": "node jobs/notificacionesOcupacion.js --dry-run"
+    "notificaciones:dry-run": "node jobs/notificacionesOcupacion.js --dry-run",
+    "tarifas:dry-run": "node jobs/capturarTarifas.js --dry-run --provider=mock",
+    "tarifas:playwright:dry-run": "node jobs/capturarTarifas.js --dry-run --provider=playwright",
+    "tarifas:serpapi:dry-run": "node jobs/capturarTarifas.js --dry-run --provider=serpapi",
+    "tarifas:serpapi:descubrir": "node jobs/descubrirHotelesGoogle.js"
   },
   "keywords": [],
   "author": "",
@@ -17,6 +21,7 @@
     "dotenv": "^17.4.2",
     "express": "^4.21.2",
     "moment-timezone": "^0.5.47",
-    "mongoose": "^8.12.1"
+    "mongoose": "^8.12.1",
+    "playwright": "^1.63.0"
   }
 }
