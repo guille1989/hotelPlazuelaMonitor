@@ -6,6 +6,15 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["start", "--prefix", "hotel-monitor"],
       "port": 3000
+    },
+    {
+      "name": "api",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "-e",
+        "process.env.DNS_SERVERS='8.8.8.8,1.1.1.1'; process.chdir('server'); require(require('path').resolve('app.js'))"
+      ],
+      "port": 5002
     }
   ]
 }
