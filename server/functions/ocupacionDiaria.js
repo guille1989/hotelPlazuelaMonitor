@@ -5,10 +5,7 @@ const {
   habitaciones,
   filtroTraslape,
 } = require("./ocupacion");
-
-// Conceptos de alojamiento en CARGOGENHISTO. 1024 (NO SHOW) se excluye: no es una
-// habitación ocupada.
-const CONCEPTOS_ALOJAMIENTO = [1020, 1021, 33, 36];
+const { CONCEPTOS_ALOJAMIENTO, ingresoPorDia } = require("./ingresoAlojamiento");
 
 // "En casa": la reserva tiene check-in hecho (estado 31) o es un walk-in.
 const enCasa = (r) => {
@@ -17,7 +14,8 @@ const enCasa = (r) => {
 };
 
 // Ocupación e ingreso por día, HÍBRIDO:
-//   día < hoy  -> folio real (colección `noches_vendidas`), cuadra con el trasunto
+//   día < hoy  -> folio real: habitaciones de `noches_vendidas` (CARGOGENHISTO) e
+//                 ingreso de `movimientos_alojamiento` (MOVFOLIO, con cargos manuales)
 //   día >= hoy -> proyección desde `reservas` (tarifa planeada)
 // Las cancelaciones salen siempre de `reservas` (el folio no las registra).
 //
@@ -78,6 +76,16 @@ async function ocupacionPorDia(db, dias) {
     d.ocupacion = set.size;
     d.habsTarifa = set.size;
     d.real = set.size;
+  }
+
+  // Ingreso del folio: el de MOVFOLIO cuando ya hay movimientos de ese día (incluye
+  // adicionales, ajustes y correcciones); si no, el de la auditoría. El respaldo cubre
+  // el histórico mientras el ETL que llena `movimientos_alojamiento` no haya corrido.
+  if (habsPorDia.size > 0) {
+    const ingresoMov = await ingresoPorDia(db, inicio, fin);
+    for (const dia of habsPorDia.keys()) {
+      if (ingresoMov.has(dia)) porDia.get(dia).tarifas = ingresoMov.get(dia);
+    }
   }
 
   // Días pasados que TODAVÍA no tienen folio (la auditoría nocturna de Zeus va con

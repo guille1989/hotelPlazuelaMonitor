@@ -2,7 +2,8 @@ const moment = require("moment-timezone");
 const { hoyBogota } = require("../functions/fechas");
 const {
   CONCEPTOS_ALOJAMIENTO,
-} = require("../functions/ocupacionDiaria");
+  ingresoPorDia,
+} = require("../functions/ingresoAlojamiento");
 const { TOTAL_HABITACIONES } = require("../functions/objetivoPickup");
 const { RE_MES } = require("./ocupacionMes");
 
@@ -63,6 +64,7 @@ async function obtenerFacturacionMensual(
   const finConsulta = moment.min(finSolicitado, ayer).format(FORMATO_FECHA);
 
   let cargos = [];
+  let ingresoMov = new Map();
   if (finConsulta >= inicioConsulta) {
     cargos = await db
       .collection("noches_vendidas")
@@ -71,6 +73,7 @@ async function obtenerFacturacionMensual(
         concepto: { $in: CONCEPTOS_ALOJAMIENTO },
       })
       .toArray();
+    ingresoMov = await ingresoPorDia(db, inicioConsulta, finConsulta);
   }
 
   const acumulados = new Map(
@@ -79,15 +82,25 @@ async function obtenerFacturacionMensual(
       { ingreso: 0, habitacionesNoche: new Set() },
     ])
   );
+  // Habitaciones de `noches_vendidas`; ingreso de la auditoría por día, que se
+  // reemplaza abajo por el de MOVFOLIO cuando ese día ya tiene movimientos.
+  const ingresoAuditoria = new Map();
   for (const cargo of cargos) {
     const mes = String(cargo.fecha || "").slice(0, 7);
     const acumulado = acumulados.get(mes);
     if (!acumulado || !cargo.fecha || cargo.fecha >= hoy) continue;
-    acumulado.ingreso += Number(cargo.valor_neto) || 0;
+    ingresoAuditoria.set(
+      cargo.fecha,
+      (ingresoAuditoria.get(cargo.fecha) || 0) + (Number(cargo.valor_neto) || 0)
+    );
     if (cargo.numero_habitacion !== null && cargo.numero_habitacion !== undefined) {
       const numero = String(cargo.numero_habitacion).trim();
       if (numero) acumulado.habitacionesNoche.add(`${cargo.fecha}|${numero}`);
     }
+  }
+  for (const [dia, ingreso] of ingresoAuditoria) {
+    const acumulado = acumulados.get(dia.slice(0, 7));
+    acumulado.ingreso += ingresoMov.has(dia) ? ingresoMov.get(dia) : ingreso;
   }
 
   const meses = claves.map((mes) => {
@@ -134,7 +147,8 @@ async function obtenerFacturacionMensual(
     desdeMes,
     hastaMes,
     fechaCorte: ayer.format(FORMATO_FECHA),
-    fuente: "noches_vendidas.valor_neto (solo alojamiento)",
+    fuente:
+      "ingreso: movimientos_alojamiento.valor_neto (MOVFOLIO, solo alojamiento); habitaciones: noches_vendidas",
     criterio: "facturación real; no incluye proyecciones de reservas",
     mayorGeneral: mayorPorIngreso(meses),
     mayorMesCerrado: mayorPorIngreso(
