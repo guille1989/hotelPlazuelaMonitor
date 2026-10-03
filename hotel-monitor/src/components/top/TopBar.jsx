@@ -10,6 +10,7 @@ const VISTAS = [
   ["resumen", "Resumen"],
   ["trasunto", "Trasunto"],
   ["pickup", "Pickup"],
+  ["tarifas", "Tarifas"],
 ];
 
 function TopBar({ vista, onVista }) {

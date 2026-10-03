@@ -20,6 +20,7 @@ const CATALOGO_HOTELES = Object.freeze(
     {
       id: "hotel-la-plazuela",
       nombre: "Hotel La Plazuela",
+      nombreCorto: "La Plazuela",
       googleHotelsToken: "ChkIpp3kudPvvM_3ARoML2cvMWhjMHI3N3Z4EAE",
       grupo: GRUPOS.PROPIO,
       propio: true,
@@ -27,18 +28,21 @@ const CATALOGO_HOTELES = Object.freeze(
     {
       id: "hotel-camino-real-popayan",
       nombre: "Hotel Camino Real Popayán",
+      nombreCorto: "Camino Real",
       googleHotelsToken: "ChkIgN-e-d6hndbCARoML2cvMWhmMjJoamJuEAE",
       grupo: GRUPOS.DIRECTO,
     },
     {
       id: "hotel-la-herreria-colonial",
       nombre: "Hotel La Herrería Colonial",
+      nombreCorto: "Herrería Colonial",
       googleHotelsToken: "ChcIgKKdtOmprrdqGgsvZy8xdGtfcTlzehAB",
       grupo: GRUPOS.DIRECTO,
     },
     {
       id: "hotel-santa-marta-centro-historico",
       nombre: "Hotel Santa Marta Centro Histórico",
+      nombreCorto: "Santa Marta",
       // En Google Hotels figura como "Hotel Santa Marta’s Popayán centro".
       googleHotelsToken: "ChkI56q9qPfS1IVEGg0vZy8xMWtyY25rZGJsEAE",
       grupo: GRUPOS.DIRECTO,
@@ -46,12 +50,14 @@ const CATALOGO_HOTELES = Object.freeze(
     {
       id: "hotel-popayan-plaza",
       nombre: "Hotel Popayán Plaza",
+      nombreCorto: "Popayán Plaza",
       googleHotelsToken: "ChcImI_U2dLy_OVMGgsvZy8xdGRkNjlmNRAB",
       grupo: GRUPOS.DIRECTO,
     },
     {
       id: "hotel-colonial-popayan",
       nombre: "Hotel y Restaurante Colonial Popayán",
+      nombreCorto: "Colonial",
       // En Google Hotels figura como "Hotel Colonial".
       googleHotelsToken: "ChkIx7uB8tad5c0iGg0vZy8xMWI2Z2dmN2szEAE",
       grupo: GRUPOS.DIRECTO,
@@ -59,24 +65,28 @@ const CATALOGO_HOTELES = Object.freeze(
     {
       id: "hotel-los-portales-inn",
       nombre: "Hotel Los Portales Inn",
+      nombreCorto: "Los Portales Inn",
       googleHotelsToken: "ChoIv8H9ndPE6NHOARoNL2cvMTFoMG1zNXZ3cRAB",
       grupo: GRUPOS.DIRECTO,
     },
     {
       id: "casa-loma-hotel-boutique",
       nombre: "Casa Loma Hotel Boutique & Terraza Gastro",
+      nombreCorto: "Casa Loma",
       googleHotelsToken: "ChkIsofeiJjfjrI8Gg0vZy8xMWtqOTNrenpyEAE",
       grupo: GRUPOS.SUPERIOR,
     },
     {
       id: "hotel-boutique-confort-suites",
       nombre: "Hotel Boutique Confort Suites",
+      nombreCorto: "Confort Suites",
       googleHotelsToken: "ChgI5q3F1fTSlIyCARoLL2cvMXRsczN3bTMQAQ",
       grupo: GRUPOS.SUPERIOR,
     },
     {
       id: "hotel-dann-monasterio",
       nombre: "Hotel Dann Monasterio Popayán",
+      nombreCorto: "Dann Monasterio",
       // En Google Hotels figura como "Hotel Monasterio".
       googleHotelsToken: "ChgI6N7vr9Om1aqHARoLL2cvMXRodmhfMDcQAQ",
       grupo: GRUPOS.SUPERIOR,
@@ -84,12 +94,14 @@ const CATALOGO_HOTELES = Object.freeze(
     {
       id: "hotel-business-center-popayan",
       nombre: "Hotel Business Center Popayán",
+      nombreCorto: "Business Center",
       googleHotelsToken: "ChoIqpy-kcby0drvARoNL2cvMTFqOHZoc2Z6dBAB",
       grupo: GRUPOS.CORPORATIVO,
     },
     {
       id: "hotel-san-martin-popayan",
       nombre: "Hotel San Martín Popayán",
+      nombreCorto: "San Martín",
       googleHotelsToken: "ChgI07THhKWA_94aGgwvZy8xaGMxMWdkazAQAQ",
       grupo: GRUPOS.CORPORATIVO,
     },

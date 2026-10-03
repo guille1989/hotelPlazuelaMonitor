@@ -32,6 +32,7 @@ jest.mock("./components/linechart/OcupacionMes", () => () => (
 ));
 jest.mock("./components/linechart/ResumenPeriodo", () => () => null);
 jest.mock("./components/Pickup", () => () => null);
+jest.mock("./components/Tarifas", () => () => null);
 jest.mock("./components/CanalesTorta", () => () => null);
 
 describe("navegación de vistas", () => {

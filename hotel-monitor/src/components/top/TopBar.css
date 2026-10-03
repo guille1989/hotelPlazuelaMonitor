@@ -114,11 +114,15 @@
   padding: 3px;
 }
 .toggle-vista button {
-  flex: 1;
+  /* Ancho según la etiqueta: con 6 vistas, "Resumen" y "Trasunto" no caben en
+     una sexta parte del ancho de un celular. */
+  flex: 1 1 auto;
+  min-width: 0;
+  white-space: nowrap;
   border: none;
   background: transparent;
   color: var(--color-muted);
-  padding: 7px 0;
+  padding: 7px 4px;
   border-radius: 8px;
   cursor: pointer;
   font-family: var(--font-ui);

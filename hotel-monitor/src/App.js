@@ -8,6 +8,7 @@ import OcupacionMes from "./components/linechart/OcupacionMes";
 import ResumenPeriodo from "./components/linechart/ResumenPeriodo";
 import Pickup from "./components/Pickup";
 import Trasunto from "./components/Trasunto";
+import Tarifas from "./components/Tarifas";
 import CanalesTorta from "./components/CanalesTorta";
 import Carrusel from "./components/Carrusel";
 import { TOTAL_HABITACIONES, formatCOP, MESES } from "./config";
@@ -33,7 +34,7 @@ const sumarCanal = (meses) => {
 function App() {
   const [reservasHoy, setReservasHoy] = useState([]);
   const [reservasCanceladasHoy, setReservasCanceladasHoy] = useState([]);
-  const [vista, setVista] = useState("hoy"); // "hoy" | "mes" | "resumen" | "trasunto" | "pickup"
+  const [vista, setVista] = useState("hoy"); // "hoy" | "mes" | "resumen" | "trasunto" | "pickup" | "tarifas"
   const [mesData, setMesData] = useState(null); // datos del mes en la gráfica
   const [diaActivo, setDiaActivo] = useState(null); // día seleccionado en la gráfica
   const [periodoData, setPeriodoData] = useState(null); // datos del periodo (resumen)
@@ -554,6 +555,7 @@ function App() {
 
       {vista === "trasunto" && <Trasunto />}
       {vista === "pickup" && <Pickup />}
+      {vista === "tarifas" && <Tarifas />}
       {vista === "resumen" && <ResumenPeriodo onData={setPeriodoData} />}
       {(vista === "hoy" || vista === "mes") && (
         <OcupacionMes onData={setMesData} onDiaActivo={setDiaActivo} />

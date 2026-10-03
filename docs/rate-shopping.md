@@ -167,8 +167,25 @@ Primera prueba real (2026-10-03, D+1/D+7/D+30): 14 de 21 precios, 12
 comparables. Los Portales Inn no tiene Booking en Google (sí su web y
 Priceline) y Camino Real solo tiene precio algunas fechas.
 
+## Vista Tarifas del dashboard
+
+Pestaña "Tarifas" (`hotel-monitor/src/components/Tarifas.jsx`) alimentada por
+`GET /api/tarifas?objetivo=75` (`server/services/tarifasCompetencia.js`). Toma la
+última captura real de `serpapi` y, por cada fecha futura:
+
+- precio propio, mediana de los competidores **directos comparables**, mínimo,
+  máximo, diferencia % y posición ("2.º más barato de 4");
+- ocupación proyectada propia (`ocupacionPorDia`, sobre 29 habitaciones);
+- lista de hoteles: comparables, no comparables (atenuados) y sin precio.
+
+Avisos, solo hasta D+30 y con al menos 2 comparables: **caro y vacío** (≥15%
+sobre la mediana y ocupación bajo el objetivo) y **barato y lleno** (≥15% bajo
+la mediana y ocupación en el objetivo o encima). El objetivo es el mismo de
+Pickup (preferencia compartida en el navegador).
+
 ## Próximo hito
 
-1. Programar la captura semanal y guardar en MongoDB.
-2. Vista en el dashboard: precio propio frente a la mediana de los directos.
-3. Tras unas semanas, revisar la cobertura de Los Portales Inn y Camino Real.
+1. Programar la captura semanal (`node jobs/capturarTarifas.js --provider=serpapi`).
+2. Desplegar backend y frontend (revisar antes `MONGO_URI` en el `.env` de AWS).
+3. Con 3-4 capturas: gráfico de evolución del precio propio frente a la mediana.
+4. Tras unas semanas, revisar la cobertura de Los Portales Inn y Camino Real.

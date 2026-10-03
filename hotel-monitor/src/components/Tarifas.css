@@ -1,0 +1,342 @@
+.tarifas {
+  padding: 4px 16px 24px;
+}
+
+.tarifas-head {
+  text-align: center;
+  margin: 20px 0 4px;
+}
+.tarifas-eyebrow {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+.tarifas-titulo {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-text);
+  letter-spacing: -0.02em;
+  margin: 3px 0 0;
+}
+.tarifas-meta {
+  font-size: 0.66rem;
+  color: var(--color-muted);
+  margin-top: 4px;
+}
+.tarifas-objetivo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  color: var(--color-muted);
+  font-size: 0.66rem;
+  margin-top: 9px;
+}
+.tarifas-objetivo select {
+  appearance: none;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 7px;
+  color: var(--color-text);
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: 0.68rem;
+  padding: 4px 22px 4px 8px;
+  background-image: linear-gradient(45deg, transparent 50%, var(--color-muted) 50%),
+    linear-gradient(135deg, var(--color-muted) 50%, transparent 50%);
+  background-position: calc(100% - 10px) 9px, calc(100% - 7px) 9px;
+  background-repeat: no-repeat;
+  background-size: 3px 3px, 3px 3px;
+}
+
+.tarifas-state {
+  text-align: center;
+  color: var(--color-muted);
+  font-size: 0.8rem;
+  padding: 28px 0;
+}
+.tarifas-state.err {
+  color: var(--color-red);
+}
+
+.tarifas-alerta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-radius: 12px;
+  padding: 10px 14px;
+  margin: 12px 0 0;
+}
+.tarifas-alerta p {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--color-text);
+}
+.tarifas-alerta-badge {
+  flex: 0 0 auto;
+  border-radius: 99px;
+  padding: 4px 10px;
+  font-size: 0.66rem;
+  font-weight: 700;
+  white-space: nowrap;
+  color: #1f293d;
+}
+.tarifas-alerta.caro_vacio {
+  background: rgba(250, 204, 21, 0.08);
+  border: 1px solid rgba(250, 204, 21, 0.2);
+}
+.tarifas-alerta.caro_vacio .tarifas-alerta-badge {
+  background: var(--color-amber);
+}
+.tarifas-alerta.barato_lleno {
+  background: var(--color-accent-dim);
+  border: 1px solid rgba(140, 244, 238, 0.25);
+}
+.tarifas-alerta.barato_lleno .tarifas-alerta-badge {
+  background: var(--color-accent);
+}
+
+.tarifas-leyenda {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px 14px;
+  margin: 16px 0 4px;
+  font-size: 0.62rem;
+  color: var(--color-muted);
+}
+.tarifas-leyenda i {
+  display: inline-block;
+  vertical-align: -1px;
+  margin-right: 3px;
+}
+.tarifas-leyenda i.propio {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--color-accent);
+}
+.tarifas-leyenda i.punto {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--color-muted);
+}
+.tarifas-leyenda i.punto.hueco {
+  background: transparent;
+  border: 1.5px solid var(--color-muted);
+  box-sizing: border-box;
+}
+.tarifas-leyenda i.mediana {
+  width: 2px;
+  height: 10px;
+  background: var(--color-text);
+}
+
+.tarifas-fechas {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.tarifas-fecha {
+  border-top: 1px solid var(--color-border);
+  padding: 11px 0 10px;
+}
+.tarifas-fecha:last-child {
+  border-bottom: 1px solid var(--color-border);
+}
+.tarifas-fecha-cabeza {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  width: 100%;
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--color-text);
+  font-family: var(--font-ui);
+  cursor: pointer;
+  text-align: left;
+}
+.tarifas-fecha-dia b,
+.tarifas-fecha-precio b {
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+.tarifas-fecha-dia small {
+  margin-left: 6px;
+  font-size: 0.64rem;
+  color: var(--color-muted);
+}
+.tarifas-fecha-precio {
+  white-space: nowrap;
+}
+.tarifas-fecha-precio small {
+  margin-left: 5px;
+  font-size: 0.68rem;
+  font-weight: 600;
+}
+.tarifas-fecha-precio small.arriba {
+  color: var(--color-amber);
+}
+.tarifas-fecha-precio small.abajo {
+  color: var(--color-accent);
+}
+
+.tarifas-pista {
+  position: relative;
+  height: 18px;
+  margin: 8px 0 3px;
+}
+.tarifas-pista::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 8px;
+  height: 2px;
+  background: var(--color-surface);
+  border-radius: 1px;
+}
+.tarifas-pista-rango {
+  position: absolute;
+  top: 8px;
+  height: 2px;
+  background: rgba(143, 164, 184, 0.45);
+  border-radius: 1px;
+}
+.tarifas-pista-punto {
+  position: absolute;
+  top: 5px;
+  width: 8px;
+  height: 8px;
+  margin-left: -4px;
+  border-radius: 50%;
+  background: var(--color-muted);
+}
+.tarifas-pista-punto.hueco {
+  background: var(--color-bg);
+  border: 1.5px solid var(--color-muted);
+  box-sizing: border-box;
+}
+.tarifas-pista-mediana {
+  position: absolute;
+  top: 1px;
+  width: 2px;
+  height: 16px;
+  margin-left: -1px;
+  background: var(--color-text);
+}
+.tarifas-pista-propio {
+  position: absolute;
+  top: 1px;
+  width: 16px;
+  height: 16px;
+  margin-left: -8px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  border: 2px solid var(--color-bg);
+  box-sizing: border-box;
+}
+.tarifas-fecha-nota {
+  font-size: 0.64rem;
+  color: var(--color-muted);
+}
+
+.tarifas-hoteles {
+  list-style: none;
+  margin: 10px 0 2px;
+  padding: 10px 12px;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  display: grid;
+  gap: 7px;
+}
+.tarifas-hoteles li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 30% 74px;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.72rem;
+  color: var(--color-text);
+}
+.tarifas-hoteles li.propio {
+  color: var(--color-accent);
+  font-weight: 600;
+}
+.tarifas-hoteles li.atenuado {
+  color: var(--color-muted);
+}
+.tarifas-hotel-nombre {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tarifas-hotel-marca {
+  display: inline-block;
+  margin-left: 5px;
+  width: 13px;
+  height: 13px;
+  line-height: 12px;
+  border-radius: 50%;
+  border: 1px solid var(--color-muted);
+  font-size: 0.55rem;
+  text-align: center;
+}
+.tarifas-hotel-barra {
+  display: block;
+  height: 6px;
+  background: var(--color-surface);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.tarifas-hotel-barra span {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--color-muted);
+}
+.tarifas-hoteles li.propio .tarifas-hotel-barra span {
+  background: var(--color-accent);
+}
+.tarifas-hoteles li.atenuado .tarifas-hotel-barra span {
+  opacity: 0.45;
+}
+.tarifas-hotel-precio,
+.tarifas-hotel-sin {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.tarifas-hotel-sin {
+  grid-column: 2 / 4;
+  color: var(--color-muted);
+  font-size: 0.66rem;
+}
+
+.tarifas-pie {
+  text-align: center;
+  margin: 14px auto 8px;
+  font-size: 0.66rem;
+  color: var(--color-muted);
+  line-height: 1.5;
+}
+.tarifas-ayuda {
+  margin-top: 8px;
+  font-size: 0.72rem;
+  color: var(--color-muted);
+}
+.tarifas-ayuda summary {
+  cursor: pointer;
+  text-align: center;
+}
+.tarifas-ayuda p {
+  line-height: 1.5;
+  margin: 8px 0;
+}
+.tarifas-ayuda b {
+  color: var(--color-text);
+}
