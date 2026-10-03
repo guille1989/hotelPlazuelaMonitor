@@ -191,11 +191,11 @@ que D+7 y D+14 sean sábados (la noche más fuerte); D+1 queda en domingo y D+3
 en martes. Cambiar el día cambia qué noches se comparan semana a semana.
 
 Cron en el servidor de Lightsail (mismo esquema que las notificaciones de
-WhatsApp), sábado 06:00 de Bogotá. Lightsail usa UTC por defecto (confirmar con
-`timedatectl`); Bogotá es UTC-5 todo el año:
+WhatsApp), sábado 06:00 de Bogotá. El servidor está en hora de Bogotá
+(`timedatectl`: America/Bogota) y cron usa la hora local:
 
 ```cron
-0 11 * * 6 cd /home/bitnami/app_hotel/hotelPlazuelaMonitor/server && /usr/bin/flock -n /tmp/hotel-tarifas.lock /opt/bitnami/node/bin/node jobs/capturarTarifas.js --provider=serpapi >> /home/bitnami/.pm2/logs/tarifas-competencia.log 2>&1
+0 6 * * 6 cd /home/bitnami/app_hotel/hotelPlazuelaMonitor/server && /usr/bin/flock -n /tmp/hotel-tarifas.lock /opt/bitnami/node/bin/node jobs/capturarTarifas.js --provider=serpapi >> /home/bitnami/.pm2/logs/tarifas-competencia.log 2>&1
 ```
 
 El `.env` del servidor necesita `SERPAPI_API_KEY` y `MONGO_URI`. A mano:
