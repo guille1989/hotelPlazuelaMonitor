@@ -128,7 +128,8 @@ test("al tocar una fecha muestra los hoteles, incluidos los que no tienen precio
   expect(sabado).toHaveAttribute("aria-expanded", "true");
   expect(screen.getByText("Camino Real")).toBeInTheDocument();
   expect(screen.getByText("sin Booking")).toBeInTheDocument();
-  expect(screen.getByTitle("Cancelación gratis no confirmada")).toBeInTheDocument();
+  // El motivo se lee en la fila (en el celular no hay tooltip).
+  expect(screen.getByText("sin cancelación gratis")).toBeInTheDocument();
 });
 
 test("comparte el objetivo de ocupación con Pickup", async () => {

@@ -43,6 +43,20 @@ const mensajeAlerta = (f, totalHabitaciones) =>
     ? `${fechaCorta(f.dia)}: ${f.diferenciaPct}% sobre la mediana y ${f.ocupacion.habitaciones} de ${totalHabitaciones} habitaciones vendidas (${f.ocupacion.pct}%).`
     : `${fechaCorta(f.dia)}: ${Math.abs(f.diferenciaPct)}% bajo la mediana con ${f.ocupacion.pct}% de ocupación; hay margen para subir.`;
 
+// Por qué un precio no entra en la mediana (nonComparableReasons del backend).
+// Visible en la fila: en el celular no hay tooltip.
+const TEXTO_MOTIVO = {
+  cancelacion_no_confirmada: "sin cancelación gratis",
+  cancelacion_no_flexible: "no reembolsable",
+  impuestos_no_confirmados: "impuestos sin confirmar",
+  tarifa_no_publica: "tarifa no pública",
+  tarifa_de_miembro: "tarifa de miembro",
+  moneda_no_cop: "en otra moneda",
+};
+
+const textoMotivos = (motivos) =>
+  motivos.map((m) => TEXTO_MOTIVO[m]).filter(Boolean).join(" · ") || "no comparable";
+
 const TEXTO_SIN_PRECIO = {
   sin_precio_booking: "sin Booking",
   sin_precio_publicado: "sin precio",
@@ -104,11 +118,9 @@ function DetalleHoteles({ fecha }) {
           ].join(" ")}
         >
           <span className="tarifas-hotel-nombre" title={h.habitacion || undefined}>
-            {h.nombre}
+            <span>{h.nombre}</span>
             {h.estado === "no_comparable" && (
-              <span className="tarifas-hotel-marca" title="Cancelación gratis no confirmada">
-                ?
-              </span>
+              <small className="tarifas-hotel-motivo">{textoMotivos(h.motivos)}</small>
             )}
           </span>
           {h.precio !== null ? (
@@ -297,6 +309,12 @@ export default function Tarifas() {
               <p>
                 <b>Mediana:</b> el precio del medio entre los competidores directos
                 comparables (con precio y cancelación gratis confirmada).
+              </p>
+              <p>
+                <b>Sin cancelación gratis:</b> el hotel tiene precio en Booking, pero
+                ninguna de sus tarifas para 2 adultos permite cancelar gratis. Se muestra en
+                gris y no entra en la mediana, para no comparar tu tarifa flexible con una
+                que puede ser no reembolsable (y por eso más barata).
               </p>
               <p>
                 <b>Avisos:</b> solo para los próximos {data.diasAlerta} días. "Caro y vacío"
