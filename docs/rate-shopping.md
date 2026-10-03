@@ -183,9 +183,40 @@ sobre la mediana y ocupación bajo el objetivo) y **barato y lleno** (≥15% baj
 la mediana y ocupación en el objetivo o encima). El objetivo es el mismo de
 Pickup (preferencia compartida en el navegador).
 
+## Captura semanal: sábados
+
+Los horizontes son relativos al día de la captura, así que D+7 y D+14 caen
+siempre el mismo día de la semana en que corre. Se captura **los sábados** para
+que D+7 y D+14 sean sábados (la noche más fuerte); D+1 queda en domingo y D+3
+en martes. Cambiar el día cambia qué noches se comparan semana a semana.
+
+Cron en el servidor de Lightsail (mismo esquema que las notificaciones de
+WhatsApp), sábado 06:00 de Bogotá. Lightsail usa UTC por defecto (confirmar con
+`timedatectl`); Bogotá es UTC-5 todo el año:
+
+```cron
+0 11 * * 6 cd /home/bitnami/app_hotel/hotelPlazuelaMonitor/server && /usr/bin/flock -n /tmp/hotel-tarifas.lock /opt/bitnami/node/bin/node jobs/capturarTarifas.js --provider=serpapi >> /home/bitnami/.pm2/logs/tarifas-competencia.log 2>&1
+```
+
+El `.env` del servidor necesita `SERPAPI_API_KEY` y `MONGO_URI`. A mano:
+`npm run tarifas:run`.
+
+Protecciones del job:
+
+- **Una captura por día.** Si ya existe `serpapi:<fecha>`, no corre; para
+  repetirla a propósito: `--forzar` (gasta otras 49 búsquedas).
+- **Cuota.** Antes de buscar consulta en SerpApi cuántas búsquedas le quedan al
+  plan (esa consulta no gasta). Si no alcanzan para la captura completa, no
+  corre: mejor sin captura que una a medias. `rate_runs.usage.cuotaAntes`
+  guarda cuántas quedaban.
+
+El plan gratis (250) se renueva el día 3 de cada mes, no por mes calendario.
+Un ciclo con 5 sábados gasta 245, así que casi no queda margen para pruebas:
+cada `dry-run` de SerpApi también gasta búsquedas.
+
 ## Próximo hito
 
-1. Programar la captura semanal (`node jobs/capturarTarifas.js --provider=serpapi`).
-2. Desplegar backend y frontend (revisar antes `MONGO_URI` en el `.env` de AWS).
-3. Con 3-4 capturas: gráfico de evolución del precio propio frente a la mediana.
-4. Tras unas semanas, revisar la cobertura de Los Portales Inn y Camino Real.
+1. Registrar el cron en Lightsail y desplegar backend y frontend (revisar antes
+   `MONGO_URI` y `SERPAPI_API_KEY` en el `.env` de AWS).
+2. Con 3-4 capturas: gráfico de evolución del precio propio frente a la mediana.
+3. Tras unas semanas, revisar la cobertura de Los Portales Inn y Camino Real.

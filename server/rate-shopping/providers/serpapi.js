@@ -1,9 +1,11 @@
 // Tarifas de competencia desde Google Hotels a través de SerpApi.
 // Por cada hotel y fecha se pide el detalle de la propiedad (`property_token`)
-// y se toma la tarifa de Booking.com: incluye IVA y trae la política de
-// cancelación, así todos los hoteles se comparan con el mismo criterio. El
-// precio "más bajo" de Google mezcla fuentes con y sin IVA (Expedia vs Booking).
+// y se toma la tarifa de Booking.com: precio final con impuestos (visto desde
+// EE. UU.) y política de cancelación, así todos los hoteles se comparan con el
+// mismo criterio. El precio "más bajo" de Google mezcla fuentes con y sin IVA.
 const SERPAPI_URL = "https://serpapi.com/search.json";
+// La consulta de cuenta no gasta búsquedas del plan.
+const SERPAPI_CUENTA_URL = "https://serpapi.com/account.json";
 const CONSULTA_POR_DEFECTO = "Hoteles en Popayán, Cauca";
 const MAX_BUSQUEDAS_POR_DEFECTO = 60;
 const TIMEOUT_MS_POR_DEFECTO = 45000;
@@ -35,19 +37,56 @@ function enteroConfigurado(valor, predeterminado, minimo, maximo) {
     : predeterminado;
 }
 
+function configuracionSerpApi(opciones = {}) {
+  return {
+    apiKey: String(opciones.apiKey ?? process.env.SERPAPI_API_KEY ?? "").trim(),
+    fetchImpl: opciones.fetchImpl || globalThis.fetch,
+    timeoutMs: enteroConfigurado(
+      opciones.timeoutMs ?? process.env.RATE_SHOPPING_TIMEOUT_MS,
+      TIMEOUT_MS_POR_DEFECTO,
+      5000,
+      120000
+    ),
+  };
+}
+
+function validarConfiguracion({ apiKey, fetchImpl }) {
+  if (!apiKey) throw new Error("Falta configurar SERPAPI_API_KEY");
+  if (typeof fetchImpl !== "function") throw new Error("Este entorno no dispone de fetch");
+}
+
+// Búsquedas que le quedan al plan hasta su renovación (ciclo del día de alta,
+// no mes calendario).
+function crearConsultaCuota(opciones = {}) {
+  const config = configuracionSerpApi(opciones);
+
+  return async function cuota() {
+    validarConfiguracion(config);
+    const url = new URL(SERPAPI_CUENTA_URL);
+    url.searchParams.set("api_key", config.apiKey);
+    const respuesta = await config.fetchImpl(url, {
+      signal: AbortSignal.timeout(config.timeoutMs),
+    });
+    let cuerpo = null;
+    try {
+      cuerpo = await respuesta.json();
+    } catch {
+      cuerpo = null;
+    }
+    const quedan = Number(cuerpo?.total_searches_left);
+    if (!respuesta.ok || cuerpo?.error || !Number.isFinite(quedan)) {
+      throw new Error(`No se pudo consultar la cuota de SerpApi (HTTP ${respuesta.status})`);
+    }
+    return { quedan, renovacion: cuerpo.plan_renewal_date || null };
+  };
+}
+
 function crearClienteSerpApi(opciones = {}) {
-  const apiKey = String(opciones.apiKey ?? process.env.SERPAPI_API_KEY ?? "").trim();
-  const fetchImpl = opciones.fetchImpl || globalThis.fetch;
-  const timeoutMs = enteroConfigurado(
-    opciones.timeoutMs ?? process.env.RATE_SHOPPING_TIMEOUT_MS,
-    TIMEOUT_MS_POR_DEFECTO,
-    5000,
-    120000
-  );
+  const config = configuracionSerpApi(opciones);
+  const { apiKey, fetchImpl, timeoutMs } = config;
 
   return async function buscar(parametros) {
-    if (!apiKey) throw new Error("Falta configurar SERPAPI_API_KEY");
-    if (typeof fetchImpl !== "function") throw new Error("Este entorno no dispone de fetch");
+    validarConfiguracion(config);
 
     const url = new URL(SERPAPI_URL);
     for (const [clave, valor] of Object.entries({
@@ -268,6 +307,9 @@ function crearProveedorSerpApi(opciones = {}) {
     1,
     5000
   );
+  // Con `buscar` inyectado (tests) no se consulta la cuota salvo que se pase `cuota`.
+  const cuota =
+    "cuota" in opciones ? opciones.cuota : opciones.buscar ? null : crearConsultaCuota(opciones);
 
   return {
     id: "serpapi",
@@ -279,12 +321,25 @@ function crearProveedorSerpApi(opciones = {}) {
       const conToken = hoteles.filter((hotel) => hotel.googleHotelsToken);
       const necesarias = conToken.length * consultas.length;
       let busquedas = 0;
+      let cuotaAntes = null;
 
       if (necesarias > maxBusquedas) {
         throw new Error(
           `La captura necesita ${necesarias} búsquedas de SerpApi y el tope por corrida es ` +
             `${maxBusquedas} (RATE_SHOPPING_SERPAPI_MAX_BUSQUEDAS)`
         );
+      }
+      // Mejor no correr que dejar la captura a medias cuando se acaba el plan.
+      if (cuota && necesarias > 0) {
+        const { quedan, renovacion } = await cuota();
+        cuotaAntes = quedan;
+        if (quedan < necesarias) {
+          throw new Error(
+            `Quedan ${quedan} búsquedas de SerpApi` +
+              (renovacion ? ` hasta el ${renovacion}` : "") +
+              ` y la captura necesita ${necesarias}; no se corre para no dejarla a medias`
+          );
+        }
       }
 
       for (const hotel of hoteles) {
@@ -337,7 +392,7 @@ function crearProveedorSerpApi(opciones = {}) {
         }
       }
 
-      return { cotizaciones, errores, usage: { busquedas } };
+      return { cotizaciones, errores, usage: { busquedas, cuotaAntes } };
     },
   };
 }
@@ -347,6 +402,7 @@ module.exports = {
   buscarPropiedades,
   cotizacionBooking,
   crearClienteSerpApi,
+  crearConsultaCuota,
   crearProveedorSerpApi,
   parametrosBusqueda,
   sugerirHotelCatalogo,

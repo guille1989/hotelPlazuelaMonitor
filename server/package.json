@@ -9,6 +9,7 @@
     "notificaciones:dry-run": "node jobs/notificacionesOcupacion.js --dry-run",
     "tarifas:dry-run": "node jobs/capturarTarifas.js --dry-run --provider=mock",
     "tarifas:playwright:dry-run": "node jobs/capturarTarifas.js --dry-run --provider=playwright",
+    "tarifas:run": "node jobs/capturarTarifas.js --provider=serpapi",
     "tarifas:serpapi:dry-run": "node jobs/capturarTarifas.js --dry-run --provider=serpapi",
     "tarifas:serpapi:descubrir": "node jobs/descubrirHotelesGoogle.js"
   },

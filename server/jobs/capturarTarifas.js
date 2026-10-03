@@ -10,7 +10,11 @@ const {
   crearProveedorPlaywright,
 } = require("../rate-shopping/providers/playwright");
 const { crearProveedorSerpApi } = require("../rate-shopping/providers/serpapi");
-const { ejecutarCapturaTarifas } = require("../services/rateShopping");
+const {
+  COLECCIONES,
+  ejecutarCapturaTarifas,
+  fechaCapturaBogota,
+} = require("../services/rateShopping");
 
 function valorArgumento(nombre) {
   const prefijo = `--${nombre}=`;
@@ -65,6 +69,20 @@ async function main() {
   const proveedor = crearProveedor(nombreProveedor);
   const catalogo = catalogoDelProveedor(nombreProveedor);
   const db = dryRun ? null : await getDb();
+
+  // Repetir la captura del día gasta otra corrida completa de la cuota (49 búsquedas
+  // de SerpApi); solo se hace a propósito, con --forzar.
+  if (!dryRun && !process.argv.includes("--forzar")) {
+    const runId = `${proveedor.id}:${fechaCapturaBogota(new Date())}`;
+    const previa = await db
+      .collection(COLECCIONES.ejecuciones)
+      .findOne({ _id: runId }, { projection: { _id: 1 } });
+    if (previa) {
+      console.log(`La captura ${runId} ya existe; no se repite (usa --forzar para repetirla).`);
+      return;
+    }
+  }
+
   const resultado = await ejecutarCapturaTarifas({
     db,
     proveedor,

@@ -4,6 +4,7 @@ const { CATALOGO_HOTELES } = require("../catalogoHoteles");
 const {
   cotizacionBooking,
   crearClienteSerpApi,
+  crearConsultaCuota,
   crearProveedorSerpApi,
   sugerirHotelCatalogo,
 } = require("./serpapi");
@@ -150,7 +151,7 @@ test("consulta el detalle de cada hotel con su token y cuenta las búsquedas", a
       ["B", "2026-10-10", "2026-10-11", 2],
     ]
   );
-  assert.deepEqual(resultado.usage, { busquedas: 2 });
+  assert.deepEqual(resultado.usage, { busquedas: 2, cuotaAntes: null });
   assert.deepEqual(resultado.cotizaciones.map((c) => c.hotelId), ["a", "b"]);
   assert.equal(resultado.errores.length, 0);
 });
@@ -186,7 +187,62 @@ test("reporta cobertura: sin token, sin Booking, sin precios y búsqueda fallida
   assert.match(resultado.errores.find((e) => e.hotelId === "a").message, /Expedia\.com/);
   assert.equal(resultado.cotizaciones.length, 0);
   // Las búsquedas fallidas no cuentan en la cuota de SerpApi.
-  assert.deepEqual(resultado.usage, { busquedas: 2 });
+  assert.deepEqual(resultado.usage, { busquedas: 2, cuotaAntes: null });
+});
+
+test("no empieza si la cuota del plan no alcanza para la captura completa", async () => {
+  const proveedor = crearProveedorSerpApi({
+    cuota: async () => ({ quedan: 1, renovacion: "2026-11-03" }),
+    buscar: async () => assert.fail("no debía buscar"),
+  });
+  await assert.rejects(
+    () =>
+      proveedor.capturar({
+        hoteles: [hotel("a", "A"), hotel("b", "B")],
+        consultas: [consulta],
+        capturedAt,
+      }),
+    /Quedan 1 búsquedas de SerpApi hasta el 2026-11-03 y la captura necesita 2/
+  );
+});
+
+test("con cuota suficiente captura y registra cuántas quedaban", async () => {
+  const proveedor = crearProveedorSerpApi({
+    cuota: async () => ({ quedan: 198, renovacion: "2026-11-03" }),
+    buscar: async () =>
+      detalleConBooking([
+        { name: "Doble", num_guests: 2, rates: [tarifa(100000, { free_cancellation: true })] },
+      ]),
+  });
+  const resultado = await proveedor.capturar({
+    hoteles: [hotel("a", "A")],
+    consultas: [consulta],
+    capturedAt,
+  });
+  assert.deepEqual(resultado.usage, { busquedas: 1, cuotaAntes: 198 });
+});
+
+test("la consulta de cuota lee las búsquedas restantes sin filtrar la API key", async () => {
+  let urlPedida;
+  const cuota = crearConsultaCuota({
+    apiKey: "secreta",
+    fetchImpl: async (url) => {
+      urlPedida = url;
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({ total_searches_left: 198, plan_renewal_date: "2026-11-03" }),
+      };
+    },
+  });
+  assert.deepEqual(await cuota(), { quedan: 198, renovacion: "2026-11-03" });
+  assert.equal(urlPedida.pathname, "/account.json");
+
+  const fallida = crearConsultaCuota({
+    apiKey: "secreta",
+    fetchImpl: async () => ({ ok: false, status: 401, json: async () => ({ error: "x" }) }),
+  });
+  await assert.rejects(fallida, (error) => !error.message.includes("secreta"));
 });
 
 test("se niega a correr si la captura supera el tope de búsquedas", async () => {
