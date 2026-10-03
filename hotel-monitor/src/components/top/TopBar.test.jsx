@@ -26,7 +26,7 @@ describe("toggle de vistas de TopBar", () => {
       .getAllByRole("button")
       .map((button) => button.textContent);
 
-    expect(etiquetas).toEqual(["Hoy", "Mes", "Resumen", "Pickup"]);
+    expect(etiquetas).toEqual(["Hoy", "Mes", "Resumen", "Trasunto", "Pickup"]);
     expect(screen.getByRole("button", { name: "Hoy" })).toHaveClass("activo");
   });
 

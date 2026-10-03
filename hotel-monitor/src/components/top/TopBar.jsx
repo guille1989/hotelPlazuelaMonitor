@@ -8,6 +8,7 @@ const VISTAS = [
   ["hoy", "Hoy"],
   ["mes", "Mes"],
   ["resumen", "Resumen"],
+  ["trasunto", "Trasunto"],
   ["pickup", "Pickup"],
 ];
 

@@ -5,7 +5,7 @@ const {
   habitaciones,
   filtroTraslape,
 } = require("./ocupacion");
-const { CONCEPTOS_ALOJAMIENTO, ingresoPorDia } = require("./ingresoAlojamiento");
+const { CONCEPTOS_ALOJAMIENTO, alojamientoPorDia } = require("./ingresoAlojamiento");
 
 // "En casa": la reserva tiene check-in hecho (estado 31) o es un walk-in.
 const enCasa = (r) => {
@@ -44,6 +44,7 @@ async function ocupacionPorDia(db, dias) {
         real: null,
         proyectada: null,
         tarifas: 0,
+        iva: 0, // IVA del alojamiento, solo en días con folio
         habsTarifa: 0,
         cancelaciones: 0,
         fuente: "reservas",
@@ -69,6 +70,7 @@ async function ocupacionPorDia(db, dias) {
     if (!habsPorDia.has(c.fecha)) habsPorDia.set(c.fecha, new Set());
     habsPorDia.get(c.fecha).add(c.numero_habitacion);
     d.tarifas += c.valor_neto || 0;
+    d.iva += c.iva || 0;
     d.fuente = "folio";
   }
   for (const [dia, set] of habsPorDia) {
@@ -82,9 +84,12 @@ async function ocupacionPorDia(db, dias) {
   // adicionales, ajustes y correcciones); si no, el de la auditoría. El respaldo cubre
   // el histórico mientras el ETL que llena `movimientos_alojamiento` no haya corrido.
   if (habsPorDia.size > 0) {
-    const ingresoMov = await ingresoPorDia(db, inicio, fin);
+    const alojamientoMov = await alojamientoPorDia(db, inicio, fin);
     for (const dia of habsPorDia.keys()) {
-      if (ingresoMov.has(dia)) porDia.get(dia).tarifas = ingresoMov.get(dia);
+      const mov = alojamientoMov.get(dia);
+      if (!mov) continue;
+      porDia.get(dia).tarifas = mov.neto;
+      porDia.get(dia).iva = mov.iva;
     }
   }
 

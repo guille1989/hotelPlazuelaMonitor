@@ -1,0 +1,195 @@
+.trasunto {
+  padding: 4px 16px 24px;
+}
+
+.trasunto-head {
+  text-align: center;
+  margin: 20px 0 4px;
+}
+.trasunto-eyebrow {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+.trasunto-mes {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 3px;
+}
+.trasunto-mes h2 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-text);
+  letter-spacing: -0.02em;
+  margin: 0;
+  min-width: 150px;
+}
+.trasunto-mes button {
+  border: none;
+  background: var(--color-surface);
+  color: var(--color-text);
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: 1.1rem;
+  line-height: 1;
+}
+.trasunto-mes button:disabled {
+  color: var(--color-muted);
+  opacity: 0.4;
+  cursor: default;
+}
+
+.trasunto-estado {
+  text-align: center;
+  color: var(--color-muted);
+  padding: 24px 0;
+  font-size: 0.85rem;
+}
+.trasunto-estado.err {
+  color: var(--color-red);
+}
+
+.trasunto-contexto {
+  text-align: center;
+  margin: 10px auto 12px;
+  font-size: 0.75rem;
+  color: var(--color-muted);
+}
+
+.trasunto-total,
+.trasunto-rubro {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+}
+.trasunto-total {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 14px 12px;
+  margin-bottom: 8px;
+}
+.trasunto-total span,
+.trasunto-rubro span {
+  color: var(--color-muted);
+  font-size: 0.67rem;
+}
+.trasunto-total strong {
+  color: var(--color-accent);
+  font-size: 1.55rem;
+  line-height: 1.2;
+  margin-top: 4px;
+}
+.trasunto-total small,
+.trasunto-rubro small {
+  color: var(--color-muted);
+  font-size: 0.6rem;
+  line-height: 1.4;
+}
+
+.trasunto-rubros {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.trasunto-rubro {
+  display: flex;
+  flex-direction: column;
+  padding: 9px 12px;
+}
+.trasunto-rubro strong {
+  color: var(--color-text);
+  font-size: 0.95rem;
+  line-height: 1.3;
+}
+.trasunto-rubro:first-child {
+  grid-column: 1 / -1;
+}
+.trasunto-rubro:first-child strong {
+  color: var(--color-accent);
+  font-size: 1.1rem;
+}
+
+/* Tabla: un día por columna; se desplaza de lado dentro de su caja y la columna de
+   rubros queda fija. */
+.trasunto-tabla-wrap {
+  overflow-x: auto;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+}
+.trasunto-tabla {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: 100%;
+  font-size: 0.68rem;
+  font-variant-numeric: tabular-nums;
+}
+.trasunto-tabla th,
+.trasunto-tabla td {
+  padding: 6px 9px;
+  text-align: right;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--color-border);
+}
+.trasunto-tabla thead th {
+  color: var(--color-text);
+  font-weight: 600;
+  text-align: center;
+  background: var(--color-surface);
+}
+.trasunto-tabla th:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  text-align: left;
+  background: var(--color-surface);
+  color: var(--color-muted);
+  font-weight: 600;
+  border-right: 1px solid var(--color-border);
+}
+.trasunto-tabla thead th:first-child {
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.trasunto-tabla tbody tr:last-child th,
+.trasunto-tabla tbody tr:last-child td {
+  border-bottom: none;
+}
+.trasunto-tabla tr.destacada td,
+.trasunto-tabla tr.destacada th {
+  color: var(--color-accent);
+  font-weight: 600;
+}
+.trasunto-tabla th.pendiente,
+.trasunto-tabla td.pendiente {
+  color: var(--color-muted);
+  text-align: center;
+}
+.trasunto-tabla .total {
+  background: var(--color-surface);
+  border-left: 1px solid rgba(140, 244, 238, 0.3);
+  font-weight: 700;
+}
+
+.trasunto-leyenda {
+  margin: 6px 4px 0;
+  font-size: 0.62rem;
+  color: var(--color-muted);
+}
+
+.trasunto-nota {
+  margin: 12px 4px 0;
+  font-size: 0.62rem;
+  line-height: 1.5;
+  color: var(--color-muted);
+}
