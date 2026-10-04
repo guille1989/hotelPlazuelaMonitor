@@ -45,6 +45,15 @@ export const etiquetaMes = (ym) => {
   return `${MESES_CORTO[m - 1]} ${y}`;
 };
 
+const DIAS_SEMANA_CORTO = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+
+// "2026-10-04" -> "Dom 4 oct"
+export const fechaCorta = (ymd) => {
+  const [y, m, d] = ymd.split("-").map(Number);
+  const semana = DIAS_SEMANA_CORTO[new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
+  return `${semana} ${d} ${MESES_CORTO[m - 1].toLowerCase()}`;
+};
+
 // Códigos de MODO_RES de Zeus -> nombre y color para el mix de canales.
 // AJUSTAR según confirme recepción qué significa cada letra.
 export const CANALES = {

@@ -2,6 +2,36 @@
   padding: 4px 16px 24px;
 }
 
+.tarifas-controles {
+  margin-top: 14px;
+}
+.tarifas-subvistas {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+}
+.tarifas-subvistas button {
+  border: none;
+  background: var(--color-surface);
+  color: var(--color-muted);
+  padding: 5px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: 0.75rem;
+  font-weight: 500;
+  transition: background 0.18s ease, color 0.18s ease;
+}
+.tarifas-subvistas button.activo {
+  background: var(--color-accent);
+  color: #1f293d;
+  font-weight: 600;
+}
+.tarifas-subvistas button:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
 .tarifas-head {
   text-align: center;
   margin: 20px 0 4px;
@@ -59,44 +89,6 @@
 }
 .tarifas-state.err {
   color: var(--color-red);
-}
-
-.tarifas-alerta {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  border-radius: 12px;
-  padding: 10px 14px;
-  margin: 12px 0 0;
-}
-.tarifas-alerta p {
-  margin: 0;
-  font-size: 0.75rem;
-  line-height: 1.4;
-  color: var(--color-text);
-}
-.tarifas-alerta-badge {
-  flex: 0 0 auto;
-  border-radius: 99px;
-  padding: 4px 10px;
-  font-size: 0.66rem;
-  font-weight: 700;
-  white-space: nowrap;
-  color: #1f293d;
-}
-.tarifas-alerta.caro_vacio {
-  background: rgba(250, 204, 21, 0.08);
-  border: 1px solid rgba(250, 204, 21, 0.2);
-}
-.tarifas-alerta.caro_vacio .tarifas-alerta-badge {
-  background: var(--color-amber);
-}
-.tarifas-alerta.barato_lleno {
-  background: var(--color-accent-dim);
-  border: 1px solid rgba(140, 244, 238, 0.25);
-}
-.tarifas-alerta.barato_lleno .tarifas-alerta-badge {
-  background: var(--color-accent);
 }
 
 .tarifas-leyenda {

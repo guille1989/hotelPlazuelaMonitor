@@ -13,7 +13,27 @@ los aplica a mano en la extranet de Booking. Los convenios corporativos no se to
 | `services/motorTarifas.js` | Reglas: de las señales a la recomendación con %, confianza y motivo |
 | `services/recomendacionesTarifa.js` | Señales + motor, y el registro en `copiloto_recomendaciones` |
 | `services/eventosCopiloto.js` | Eventos de demanda cargados desde JSON |
-| `GET /api/recomendaciones?dias=60&objetivo=75` | Lo mismo para el dashboard, calculado al momento |
+| `GET /api/recomendaciones?dias=60&objetivo=75` | Lo mismo para el dashboard, calculado al momento, con `yaAplicada` si la fecha se marcó en los últimos 7 días |
+| `POST /api/recomendaciones/aplicada` `{dia, accion, pct}` | Marca que se cambió el precio en Booking como se recomendó |
+| `DELETE /api/recomendaciones/aplicada/:dia` | Deshace la marca |
+| `hotel-monitor/src/components/Copiloto.jsx` | Vista "Recomendaciones" de la pestaña Tarifas |
+
+## Vista en el dashboard
+
+La pestaña **Tarifas** abre en **Recomendaciones** (la otra subvista, **Competencia**,
+es la lista de precios de Booking que había antes, sin los avisos "caro y vacío /
+barato y lleno", que el copiloto reemplaza). El objetivo de ocupación es el mismo de
+Pickup y vale para las dos.
+
+- "Para revisar": fechas para subir, bajar o con un grupo por confirmar (cotización de
+  5+ habitaciones). "Todas": las 60, incluidas las de mantener y las ya aplicadas.
+- Agrupadas por tramo: próximos 7 días, 8–14, 15–30 y más de 30.
+- Al tocar una fecha: el motivo, lo que hay en libros, el pronóstico, el año pasado,
+  el precio con IVA contra la competencia, piso y techo, y eventos.
+- **"Ya cambié el precio en Booking"**: guarda la marca en la recomendación del día.
+  Esa fecha no vuelve a pedir cambio en 7 días, porque hasta la captura del sábado el
+  copiloto sigue viendo el precio anterior y repetiría la misma subida. Es el tope de
+  un paso por semana y el dato que necesita la medición de la Fase 5.
 
 ## Comandos (desde `server/`)
 
@@ -94,7 +114,9 @@ Además:
 - `copiloto_recomendaciones`: una por corrida y fecha (`_id` =
   `<corrida>:<fecha>`), con la recomendación, la versión de reglas, la tendencia y
   el resumen de señales. Volver a correr el mismo día la reemplaza sin tocar los
-  campos que se agreguen después (si se aplicó, cómo cerró).
+  campos que se agreguen después. `aplicada: {en, corrida, accion, pct}` se agrega
+  desde el dashboard; si el cron todavía no guardó la corrida del día, la marca crea
+  el documento y el cron lo completa.
 
 ## Cron
 
@@ -107,6 +129,7 @@ competencia de las 06:00:
 
 ## Próximos pasos
 
-- Fase 3: vista en el dashboard (evoluciona la pestaña Tarifas) con botón "aplicada".
 - Fase 4: herramienta en el agente de WhatsApp y resumen de los sábados.
 - Fase 5: completar cada recomendación con el resultado y ajustar las reglas.
+- El backend no tiene autenticación (decisión aparcada): quien conozca la URL podría
+  marcar o desmarcar fechas. Solo afecta los datos de medición.

@@ -1,28 +1,35 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { MESES_CORTO, formatCOP } from "../config";
+import { fechaCorta, formatCOP } from "../config";
 import { apiUrl } from "../api";
+import Copiloto from "./Copiloto";
 import "./Tarifas.css";
 
 // Mismo objetivo de ocupación que Pickup (se comparte la preferencia guardada).
 const OBJETIVOS = [60, 65, 70, 75, 80, 85, 90, 95];
 const CLAVE_OBJETIVO = "pickupObjetivoOcupacion";
-const DIAS_SEMANA = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+const SUBVISTAS = [
+  ["recomendaciones", "Recomendaciones"],
+  ["competencia", "Competencia"],
+];
+const CLAVE_SUBVISTA = "tarifasSubvista";
 
-const objetivoGuardado = () => {
+const leerPreferencia = (clave, validos, porDefecto) => {
   try {
-    const valor = Number(window.localStorage.getItem(CLAVE_OBJETIVO));
-    return OBJETIVOS.includes(valor) ? valor : 75;
+    const valor = window.localStorage.getItem(clave);
+    const convertido = typeof porDefecto === "number" ? Number(valor) : valor;
+    return validos.includes(convertido) ? convertido : porDefecto;
   } catch {
-    return 75;
+    return porDefecto;
   }
 };
 
-// "2026-10-04" -> "Dom 4 oct"
-const fechaCorta = (ymd) => {
-  const [y, m, d] = ymd.split("-").map(Number);
-  const semana = DIAS_SEMANA[new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
-  return `${semana} ${d} ${MESES_CORTO[m - 1].toLowerCase()}`;
+const guardarPreferencia = (clave, valor) => {
+  try {
+    window.localStorage.setItem(clave, String(valor));
+  } catch {
+    // La vista funciona aunque el navegador no permita almacenamiento local.
+  }
 };
 
 const conSigno = (pct) => `${pct > 0 ? "+" : pct < 0 ? "−" : ""}${Math.abs(pct)}%`;
@@ -32,16 +39,6 @@ const textoPosicion = ({ lugar, de }) => {
   if (lugar === de) return `el más caro de ${de}`;
   return `${lugar}.º más barato de ${de}`;
 };
-
-const TITULO_ALERTA = {
-  caro_vacio: "Caro y vacío",
-  barato_lleno: "Barato y lleno",
-};
-
-const mensajeAlerta = (f, totalHabitaciones) =>
-  f.alerta === "caro_vacio"
-    ? `${fechaCorta(f.dia)}: ${f.diferenciaPct}% sobre la mediana y ${f.ocupacion.habitaciones} de ${totalHabitaciones} habitaciones vendidas (${f.ocupacion.pct}%).`
-    : `${fechaCorta(f.dia)}: ${Math.abs(f.diferenciaPct)}% bajo la mediana con ${f.ocupacion.pct}% de ocupación; hay margen para subir.`;
 
 // Por qué un precio no entra en la mediana (nonComparableReasons del backend).
 // Visible en la fila: en el celular no hay tooltip.
@@ -139,8 +136,58 @@ function DetalleHoteles({ fecha }) {
   );
 }
 
+// Pestaña Tarifas: el copiloto (qué hacer con cada fecha) y la competencia (precios
+// de Booking). El objetivo de ocupación es el mismo de Pickup y vale para las dos.
 export default function Tarifas() {
-  const [objetivo, setObjetivo] = useState(objetivoGuardado);
+  const [subvista, setSubvista] = useState(() =>
+    leerPreferencia(CLAVE_SUBVISTA, SUBVISTAS.map(([id]) => id), "recomendaciones")
+  );
+  const [objetivo, setObjetivo] = useState(() =>
+    leerPreferencia(CLAVE_OBJETIVO, OBJETIVOS, 75)
+  );
+
+  useEffect(() => guardarPreferencia(CLAVE_SUBVISTA, subvista), [subvista]);
+  useEffect(() => guardarPreferencia(CLAVE_OBJETIVO, objetivo), [objetivo]);
+
+  return (
+    <div className="tarifas">
+      <div className="tarifas-controles">
+        <div className="tarifas-subvistas" role="tablist" aria-label="Vista de tarifas">
+          {SUBVISTAS.map(([id, etiqueta]) => (
+            <button
+              key={id}
+              type="button"
+              role="tab"
+              aria-selected={subvista === id}
+              className={subvista === id ? "activo" : ""}
+              onClick={() => setSubvista(id)}
+            >
+              {etiqueta}
+            </button>
+          ))}
+        </div>
+        <label className="tarifas-objetivo">
+          Objetivo de ocupación
+          <select
+            value={objetivo}
+            onChange={(evento) => setObjetivo(Number(evento.target.value))}
+          >
+            {OBJETIVOS.map((valor) => (
+              <option key={valor} value={valor}>{valor}%</option>
+            ))}
+          </select>
+        </label>
+      </div>
+      {subvista === "recomendaciones" ? (
+        <Copiloto objetivo={objetivo} />
+      ) : (
+        <Competencia objetivo={objetivo} />
+      )}
+    </div>
+  );
+}
+
+export function Competencia({ objetivo }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -167,14 +214,6 @@ export default function Tarifas() {
     };
   }, [objetivo]);
 
-  useEffect(() => {
-    try {
-      window.localStorage.setItem(CLAVE_OBJETIVO, String(objetivo));
-    } catch {
-      // La vista funciona aunque el navegador no permita almacenamiento local.
-    }
-  }, [objetivo]);
-
   const alternar = (dia) =>
     setAbiertas((previas) => {
       const nuevas = new Set(previas);
@@ -185,14 +224,13 @@ export default function Tarifas() {
 
   const fechas = (data && data.fechas) || [];
   const escala = escalaPrecios(fechas);
-  const alertas = fechas.filter((f) => f.alerta);
   const directos = fechas.length
     ? fechas[0].hoteles.filter((h) => !h.propio && h.grupo === "directo").length
     : 0;
   const resumen = data && data.ejecucion && data.ejecucion.summary;
 
   return (
-    <div className="tarifas">
+    <>
       <div className="tarifas-head">
         <div className="tarifas-eyebrow">Competencia en Booking</div>
         <h2 className="tarifas-titulo">
@@ -204,17 +242,6 @@ export default function Tarifas() {
             desde EE. UU.
           </div>
         )}
-        <label className="tarifas-objetivo">
-          Objetivo de ocupación
-          <select
-            value={objetivo}
-            onChange={(evento) => setObjetivo(Number(evento.target.value))}
-          >
-            {OBJETIVOS.map((valor) => (
-              <option key={valor} value={valor}>{valor}%</option>
-            ))}
-          </select>
-        </label>
       </div>
 
       {loading && <div className="tarifas-state">Cargando…</div>}
@@ -226,13 +253,6 @@ export default function Tarifas() {
 
       {!loading && !error && data && data.ejecucion && (
         <>
-          {alertas.map((f) => (
-            <div key={f.dia} className={`tarifas-alerta ${f.alerta}`}>
-              <span className="tarifas-alerta-badge">{TITULO_ALERTA[f.alerta]}</span>
-              <p>{mensajeAlerta(f, data.totalHabitaciones)}</p>
-            </div>
-          ))}
-
           <div className="tarifas-leyenda" aria-hidden="true">
             <span><i className="propio" /> La Plazuela</span>
             <span><i className="punto" /> competidor</span>
@@ -303,8 +323,10 @@ export default function Tarifas() {
               </p>
               <p>
                 <b>Precio visto desde EE. UU.:</b> Booking cambia el precio según el país de
-                quien busca. Todos los hoteles se miden igual, así que sirve para comparar,
-                pero puede no ser lo que paga un huésped colombiano.
+                quien busca. A los extranjeros les muestra el precio de La Plazuela sin el
+                19 % de IVA (están exentos); un huésped colombiano lo ve con el IVA aparte.
+                Algunos competidores, como Popayán Plaza, ya incluyen el IVA en su precio.
+                Las recomendaciones comparan con el IVA incluido.
               </p>
               <p>
                 <b>Mediana:</b> el precio del medio entre los competidores directos
@@ -317,12 +339,6 @@ export default function Tarifas() {
                 que puede ser no reembolsable (y por eso más barata).
               </p>
               <p>
-                <b>Avisos:</b> solo para los próximos {data.diasAlerta} días. "Caro y vacío"
-                cuando estás {data.umbralAlertaPct}% o más sobre la mediana con la ocupación
-                bajo el objetivo; "Barato y lleno" cuando estás {data.umbralAlertaPct}% o
-                más bajo la mediana con la ocupación en el objetivo o encima.
-              </p>
-              <p>
                 <b>Sin precio:</b> Google no muestra tarifa para esa fecha. No significa que
                 el hotel esté lleno.
               </p>
@@ -330,6 +346,6 @@ export default function Tarifas() {
           </details>
         </>
       )}
-    </div>
+    </>
   );
 }

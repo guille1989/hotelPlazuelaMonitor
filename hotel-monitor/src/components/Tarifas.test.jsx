@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import axios from "axios";
-import Tarifas from "./Tarifas";
+import Tarifas, { Competencia } from "./Tarifas";
 
 jest.mock("axios", () => ({
   __esModule: true,
@@ -94,20 +94,16 @@ afterEach(() => {
   jest.clearAllMocks();
 });
 
-test("muestra cada fecha con su precio, la diferencia y el aviso de caro y vacío", async () => {
+test("muestra cada fecha con su precio y la diferencia con la mediana", async () => {
   axios.get.mockResolvedValue(respuesta);
-  render(<Tarifas />);
+  render(<Competencia objetivo={75} />);
 
   expect(
     await screen.findByRole("heading", { name: "Tu tarifa frente a 6 directos" })
   ).toBeInTheDocument();
   expect(axios.get).toHaveBeenCalledWith(expect.stringContaining("/api/tarifas?objetivo=75"));
-  expect(screen.getByText("Caro y vacío")).toBeInTheDocument();
-  expect(
-    screen.getByText(
-      "Lun 2 nov: 43% sobre la mediana y 2 de 29 habitaciones vendidas (7%)."
-    )
-  ).toBeInTheDocument();
+  // Los avisos "caro y vacío / barato y lleno" los reemplaza el copiloto.
+  expect(screen.queryByText("Caro y vacío")).not.toBeInTheDocument();
 
   const sabado = screen.getByRole("button", { name: /Sáb 10 oct/ });
   expect(within(sabado).getByText("D+7 · ocupación 17%")).toBeInTheDocument();
@@ -118,7 +114,7 @@ test("muestra cada fecha con su precio, la diferencia y el aviso de caro y vací
 
 test("al tocar una fecha muestra los hoteles, incluidos los que no tienen precio", async () => {
   axios.get.mockResolvedValue(respuesta);
-  render(<Tarifas />);
+  render(<Competencia objetivo={75} />);
 
   const sabado = await screen.findByRole("button", { name: /Sáb 10 oct/ });
   expect(sabado).toHaveAttribute("aria-expanded", "false");
@@ -132,18 +128,50 @@ test("al tocar una fecha muestra los hoteles, incluidos los que no tienen precio
   expect(screen.getByText("sin cancelación gratis")).toBeInTheDocument();
 });
 
-test("comparte el objetivo de ocupación con Pickup", async () => {
-  window.localStorage.setItem("pickupObjetivoOcupacion", "85");
-  axios.get.mockResolvedValue(respuesta);
+// La pestaña pide recomendaciones o competencia según la subvista elegida.
+const responderPorRuta = () =>
+  axios.get.mockImplementation((url) =>
+    Promise.resolve(
+      url.includes("/api/recomendaciones")
+        ? { data: { hoy: "2026-10-04", capturas: [], recomendaciones: [] } }
+        : respuesta
+    )
+  );
+
+test("abre en las recomendaciones y recuerda si se cambia a la competencia", async () => {
+  responderPorRuta();
   render(<Tarifas />);
 
-  await screen.findByText("Caro y vacío");
-  expect(axios.get).toHaveBeenCalledWith(expect.stringContaining("objetivo=85"));
+  expect(await screen.findByText("Copiloto de tarifas")).toBeInTheDocument();
+  expect(axios.get).toHaveBeenCalledWith(expect.stringContaining("/api/recomendaciones"));
+  expect(screen.getByRole("tab", { name: "Recomendaciones" })).toHaveAttribute("aria-selected", "true");
+
+  fireEvent.click(screen.getByRole("tab", { name: "Competencia" }));
+  expect(
+    await screen.findByRole("heading", { name: "Tu tarifa frente a 6 directos" })
+  ).toBeInTheDocument();
+  expect(window.localStorage.getItem("tarifasSubvista")).toBe("competencia");
+});
+
+test("comparte el objetivo de ocupación con Pickup en las dos subvistas", async () => {
+  window.localStorage.setItem("pickupObjetivoOcupacion", "85");
+  window.localStorage.setItem("tarifasSubvista", "competencia");
+  responderPorRuta();
+  render(<Tarifas />);
+
+  await screen.findByRole("heading", { name: "Tu tarifa frente a 6 directos" });
+  expect(axios.get).toHaveBeenCalledWith(expect.stringContaining("/api/tarifas?objetivo=85"));
+
+  fireEvent.change(screen.getByRole("combobox"), { target: { value: "70" } });
+  fireEvent.click(screen.getByRole("tab", { name: "Recomendaciones" }));
+  await screen.findByText("Copiloto de tarifas");
+  expect(axios.get).toHaveBeenCalledWith(expect.stringContaining("/api/recomendaciones?dias=60&objetivo=70"));
+  expect(window.localStorage.getItem("pickupObjetivoOcupacion")).toBe("70");
 });
 
 test("sin capturas lo dice en vez de mostrar una lista vacía", async () => {
   axios.get.mockResolvedValue({ data: { ejecucion: null, objetivoPct: 75, fechas: [] } });
-  render(<Tarifas />);
+  render(<Competencia objetivo={75} />);
 
   expect(await screen.findByText("Todavía no hay capturas de tarifas.")).toBeInTheDocument();
 });
