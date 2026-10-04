@@ -11,7 +11,9 @@
     "tarifas:playwright:dry-run": "node jobs/capturarTarifas.js --dry-run --provider=playwright",
     "tarifas:run": "node jobs/capturarTarifas.js --provider=serpapi",
     "tarifas:serpapi:dry-run": "node jobs/capturarTarifas.js --dry-run --provider=serpapi",
-    "tarifas:serpapi:descubrir": "node jobs/descubrirHotelesGoogle.js"
+    "tarifas:serpapi:descubrir": "node jobs/descubrirHotelesGoogle.js",
+    "copiloto:senales": "node jobs/tablaSenales.js",
+    "copiloto:eventos": "node jobs/cargarEventos.js"
   },
   "keywords": [],
   "author": "",

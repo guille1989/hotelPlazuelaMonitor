@@ -1,0 +1,201 @@
+{
+  "origen": "Estudio de impacto turístico en Popayán, corte 2026-10-04",
+  "notas": "Noches de desde a hasta inclusive. Impacto = impacto sobre alojamiento. Festivos y puentes no van aquí: los calcula functions/calendarioColombia.js. Excluidos: Noche de Museos (ya realizado), Simulacro Nacional (no genera demanda) y eventos sin fecha (Festival de las Colonias).",
+  "eventos": [
+    {
+      "nombre": "Receso escolar de octubre",
+      "desde": "2026-10-05",
+      "hasta": "2026-10-11",
+      "impacto": "alto",
+      "categoria": "receso_escolar",
+      "estado": "confirmado para calendario A; puede variar en colegios privados",
+      "observaciones": "Con el festivo del 12 de octubre, muchas familias tienen descanso continuo del 5 al 12.",
+      "fuente": "https://mineducacion.gov.co/portal/micrositios-preescolar-basica-y-media/Matriculas/426215%3ACalendario-Escolar-2026"
+    },
+    {
+      "nombre": "Final departamental de los Juegos Intercolegiados",
+      "desde": "2026-09-29",
+      "hasta": "2026-10-22",
+      "impacto": "medio",
+      "categoria": "deportivo",
+      "estado": "confirmado",
+      "observaciones": "Más de 500 deportistas, entrenadores y delegados. Puede generar reservas de grupos y desayunos tempranos.",
+      "fuente": "https://www.cauca.gov.co/Prensa/SaladePrensa/Paginas/Cauca-inici%C3%B3-la-fase-final-departamental-de-los-Juegos-Intercolegiados-2026.aspx"
+    },
+    {
+      "nombre": "Expovivienda Popayán 2026",
+      "desde": "2026-10-02",
+      "hasta": "2026-10-04",
+      "impacto": "bajo-medio",
+      "categoria": "feria_comercial",
+      "estado": "confirmado",
+      "fuente": "https://www.comfacauca.com/eventos/expo-vivienda-popayan/"
+    },
+    {
+      "nombre": "Festival Internacional de Títeres",
+      "desde": "2026-10-03",
+      "hasta": "2026-10-17",
+      "impacto": "medio",
+      "categoria": "cultural_familiar",
+      "estado": "confirmado",
+      "observaciones": "Fechas principales 3, 10 y 17 de octubre. Participantes de España, Chile y Colombia; favorece turismo familiar.",
+      "fuente": "https://festivaldetiterespopayan.com.co/"
+    },
+    {
+      "nombre": "Festival de Cine Corto",
+      "desde": "2026-10-05",
+      "hasta": "2026-10-09",
+      "impacto": "medio-alto",
+      "categoria": "audiovisual",
+      "estado": "confirmado",
+      "observaciones": "Programación central del 5 al 9; el organizador anuncia el ciclo hasta el 11. Realizadores, invitados y estudiantes.",
+      "fuente": "https://festicinepopayan.com/"
+    },
+    {
+      "nombre": "Semana del Espacio e Hidrochallenge",
+      "desde": "2026-10-05",
+      "hasta": "2026-10-09",
+      "impacto": "bajo-medio",
+      "categoria": "academico_cientifico",
+      "estado": "confirmado",
+      "fuente": "https://www.unicauca.edu.co/evento-detalle-cultura/?idEvento=479"
+    },
+    {
+      "nombre": "Seminario de Educación Artística",
+      "desde": "2026-10-08",
+      "hasta": "2026-10-09",
+      "impacto": "bajo",
+      "categoria": "academico_cultural",
+      "estado": "confirmado"
+    },
+    {
+      "nombre": "Corporación Gastronómica (probable Congreso Gastronómico)",
+      "desde": "2026-10-22",
+      "hasta": "2026-10-24",
+      "impacto": "alto",
+      "categoria": "gastronomico",
+      "estado": "inferido de Zeus, por confirmar",
+      "observaciones": "No está en el estudio. Grupo de la Corporación Gastronómica de Popayán con 26 habitaciones del 22 al 25 de octubre (reserva 037163); en 2025 vino del 18 al 25 de octubre."
+    },
+    {
+      "nombre": "Festival de la Juventud",
+      "desde": "2026-10-26",
+      "hasta": "2026-11-01",
+      "impacto": "medio",
+      "categoria": "cultural_social",
+      "estado": "confirmado, programación detallada pendiente",
+      "observaciones": "El impacto podría subir si la programación incluye conciertos o delegaciones regionales.",
+      "fuente": "https://www.popayan.gov.co/NuestraAlcaldia/SaladePrensa/Paginas/COMPOS-2026-Popay%C3%A1n-eval%C3%BAa-el-avance-de-sus-pol%C3%ADticas-sociales-y-traza-agenda-para-el-Festival-de-la-Juventud-.aspx"
+    },
+    {
+      "nombre": "Halloween",
+      "desde": "2026-10-31",
+      "hasta": "2026-10-31",
+      "impacto": "medio",
+      "categoria": "celebracion_comercial",
+      "estado": "fecha confirmada, programación municipal pendiente",
+      "observaciones": "Sábado del puente de Todos los Santos, junto con el Festival de la Juventud."
+    },
+    {
+      "nombre": "Popayán Ciudad Libro",
+      "desde": "2026-11-05",
+      "hasta": "2026-11-12",
+      "impacto": "alto",
+      "categoria": "feria_cultural_literaria",
+      "estado": "confirmado",
+      "observaciones": "En 2024: unos 10.000 asistentes y 110 invitados. Escritores, editoriales y organizadores pueden reservar varias noches.",
+      "fuente": "https://ciudadlibro.com/"
+    },
+    {
+      "nombre": "Concierto Candlelight",
+      "desde": "2026-11-08",
+      "hasta": "2026-11-08",
+      "impacto": "bajo",
+      "categoria": "musical",
+      "estado": "confirmado",
+      "fuente": "https://feverup.com/es/popayan-colombia/candlelight/"
+    },
+    {
+      "nombre": "Grados públicos UNICOMFACAUCA",
+      "desde": "2026-11-13",
+      "hasta": "2026-11-13",
+      "impacto": "medio",
+      "categoria": "graduacion_universitaria",
+      "estado": "confirmado",
+      "observaciones": "Puede generar una noche de alojamiento para familias de otros municipios.",
+      "fuente": "https://www.unicomfacauca.edu.co/estudiantes/calendario-academico-pregrado-2026-2/"
+    },
+    {
+      "nombre": "Concierto Candlelight",
+      "desde": "2026-11-15",
+      "hasta": "2026-11-15",
+      "impacto": "bajo",
+      "categoria": "musical",
+      "estado": "confirmado",
+      "fuente": "https://feverup.com/es/popayan-colombia/candlelight/"
+    },
+    {
+      "nombre": "Nuestra Señora de Belén (inicio)",
+      "desde": "2026-11-21",
+      "hasta": "2026-11-26",
+      "impacto": "bajo-medio",
+      "categoria": "religioso_cultural",
+      "estado": "tradicional; fechas estimadas, programación 2026 pendiente",
+      "observaciones": "Las procesiones principales suelen ser en diciembre."
+    },
+    {
+      "nombre": "Noche y Son Pisojé",
+      "desde": "2026-11-27",
+      "hasta": "2026-11-27",
+      "impacto": "bajo",
+      "categoria": "recreativo",
+      "estado": "confirmado",
+      "fuente": "https://www.comfacauca.com/eventos/noche-y-son-pisoje-11/"
+    },
+    {
+      "nombre": "Exposición Equina ASDECCA-Fedequinas",
+      "desde": "2026-11-27",
+      "hasta": "2026-11-28",
+      "impacto": "alto",
+      "categoria": "equina_agropecuaria",
+      "estado": "confirmado; sede y programación complementaria pendientes",
+      "observaciones": "Grado A. Criadores, jueces, propietarios y equipos de otros municipios y departamentos.",
+      "fuente": "https://fedequinas.org/event/popayan-cauca-asdecca/"
+    },
+    {
+      "nombre": "Ventana de demanda: receso, cine, títeres y puente",
+      "tipo": "ventana",
+      "desde": "2026-10-09",
+      "hasta": "2026-10-12",
+      "impacto": "muy alto"
+    },
+    {
+      "nombre": "Ventana de demanda: juventud, Halloween y puente",
+      "tipo": "ventana",
+      "desde": "2026-10-30",
+      "hasta": "2026-11-02",
+      "impacto": "alto"
+    },
+    {
+      "nombre": "Ventana de demanda: Ciudad Libro",
+      "tipo": "ventana",
+      "desde": "2026-11-05",
+      "hasta": "2026-11-12",
+      "impacto": "alto"
+    },
+    {
+      "nombre": "Ventana de demanda: grados y puente",
+      "tipo": "ventana",
+      "desde": "2026-11-13",
+      "hasta": "2026-11-16",
+      "impacto": "alto"
+    },
+    {
+      "nombre": "Ventana de demanda: exposición equina",
+      "tipo": "ventana",
+      "desde": "2026-11-27",
+      "hasta": "2026-11-29",
+      "impacto": "alto"
+    }
+  ]
+}
