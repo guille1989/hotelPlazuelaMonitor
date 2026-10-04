@@ -6,7 +6,8 @@ const { NIVELES_IMPACTO } = require("./eventosCopiloto");
 // Reglas fijas para que cada recomendación se explique en una línea.
 
 // Se guarda con cada recomendación para poder medir cada versión por separado.
-const VERSION_REGLAS = "1";
+// "2" (2026-10-04): el evento fuerte ya no frena la rebaja de un precio fuera de mercado.
+const VERSION_REGLAS = "2";
 // Ocupación esperada por debajo de esta fracción = demanda baja (15 de 29).
 const PCT_DEMANDA_BAJA = 50;
 // ±10 % de la mediana de la competencia = precio en línea.
@@ -29,6 +30,10 @@ const QUEDAN_POCAS = 2;
 // Eventos de este impacto o más frenan los descuentos y, si el ritmo lo confirma,
 // suben la demanda (decisión del 2026-10-04).
 const IMPACTO_FUERTE = "alto";
+// ...salvo que el precio esté fuera de mercado: más de 30 % sobre la competencia o por
+// encima del techo. Ahí ni rebajado queda barato, así que se baja igual (lun 2-nov-2026:
+// +70 % sobre la competencia, encima del techo y con 10 de 29 esperadas).
+const CARO_EXTREMO_PCT = 30;
 // Con la tendencia de reservas a la baja, el pronóstico (que copia el pickup del año
 // pasado) no basta para subir: hace falta tener ya en libros casi el objetivo. En la
 // prueba de agosto 2026 evitó 5 subidas en días que terminaron por debajo del 50 %.
@@ -123,6 +128,17 @@ function evaluarPrecio(senal) {
   };
 }
 
+function encimaDelTecho(precio, rango) {
+  return Boolean(rango && rango.techo && precio.propio && precio.propio > rango.techo);
+}
+
+function fueraDeMercado(precio, rango) {
+  return (
+    precio.posicion === "caro" &&
+    (precio.diferenciaPct > CARO_EXTREMO_PCT || encimaDelTecho(precio, rango))
+  );
+}
+
 // Recorta el % para no salirse del piso / techo. Se mide contra el precio público
 // (Booking con IVA), que es el que se cambia; la tarifa vendida no sirve porque mezcla
 // grupos y convenios. Sin captura de esa fecha no se recorta: el rango va en la
@@ -171,6 +187,17 @@ function armarMotivo({ senal, demanda, precio, regla, limite }) {
   }
   if (demanda.subidaPorEvento) partes.push(`${demanda.evento} y el ritmo lo confirma`);
   if (regla === "evento_frena") partes.push(`No bajar: ${demanda.evento}`);
+  if (regla === "caro_pese_a_evento") {
+    const motivos = [];
+    if (precio.diferenciaPct > CARO_EXTREMO_PCT) {
+      motivos.push(`${conSigno(precio.diferenciaPct)} % sobre la competencia`);
+    }
+    if (encimaDelTecho(precio, senal.rango)) {
+      motivos.push(`por encima del techo de ${miles(senal.rango.techo)}`);
+    }
+    const evento = demanda.evento.charAt(0).toUpperCase() + demanda.evento.slice(1);
+    partes.push(`${evento}, pero el precio está ${motivos.join(" y ")}: bajar igual`);
+  }
   if (regla === "sin_precio_lejos") partes.push("Sin precio de competencia no se baja a más de 14 días");
   if (regla === "revisar_canales") partes.push("El precio no es el problema: revisar canales y visibilidad");
   if (regla === "confirmar_cotizacion") partes.push("No bajar antes de confirmar la cotización");
@@ -199,8 +226,12 @@ function recomendar(senal) {
       regla = "sin_precio_lejos";
     }
     if (pct < 0 && demanda.evento) {
-      pct = 0;
-      regla = "evento_frena";
+      if (fueraDeMercado(precio, senal.rango)) {
+        regla = "caro_pese_a_evento";
+      } else {
+        pct = 0;
+        regla = "evento_frena";
+      }
     }
     // Si el grupo confirma, el descuento sobraba: primero hay que confirmarlo.
     if (pct < 0 && demanda.cotizadas >= COTIZACION_EN_RIESGO) {

@@ -64,7 +64,10 @@ guarda el estado final) ni competencia anterior al 3-oct-2026.
   `copiloto_rangos` (`{_id: "YYYY-MM", piso, techo}`). Se miden contra el precio
   público de Booking; sin captura de esa fecha no se recorta.
 - **Eventos de impacto alto o más frenan los descuentos**, y solo suben el precio
-  si el ritmo de reservas lo confirma.
+  si el ritmo de reservas lo confirma. Excepción (versión "2" de las reglas): si el
+  precio está fuera de mercado (más de 30 % sobre la competencia o por encima del
+  techo) se baja igual, porque ni rebajado queda barato. Caso que la motivó: lun
+  2-nov-2026, +70 % sobre la competencia, encima del techo y 10 de 29 esperadas.
 
 ## Pronóstico
 
@@ -85,7 +88,7 @@ llegó al objetivo; **mantener**, 16,4; **bajar**, 13,6.
 Límites conocidos: los grupos que reservan tarde no se pronostican (9–12 jun 2026);
 si una reserva cambió de fechas, Zeus no guarda el historial.
 
-## Reglas del motor (versión "1")
+## Reglas del motor (versión "2")
 
 Matriz de presión de demanda × posición del precio (±10 % de la mediana de los
 directos comparables):

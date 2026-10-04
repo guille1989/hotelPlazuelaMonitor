@@ -66,19 +66,51 @@ test("demanda baja y caro: bajar 10 %, salvo que haya un evento fuerte", () => {
   assert.equal(sinEvento.accion, "bajar");
   assert.equal(sinEvento.pct, -10);
 
-  const conEvento = recomendar(
-    senal({
-      ...base,
-      calendario: {
-        ...base.calendario,
-        eventos: [{ nombre: "Ventana de demanda", impacto: "alto", tipo: "ventana" }],
-        impactoEventos: "alto",
-      },
-    })
+  // Con evento fuerte y algo caro (con IVA 172.550, +11 %, bajo el techo): no se baja.
+  const conEvento = {
+    ...base,
+    calendario: {
+      ...base.calendario,
+      eventos: [{ nombre: "Ventana de demanda", impacto: "alto", tipo: "ventana" }],
+      impactoEventos: "alto",
+    },
+  };
+  const algoCaro = recomendar(senal({ ...conEvento, competencia: competencia(145000, 155000) }));
+  assert.equal(algoCaro.accion, "mantener");
+  assert.equal(algoCaro.regla, "evento_frena");
+  assert.match(algoCaro.motivo, /No bajar: ventana de demanda alta/);
+});
+
+test("con un evento fuerte igual se baja si el precio está fuera de mercado", () => {
+  const base = {
+    dia: "2026-11-02",
+    calendario: {
+      tipo: "fin_puente",
+      festivo: "Todos los Santos",
+      eventos: [{ nombre: "Ventana de demanda", impacto: "alto", tipo: "ventana" }],
+      impactoEventos: "alto",
+    },
+    ocupacion: { proyectada: 2, pct: 7, objetivo: 22, grupos: 0, cotizadas: 0 },
+    ritmo: { actual: 2, anioAnterior: { fecha: "2025-11-03", alCorte: 6, final: 16 }, diferencia: -4, pronostico: 12 },
+    rango: { piso: 107000, techo: 240000 },
+  };
+  // Caso real del 2-nov: 263.159 con IVA, +70 % y encima del techo.
+  const extremo = recomendar(senal({ ...base, competencia: competencia(221142, 155000) }));
+  assert.equal(extremo.accion, "bajar");
+  assert.equal(extremo.pct, -10);
+  assert.equal(extremo.regla, "caro_pese_a_evento");
+  assert.equal(extremo.versionReglas, "2");
+  assert.match(
+    extremo.motivo,
+    /Ventana de demanda alta, pero el precio está \+70 % sobre la competencia y por encima del techo de 240k: bajar igual/
   );
-  assert.equal(conEvento.accion, "mantener");
-  assert.equal(conEvento.regla, "evento_frena");
-  assert.match(conEvento.motivo, /No bajar: ventana de demanda alta/);
+
+  // +25 % sobre la competencia pero encima del techo (bajo): también se baja.
+  const encimaTecho = recomendar(
+    senal({ ...base, competencia: competencia(163000, 155000), rango: { piso: 107000, techo: 180000 } })
+  );
+  assert.equal(encimaTecho.regla, "caro_pese_a_evento");
+  assert.match(encimaTecho.motivo, /pero el precio está por encima del techo de 180k: bajar igual/);
 });
 
 test("un evento fuerte sube la demanda solo si el ritmo lo confirma", () => {
