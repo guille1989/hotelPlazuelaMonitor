@@ -19,6 +19,7 @@ const pickupRouter = require("./routes/pickup");
 const cargosManualesRouter = require("./routes/cargosmanuales");
 const trasuntoRouter = require("./routes/trasunto");
 const tarifasRouter = require("./routes/tarifas");
+const recomendacionesRouter = require("./routes/recomendaciones");
 const whatsappRouter = require("./routes/whatsapp");
 
 app.use(
@@ -43,6 +44,7 @@ app.use("/api/pickup", pickupRouter);
 app.use("/api/cargosmanuales", cargosManualesRouter);
 app.use("/api/trasunto", trasuntoRouter);
 app.use("/api/tarifas", tarifasRouter);
+app.use("/api/recomendaciones", recomendacionesRouter);
 app.use("/webhooks/whatsapp", whatsappRouter);
 
 // Calienta la conexión a Mongo al arrancar (no bloquea el listen; las rutas la reutilizan).

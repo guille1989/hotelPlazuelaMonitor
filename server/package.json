@@ -13,7 +13,9 @@
     "tarifas:serpapi:dry-run": "node jobs/capturarTarifas.js --dry-run --provider=serpapi",
     "tarifas:serpapi:descubrir": "node jobs/descubrirHotelesGoogle.js",
     "copiloto:senales": "node jobs/tablaSenales.js",
-    "copiloto:eventos": "node jobs/cargarEventos.js"
+    "copiloto:eventos": "node jobs/cargarEventos.js",
+    "copiloto:recomendaciones": "node jobs/recomendacionesTarifa.js",
+    "copiloto:guardar": "node jobs/recomendacionesTarifa.js --guardar"
   },
   "keywords": [],
   "author": "",

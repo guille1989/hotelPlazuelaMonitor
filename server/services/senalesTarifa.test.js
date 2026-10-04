@@ -2,6 +2,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const {
   armarSenales,
+  calcularTendencia,
   competenciaPorDia,
   diasEquivalentes,
   enLibrosAlCorte,
@@ -165,11 +166,16 @@ test("arma ritmo, pickup, pronóstico, tarifas, competencia y calendario del dí
     impactoEventos: "muy alto",
   });
   assert.deepEqual(senal.ocupacion, { proyectada: 3, pct: 10, objetivo: 22, grupos: 0, cotizadas: 0 });
+  // Pickup individual del año pasado a 12 días de la noche, en los días equivalentes
+  // con folio: vie 10-oct (0 → 15) y vie 17-oct (5 → 9). Promedio 9,5.
   assert.deepEqual(senal.ritmo, {
     actual: 3,
     anioAnterior: { fecha: "2025-10-17", alCorte: 5, final: 9 },
     diferencia: -2,
-    pronostico: 7,
+    pronostico: 13,
+    pickupEsperado: 10,
+    diasReferencia: 2,
+    tendencia: { reservasEsteAnio: 1, reservasAnioPasado: 1, razon: 1, factor: 1 },
   });
   // Neto de la semana: +1 nueva −1 cancelada.
   assert.deepEqual(senal.pickup, { dias: 7, actual: 0, anioAnterior: 1 });
@@ -223,6 +229,79 @@ test("cuenta las habitaciones de grupos e ignora tarifas que no son tarifas", ()
     habitaciones: 7,
     doble: { promedio: 186000, habitaciones: 7 },
   });
+});
+
+test("la tendencia compara reservas individuales nuevas de las últimas 4 semanas", () => {
+  const nuevas = (n, llegada, salida, fecha_reserva, prefijo) =>
+    Array.from({ length: n }, (_, i) => reserva(llegada, salida, { fecha_reserva, codigo_reserva: `${prefijo}${i}` }));
+  const tendencia = calcularTendencia({
+    hoy: "2026-10-04",
+    dias: ["2026-10-20"],
+    actual: {
+      porDia: new Map(),
+      reservas: [
+        ...nuevas(6, "2026-10-20", "2026-10-21", "2026-09-20", "I"),
+        // Los grupos no cuentan para la tendencia.
+        reserva("2026-10-20", "2026-10-21", { codigo_reserva: "G", cantid_reh: 8, fecha_reserva: "2026-09-25" }),
+      ],
+    },
+    anioAnterior: { porDia: new Map(), reservas: nuevas(12, "2025-10-21", "2025-10-22", "2025-09-20", "A") },
+  });
+  assert.deepEqual(tendencia, { reservasEsteAnio: 6, reservasAnioPasado: 12, razon: 0.5, factor: 0.71 });
+});
+
+test("el pickup esperado salta días saturados y descuenta los grupos del año pasado", () => {
+  const dia = "2026-10-20"; // martes; equivalentes: martes de oct–nov 2025
+  const folio = (ocupacion) => ({ ocupacion, tarifas: 0, iva: 0, habsTarifa: ocupacion, fuente: "folio" });
+  const [senal] = armarSenales({
+    hoy: "2026-10-04",
+    dias: [dia],
+    actual: { porDia: new Map(), reservas: [] },
+    anioAnterior: {
+      porDia: new Map([
+        ["2025-10-14", folio(28)], // saturado: no se promedia
+        ["2025-10-21", folio(20)],
+      ]),
+      reservas: [
+        reserva("2025-10-21", "2025-10-22", { codigo_reserva: "G2", cantid_reh: 6, fecha_reserva: "2025-08-01" }),
+        ...Array.from({ length: 4 }, (_, i) =>
+          reserva("2025-10-21", "2025-10-22", { codigo_reserva: `I${i}`, fecha_reserva: "2025-09-01" })
+        ),
+      ],
+    },
+  });
+  // 20 al cierre − 6 del grupo = 14 individuales; a 16 días había 4: pickup 10.
+  assert.equal(senal.ritmo.pickupEsperado, 10);
+  assert.equal(senal.ritmo.diasReferencia, 1);
+  assert.equal(senal.ritmo.pronostico, 10);
+});
+
+test("en modo histórico usa lo que había en libros al corte y trae el resultado", () => {
+  const corte = "2026-09-01";
+  const dia = "2026-09-10";
+  const actual = {
+    porDia: new Map([[dia, { ocupacion: 20, tarifas: 3000000, iva: 400000, habsTarifa: 20, fuente: "folio" }]]),
+    reservas: [
+      reserva(dia, "2026-09-11", { cantid_reh: 3, fecha_reserva: "2026-08-01", valor_habitacion: 180000 }),
+      // Cancelada después del corte: ese día todavía estaba en libros.
+      reserva(dia, "2026-09-11", { cantid_reh: 2, fecha_reserva: "2026-08-15", fecha_cancelacion: "2026-09-05", valor_habitacion: 200000 }),
+      // Cancelada antes del corte y reservada después: no cuentan.
+      reserva(dia, "2026-09-11", { fecha_reserva: "2026-08-10", fecha_cancelacion: "2026-08-20" }),
+      reserva(dia, "2026-09-11", { cantid_reh: 4, fecha_reserva: "2026-09-03" }),
+    ],
+  };
+  const [senal] = armarSenales({
+    hoy: corte,
+    dias: [dia],
+    actual,
+    anioAnterior: { porDia: new Map(), reservas: [] },
+    historico: true,
+  });
+  assert.equal(senal.ocupacion.proyectada, 5);
+  assert.equal(senal.ocupacion.cotizadas, null);
+  assert.equal(senal.ritmo.actual, 5);
+  assert.deepEqual(senal.tarifaVendida.doble, { promedio: 188000, habitaciones: 5 });
+  assert.deepEqual(senal.resultado, { ocupacion: 20, adr: 170000 });
 });
 
 test("sin folio del año pasado no hay pronóstico ni historia", () => {

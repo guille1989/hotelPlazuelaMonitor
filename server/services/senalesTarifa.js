@@ -50,6 +50,19 @@ const MIN_NOCHES_RANGO = 20;
 const TARIFA_MINIMA_VALIDA = 50000;
 // Reserva con estas habitaciones o más = grupo (tarifa negociada, bloqueo).
 const MIN_HABITACIONES_GRUPO = 5;
+// Pronóstico. Días del año pasado con esta ocupación final o más estaban topados por
+// capacidad: su pickup no dice cuánta demanda había y no se promedian.
+const OCUPACION_SATURADA = 27;
+// Tendencia: reservas individuales nuevas de los últimos 28 días para los próximos 30,
+// este año contra el año pasado. Se aplica su raíz cuadrada (amortiguada), acotada.
+// Por ahora solo baja el pronóstico: en las pruebas (mar–sep 2026) nunca pasó de 1,05,
+// así que una tendencia al alza no está validada, y pronosticar de más (subir precio y
+// quedar vacío) es el error caro.
+const VENTANA_TENDENCIA = 28;
+const HORIZONTE_TENDENCIA = 30;
+const MIN_RESERVAS_TENDENCIA = 10;
+const TENDENCIA_MIN = 0.5;
+const TENDENCIA_MAX = 1;
 
 // Rangos de tarifa fijados a mano por mes ({_id: "YYYY-MM", piso, techo}).
 const COLECCION_RANGOS = "copiloto_rangos";
@@ -88,10 +101,10 @@ function habitacionesCotizadas(reservas, dia) {
 // después: son bloqueos de grupo que se liberaron (o no-shows), no demanda. La
 // Corporación Gastronómica tenía 36 habitaciones en libros para el 20-oct-2025 y
 // liberó 26 al llegar. Tope: las habitaciones del hotel.
-function enLibrosAlCorte(reservas, dia, corte) {
+function enLibrosAlCorte(reservas, dia, corte, filtro = () => true) {
   let total = 0;
   for (const r of reservas) {
-    if (!cubreDia(r, dia)) continue;
+    if (!filtro(r) || !cubreDia(r, dia)) continue;
     if (!r.fecha_reserva || r.fecha_reserva > corte) continue;
     const llegada = r.fecha_llegada_habitacion || r.fecha_llegada;
     if (estaCancelada(r) && (r.fecha_cancelacion <= corte || r.fecha_cancelacion >= llegada)) {
@@ -100,6 +113,51 @@ function enLibrosAlCorte(reservas, dia, corte) {
     total += habitaciones(r);
   }
   return Math.min(TOTAL_HABITACIONES, total);
+}
+
+// Códigos de reserva de grupo: todas sus líneas suman 5 o más habitaciones.
+function codigosDeGrupo(reservas) {
+  const porCodigo = new Map();
+  for (const r of reservas) {
+    if (!r.codigo_reserva) continue;
+    porCodigo.set(r.codigo_reserva, (porCodigo.get(r.codigo_reserva) || 0) + habitaciones(r));
+  }
+  return new Set(
+    [...porCodigo].filter(([, habs]) => habs >= MIN_HABITACIONES_GRUPO).map(([codigo]) => codigo)
+  );
+}
+
+// Tendencia de demanda: reservas individuales netas de las últimas 4 semanas para el
+// horizonte, contra las del año pasado en la misma ventana. El pickup del año pasado
+// se escala por la raíz de esta razón (probado en 7 cortes de mar–sep 2026: sin ella
+// el pronóstico de agosto se pasaba por 7,5 habitaciones de media).
+function calcularTendencia({ hoy, dias, actual, anioAnterior }) {
+  const corteAA = sumarDias(hoy, -DESFASE_ANIO);
+  const grupoTY = codigosDeGrupo(actual.reservas);
+  const grupoAA = codigosDeGrupo(anioAnterior.reservas);
+  const individualTY = (r) => !grupoTY.has(r.codigo_reserva);
+  const individualAA = (r) => !grupoAA.has(r.codigo_reserva);
+  let esteAnio = 0;
+  let anioPasado = 0;
+  for (const dia of dias.slice(0, HORIZONTE_TENDENCIA)) {
+    const diaAA = sumarDias(dia, -DESFASE_ANIO);
+    esteAnio +=
+      enLibrosAlCorte(actual.reservas, dia, hoy, individualTY) -
+      enLibrosAlCorte(actual.reservas, dia, sumarDias(hoy, -VENTANA_TENDENCIA), individualTY);
+    anioPasado +=
+      enLibrosAlCorte(anioAnterior.reservas, diaAA, corteAA, individualAA) -
+      enLibrosAlCorte(anioAnterior.reservas, diaAA, sumarDias(corteAA, -VENTANA_TENDENCIA), individualAA);
+  }
+  const razon =
+    anioPasado >= MIN_RESERVAS_TENDENCIA
+      ? Math.min(TENDENCIA_MAX, Math.max(TENDENCIA_MIN, esteAnio / anioPasado))
+      : 1;
+  return {
+    reservasEsteAnio: esteAnio,
+    reservasAnioPasado: anioPasado,
+    razon: Math.round(razon * 100) / 100,
+    factor: Math.round(Math.sqrt(razon) * 100) / 100,
+  };
 }
 
 // Habitaciones vigentes de `dia` que pertenecen a reservas de grupo.
@@ -271,9 +329,21 @@ function tarifaVendida(reservas, dia) {
   };
 }
 
+// Reservas tal como estaban en la fecha `corte`: hechas hasta entonces y no canceladas
+// todavía (las que se cancelaron después vuelven a contar como vigentes).
+function reservasAlCorte(reservas, corte) {
+  return reservas
+    .filter((r) => r.fecha_reserva && r.fecha_reserva <= corte)
+    .filter((r) => !(estaCancelada(r) && r.fecha_cancelacion <= corte))
+    .map((r) => (estaCancelada(r) ? { ...r, fecha_cancelacion: null } : r));
+}
+
 // Arma las señales a partir de datos ya leídos. Separada de Mongo para testear.
 //   actual / anioAnterior: salidas de ocupacionPorDia ({porDia, reservas}); la del
 //   año anterior debe cubrir las fechas equivalentes (±45 días alrededor de dia-364).
+//   historico: `hoy` es una fecha pasada (prueba hacia atrás). La ocupación sale de las
+//   reservas que había en libros ese día, no hay cotizaciones (Zeus solo guarda el
+//   estado final) y cada día trae `resultado`: lo que de verdad pasó según el folio.
 function armarSenales({
   hoy,
   dias,
@@ -283,6 +353,7 @@ function armarSenales({
   competencia = new Map(),
   rangos = new Map(),
   eventos = [],
+  historico = false,
 }) {
   const objetivo = objetivoDiarioHabitaciones(objetivoPct);
   const corteAA = sumarDias(hoy, -DESFASE_ANIO);
@@ -290,25 +361,73 @@ function armarSenales({
   const hace7AA = sumarDias(corteAA, -VENTANA_PICKUP);
   // Para hoy y el año pasado se usa la misma reconstrucción, para comparar parejo.
   const enLibros = (datos, dia, corte) => enLibrosAlCorte(datos.reservas, dia, corte);
+  const reservasHoy = historico ? reservasAlCorte(actual.reservas, hoy) : actual.reservas;
+  const tendencia = calcularTendencia({ hoy, dias, actual, anioAnterior });
+  const grupoAA = codigosDeGrupo(anioAnterior.reservas);
+  const individualAA = (r) => !grupoAA.has(r.codigo_reserva);
+  const folioAA = (fecha) => {
+    const d = anioAnterior.porDia.get(fecha);
+    return d && d.fuente === "folio" ? d.ocupacion : null;
+  };
+
+  // Habitaciones individuales que el año pasado entraron desde esta misma antelación
+  // hasta la noche, promediadas en los días equivalentes no saturados. Los grupos se
+  // descuentan del cierre: los de este año ya están en libros.
+  function pickupEsperadoBase(dia, antelacion) {
+    const pickups = [];
+    for (const fecha of diasEquivalentes(dia)) {
+      const final = folioAA(fecha);
+      if (final === null || final >= OCUPACION_SATURADA) continue;
+      const grupos = anioAnterior.reservas
+        .filter((r) => grupoAA.has(r.codigo_reserva) && !estaCancelada(r) && cubreDia(r, fecha))
+        .reduce((t, r) => t + habitaciones(r), 0);
+      const alCorte = enLibrosAlCorte(
+        anioAnterior.reservas,
+        fecha,
+        sumarDias(fecha, -antelacion),
+        individualAA
+      );
+      pickups.push(Math.max(0, final - grupos) - alCorte);
+    }
+    if (pickups.length === 0) return null;
+    return { valor: pickups.reduce((a, b) => a + b, 0) / pickups.length, dias: pickups.length };
+  }
 
   return dias.map((dia) => {
     const d = actual.porDia.get(dia);
-    const proyectada = d?.proyectada ?? 0;
+    const proyectada = historico
+      ? Math.min(
+          TOTAL_HABITACIONES,
+          reservasHoy.filter((r) => cubreDia(r, dia)).reduce((t, r) => t + habitaciones(r), 0)
+        )
+      : d?.proyectada ?? 0;
 
     const ritmoHoy = enLibros(actual, dia, hoy);
     const diaAA = sumarDias(dia, -DESFASE_ANIO);
     const alCorteAA = enLibros(anioAnterior, diaAA, corteAA);
-    const datoAA = anioAnterior.porDia.get(diaAA);
-    const finalAA = datoAA && datoAA.fuente === "folio" ? datoAA.ocupacion : null;
-    // Pronóstico aditivo: lo que hay hoy más lo que el año pasado entró (neto de
-    // cancelaciones) desde este punto hasta la fecha.
-    const pronostico =
-      finalAA === null
+    const finalAA = folioAA(diaAA);
+    // Pronóstico: lo que hay hoy en libros + el pickup individual esperado, escalado
+    // por la tendencia. Sin días equivalentes, el pickup del mismo día del año pasado.
+    const base = pickupEsperadoBase(dia, diasEntre(hoy, dia));
+    const pickupEsperado = base
+      ? base.valor * tendencia.factor
+      : finalAA === null
         ? null
-        : Math.min(TOTAL_HABITACIONES, Math.max(0, ritmoHoy + finalAA - alCorteAA));
+        : finalAA - alCorteAA;
+    const pronostico =
+      pickupEsperado === null
+        ? null
+        : Math.min(TOTAL_HABITACIONES, Math.max(0, Math.round(ritmoHoy + pickupEsperado)));
 
     const comp = competencia.get(dia);
     const eventosDia = eventosDelDia(eventos, dia);
+    const resultado =
+      historico && d?.fuente === "folio"
+        ? {
+            ocupacion: d.ocupacion,
+            adr: d.habsTarifa ? Math.round((d.tarifas + d.iva) / d.habsTarifa) : null,
+          }
+        : null;
 
     return {
       dia,
@@ -324,24 +443,28 @@ function armarSenales({
         proyectada,
         pct: Math.round((proyectada * 100) / TOTAL_HABITACIONES),
         objetivo,
-        grupos: habitacionesDeGrupo(actual.reservas, dia),
-        cotizadas: habitacionesCotizadas(actual.reservas, dia),
+        grupos: habitacionesDeGrupo(reservasHoy, dia),
+        cotizadas: historico ? null : habitacionesCotizadas(reservasHoy, dia),
       },
       ritmo: {
         actual: ritmoHoy,
         anioAnterior: { fecha: diaAA, alCorte: alCorteAA, final: finalAA },
         diferencia: ritmoHoy - alCorteAA,
         pronostico,
+        pickupEsperado: pickupEsperado === null ? null : Math.round(pickupEsperado),
+        diasReferencia: base ? base.dias : 0,
+        tendencia,
       },
       pickup: {
         dias: VENTANA_PICKUP,
         actual: ritmoHoy - enLibros(actual, dia, hace7),
         anioAnterior: alCorteAA - enLibros(anioAnterior, diaAA, hace7AA),
       },
-      tarifaVendida: tarifaVendida(actual.reservas, dia),
+      tarifaVendida: tarifaVendida(reservasHoy, dia),
       historia: historiaEquivalente(diasEquivalentes(dia), anioAnterior.porDia),
       competencia: comp ? { ...comp, antiguedadDias: diasEntre(comp.capturedDate, hoy) } : null,
       rango: rangos.get(dia.slice(0, 7)) || null,
+      ...(historico ? { resultado } : {}),
     };
   });
 }
@@ -352,7 +475,7 @@ async function leerCompetencia(db, hoy, objetivoPct) {
     .find({
       source: "serpapi",
       simulated: { $ne: true },
-      capturedDate: { $gte: sumarDias(hoy, -DIAS_CAPTURAS) },
+      capturedDate: { $gte: sumarDias(hoy, -DIAS_CAPTURAS), $lte: hoy },
     })
     .sort({ capturedDate: -1 })
     .toArray();
@@ -382,8 +505,14 @@ async function leerCompetencia(db, hoy, objetivoPct) {
   };
 }
 
-async function obtenerSenalesTarifa(db, { dias = HORIZONTE_DIAS, objetivoPct = 75 } = {}) {
-  const hoy = hoyBogota();
+// `corte`: fecha pasada para correr "como si fuera" ese día (prueba hacia atrás).
+async function obtenerSenalesTarifa(
+  db,
+  { dias = HORIZONTE_DIAS, objetivoPct = 75, corte = null } = {}
+) {
+  const hoyReal = hoyBogota();
+  const historico = Boolean(corte) && corte < hoyReal;
+  const hoy = historico ? corte : hoyReal;
   const fechas = listaDias(hoy, dias);
   const ultima = fechas[fechas.length - 1];
   const inicioAA = sumarDias(hoy, -DESFASE_ANIO - VENTANA_ESPECIALES);
@@ -402,21 +531,25 @@ async function obtenerSenalesTarifa(db, { dias = HORIZONTE_DIAS, objetivoPct = 7
       db.collection(COLECCION_RANGOS).find({ _id: { $in: meses } }).toArray(),
     ]);
 
+  const senales = armarSenales({
+    hoy,
+    dias: fechas,
+    objetivoPct,
+    actual,
+    anioAnterior,
+    competencia,
+    rangos: rangosPorMes(anioAnterior.reservas, meses, manuales),
+    eventos,
+    historico,
+  });
   return {
     hoy,
+    historico,
     objetivoPct,
     totalHabitaciones: TOTAL_HABITACIONES,
     capturas,
-    dias: armarSenales({
-      hoy,
-      dias: fechas,
-      objetivoPct,
-      actual,
-      anioAnterior,
-      competencia,
-      rangos: rangosPorMes(anioAnterior.reservas, meses, manuales),
-      eventos,
-    }),
+    tendencia: senales[0]?.ritmo.tendencia ?? null,
+    dias: senales,
   };
 }
 
@@ -425,6 +558,8 @@ module.exports = {
   DESFASE_ANIO,
   HORIZONTE_DIAS,
   armarSenales,
+  calcularTendencia,
+  codigosDeGrupo,
   competenciaPorDia,
   diasEquivalentes,
   enLibrosAlCorte,
@@ -434,5 +569,6 @@ module.exports = {
   obtenerSenalesTarifa,
   percentilPonderado,
   rangosPorMes,
+  reservasAlCorte,
   tarifaVendida,
 };
