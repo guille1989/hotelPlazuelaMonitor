@@ -45,6 +45,7 @@ function resumenSenal(s) {
           precioPropio: s.competencia.precioPropio,
           mediana: s.competencia.mediana,
           comparables: s.competencia.comparables,
+          ...(s.competencia.estimado ? { estimado: true, entre: s.competencia.entre } : {}),
         }
       : null,
     rango: s.rango ? { piso: s.rango.piso, techo: s.rango.techo, origen: s.rango.origen } : null,

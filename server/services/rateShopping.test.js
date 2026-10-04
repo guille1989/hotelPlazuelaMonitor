@@ -7,7 +7,8 @@ const {
   idTarifa,
 } = require("./rateShopping");
 
-test("ejecuta en seco las 84 consultas del catálogo MVP", async () => {
+// 11 hoteles activos (Los Portales Inn está fuera de la captura) × 7 horizontes.
+test("ejecuta en seco las 77 consultas del catálogo activo", async () => {
   const resultado = await ejecutarCapturaTarifas({
     proveedor: crearProveedorMock(),
     consultas: crearConsultas({ fechaBase: "2026-09-27" }),
@@ -18,10 +19,10 @@ test("ejecuta en seco las 84 consultas del catálogo MVP", async () => {
   assert.equal(resultado.ejecucion._id, "mock:2026-09-27");
   assert.equal(resultado.ejecucion.status, "completa");
   assert.deepEqual(resultado.ejecucion.summary, {
-    esperadas: 84,
-    recibidas: 84,
+    esperadas: 77,
+    recibidas: 77,
     coberturaPct: 100,
-    comparables: 84,
+    comparables: 77,
     agotadas: 0,
     noComparables: 0,
     errores: 0,

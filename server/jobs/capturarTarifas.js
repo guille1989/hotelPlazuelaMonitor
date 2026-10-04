@@ -15,6 +15,8 @@ const {
   ejecutarCapturaTarifas,
   fechaCapturaBogota,
 } = require("../services/rateShopping");
+const { elegirFechasCaptura } = require("../services/fechasCaptura");
+const { generarRecomendaciones } = require("../services/recomendacionesTarifa");
 
 function valorArgumento(nombre) {
   const prefijo = `--${nombre}=`;
@@ -41,8 +43,21 @@ function leerHorizontes(valor) {
   return horizontes;
 }
 
+// Noches que necesita el copiloto (ver services/fechasCaptura.js), como horizontes
+// desde hoy. Imprime por qué se eligió cada una.
+async function horizontesDelCopiloto(db) {
+  const { dias, recomendaciones } = await generarRecomendaciones(db, { dias: 60 });
+  const elegidas = elegirFechasCaptura(dias.map((s, i) => ({ s, r: recomendaciones[i] })));
+  console.log(
+    `Noches elegidas por el copiloto: ${elegidas
+      .map((e) => `${e.dia} (D+${e.diasHasta}, puntaje ${e.puntaje})`)
+      .join(", ")}`
+  );
+  return elegidas.map((e) => e.diasHasta);
+}
+
 // Con SerpApi cada hotel gasta una búsqueda por fecha: por defecto solo el
-// hotel propio y los competidores directos (7 × 7 fechas = 49 por corrida).
+// hotel propio y los competidores directos activos (6 × 8 noches = 48 por corrida).
 function catalogoDelProveedor(nombreProveedor) {
   if (nombreProveedor === "playwright") {
     return CATALOGO_HOTELES.filter((hotel) => IDS_PILOTO_PLAYWRIGHT.includes(hotel.id));
@@ -65,10 +80,18 @@ async function main() {
   const nombreProveedor =
     valorArgumento("provider") || process.env.RATE_SHOPPING_PROVIDER || "mock";
   const fechaBase = valorArgumento("fecha-base") || undefined;
-  const horizontes = leerHorizontes(valorArgumento("horizontes"));
+  let horizontes = leerHorizontes(valorArgumento("horizontes"));
   const proveedor = crearProveedor(nombreProveedor);
   const catalogo = catalogoDelProveedor(nombreProveedor);
-  const db = dryRun ? null : await getDb();
+  const soloFechas = process.argv.includes("--solo-fechas");
+  const db = dryRun && !soloFechas ? null : await getDb();
+
+  // Sin --horizontes ni --fecha-base, las noches las elige el copiloto. En seco se
+  // usan los horizontes fijos. --solo-fechas muestra la elección sin consultar nada.
+  if (soloFechas) {
+    await horizontesDelCopiloto(db);
+    return;
+  }
 
   // Repetir la captura del día gasta otra corrida completa de la cuota (49 búsquedas
   // de SerpApi); solo se hace a propósito, con --forzar.
@@ -80,6 +103,15 @@ async function main() {
     if (previa) {
       console.log(`La captura ${runId} ya existe; no se repite (usa --forzar para repetirla).`);
       return;
+    }
+  }
+
+  if (!horizontes && !fechaBase && db) {
+    try {
+      horizontes = await horizontesDelCopiloto(db);
+    } catch (error) {
+      // Mejor capturar los horizontes fijos que quedarse sin captura esta semana.
+      console.error("No se pudieron elegir las noches con el copiloto:", error.message);
     }
   }
 

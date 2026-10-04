@@ -10,6 +10,7 @@
     "tarifas:dry-run": "node jobs/capturarTarifas.js --dry-run --provider=mock",
     "tarifas:playwright:dry-run": "node jobs/capturarTarifas.js --dry-run --provider=playwright",
     "tarifas:run": "node jobs/capturarTarifas.js --provider=serpapi",
+    "tarifas:fechas": "node jobs/capturarTarifas.js --provider=serpapi --solo-fechas",
     "tarifas:serpapi:dry-run": "node jobs/capturarTarifas.js --dry-run --provider=serpapi",
     "tarifas:serpapi:descubrir": "node jobs/descubrirHotelesGoogle.js",
     "copiloto:senales": "node jobs/tablaSenales.js",

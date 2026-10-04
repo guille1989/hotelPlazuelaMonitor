@@ -153,6 +153,38 @@ test("el detalle explica la recomendación y permite marcarla como aplicada", as
   expect(await within(sabado).findByText("↑ 10%")).toBeInTheDocument();
 });
 
+test("marca el precio estimado con fechas vecinas", async () => {
+  axios.get.mockResolvedValue({
+    data: {
+      ...respuesta.data,
+      recomendaciones: [
+        rec("2026-10-14", 10, {
+          pct: 10,
+          datos: { precioPropioConIva: 121053, mediana: 154576, diferenciaPct: -22, precioEstimado: true },
+          senal: {
+            competencia: {
+              capturedDate: "2026-10-03",
+              antiguedadDias: 1,
+              precioPropio: 101725,
+              mediana: 154576,
+              comparables: 3,
+              estimado: true,
+              entre: ["2026-10-10", "2026-10-17"],
+            },
+          },
+        }),
+      ],
+    },
+  });
+  render(<Copiloto objetivo={75} />);
+
+  expect(await screen.findByText("10 reservadas · se esperan 24 de 29 · Booking ≈−22%")).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: /Mié 14 oct/ }));
+  expect(
+    screen.getByText(/≈ \$\s?121\.053 vs ≈ \$\s?154\.576 · estimado con las noches del sáb 10 oct y el sáb 17 oct/)
+  ).toBeInTheDocument();
+});
+
 test("avisa si no se pudo guardar la marca", async () => {
   axios.get.mockResolvedValue(respuesta);
   axios.post.mockRejectedValue(new Error("red"));

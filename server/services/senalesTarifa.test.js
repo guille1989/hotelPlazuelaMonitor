@@ -4,6 +4,7 @@ const {
   armarSenales,
   calcularTendencia,
   competenciaPorDia,
+  completarCompetencia,
   diasEquivalentes,
   enLibrosAlCorte,
   habitacionesCotizadas,
@@ -96,6 +97,50 @@ test("toma la captura más reciente que tenga precio para cada fecha", () => {
   assert.equal(competencia.get("2026-10-10").capturedDate, "2026-10-03");
   assert.equal(competencia.get("2026-10-17").mediana, 140000);
   assert.equal(competencia.get("2026-10-17").capturedDate, "2026-09-26");
+});
+
+test("estima la competencia de una fecha sin captura solo si las vecinas coinciden", () => {
+  const captura = (precioPropio, mediana, comparables = 3, capturedDate = "2026-10-03") => ({
+    capturedDate,
+    precioPropio,
+    propioComparable: true,
+    mediana,
+    comparables,
+    minimo: null,
+    maximo: null,
+    diferenciaPct: null,
+  });
+  const competencia = new Map([
+    ["2026-10-06", captura(121628, 100000, 1)], // un solo comparable: no sirve de ancla
+    ["2026-10-10", captura(101725, 155152)],
+    ["2026-10-17", captura(101725, 154000, 3, "2026-09-26")],
+    ["2026-11-02", captura(221142, 154576)], // termina la promo propia
+  ]);
+  const completa = completarCompetencia(competencia, [
+    "2026-10-08", "2026-10-12", "2026-10-17", "2026-10-25", "2026-11-05",
+  ]);
+
+  // Entre el 10 y el 17 la promo es la misma: se estima.
+  assert.deepEqual(completa.get("2026-10-12"), {
+    estimado: true,
+    entre: ["2026-10-10", "2026-10-17"],
+    capturedDate: "2026-09-26",
+    precioPropio: 101725,
+    propioComparable: true,
+    mediana: 154576,
+    comparables: 3,
+    minimo: null,
+    maximo: null,
+    diferenciaPct: null,
+  });
+  // Entre el 17 y el 2-nov el precio propio pasa de 101k a 221k: no se adivina.
+  assert.equal(completa.has("2026-10-25"), false);
+  // Sin vecina posterior no hay estimado; antes del 10 la única vecina previa no sirve.
+  assert.equal(completa.has("2026-11-05"), false);
+  assert.equal(completa.has("2026-10-08"), false);
+  // Las capturadas no se tocan, y la del 6-oct sigue aunque no sirva de ancla.
+  assert.equal(completa.get("2026-10-17").estimado, undefined);
+  assert.equal(completa.get("2026-10-06").comparables, 1);
 });
 
 test("días equivalentes: mismo día de la semana, o el mismo tipo de puente", () => {

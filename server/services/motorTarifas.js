@@ -125,6 +125,8 @@ function evaluarPrecio(senal) {
     mediana: c.mediana,
     diferenciaPct,
     vieja: c.antiguedadDias > COMPETENCIA_VIEJA_DIAS,
+    // Sin captura de esa fecha: sale de las fechas vecinas (ver completarCompetencia).
+    estimado: c.estimado === true,
   };
 }
 
@@ -178,7 +180,8 @@ function armarMotivo({ senal, demanda, precio, regla, limite }) {
   partes.push(
     precio.posicion === "sin_dato"
       ? "Sin precio de competencia para esta fecha"
-      : `Booking ${miles(precio.propio)} con IVA vs ${miles(precio.mediana)} de la competencia (${conSigno(precio.diferenciaPct)} %)`
+      : `Booking ${miles(precio.propio)} con IVA vs ${miles(precio.mediana)} de la competencia ` +
+          `(${conSigno(precio.diferenciaPct)} %${precio.estimado ? ", estimado con fechas vecinas" : ""})`
   );
   if (demanda.frenadaPorTendencia) {
     partes.push(
@@ -243,7 +246,7 @@ function recomendar(senal) {
   pct = limitado.pct;
 
   let dudas = 0;
-  if (precio.posicion === "sin_dato") dudas += 1;
+  if (precio.posicion === "sin_dato" || precio.estimado) dudas += 1;
   if (precio.vieja) dudas += 1;
   if (senal.ritmo.pronostico === null) dudas += 1;
   if (demanda.cotizadas >= COTIZACION_EN_RIESGO) dudas += 1;
@@ -269,6 +272,7 @@ function recomendar(senal) {
       precioPropioConIva: precio.propio ?? null,
       mediana: precio.mediana ?? null,
       diferenciaPct: precio.diferenciaPct ?? null,
+      precioEstimado: precio.estimado === true,
     },
   };
 }

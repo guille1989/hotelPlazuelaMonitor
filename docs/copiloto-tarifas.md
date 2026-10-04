@@ -69,6 +69,18 @@ guarda el estado final) ni competencia anterior al 3-oct-2026.
   techo) se baja igual, porque ni rebajado queda barato. Caso que la motivó: lun
   2-nov-2026, +70 % sobre la competencia, encima del techo y 10 de 29 esperadas.
 
+## Precio de la competencia en fechas sin captura
+
+Cada sábado se consultan solo 8 noches (las elige el copiloto, ver
+`rate-shopping.md`). Para las demás fechas el precio se **estima** con las dos
+fechas capturadas más cercanas, una antes y otra después, solo si en las dos el
+precio propio y la mediana de la competencia coinciden ±10 %. La competencia casi
+no cambia precio por fecha (el 3-oct Herrería estaba a $154.000 en las 6 fechas,
+Popayán Plaza a $155.152 en las 4); el precio propio sí, por la promoción de
+Booking en fechas cercanas, y donde cambia entre las vecinas no se estima. Un
+estimado decide igual que una captura pero baja la confianza un escalón; en la
+vista se marca con "≈". El 2026-10-04 llevó la cobertura de 6 a 39 de 60 fechas.
+
 ## Pronóstico
 
 Habitaciones en libros hoy + el pickup individual que el año pasado entró desde la

@@ -48,7 +48,10 @@ function resumenFila(rec) {
     `${ocupacion.proyectada} reservadas`,
     `se esperan ${rec.datos.esperada} de ${TOTAL_HABITACIONES}`,
   ];
-  if (rec.datos.diferenciaPct !== null) partes.push(`Booking ${conSigno(rec.datos.diferenciaPct)}`);
+  if (rec.datos.diferenciaPct !== null) {
+    // "≈": sin captura de esa fecha, estimado con las fechas vecinas.
+    partes.push(`Booking ${rec.datos.precioEstimado ? "≈" : ""}${conSigno(rec.datos.diferenciaPct)}`);
+  }
   if (ocupacion.cotizadas >= 5) partes.push(`${ocupacion.cotizadas} en cotización`);
   return partes.join(" · ");
 }
@@ -81,7 +84,9 @@ function Detalle({ rec, guardando, error, onAplicar, onDeshacer }) {
         <dt>Booking con IVA</dt>
         <dd>
           {competencia && datos.mediana !== null
-            ? `${formatCOP(datos.precioPropioConIva)} vs ${formatCOP(datos.mediana)} · ${competencia.comparables} hoteles, captura ${fechaCorta(competencia.capturedDate).toLowerCase()}`
+            ? competencia.estimado
+              ? `≈ ${formatCOP(datos.precioPropioConIva)} vs ≈ ${formatCOP(datos.mediana)} · estimado con las noches del ${fechaCorta(competencia.entre[0]).toLowerCase()} y el ${fechaCorta(competencia.entre[1]).toLowerCase()}`
+              : `${formatCOP(datos.precioPropioConIva)} vs ${formatCOP(datos.mediana)} · ${competencia.comparables} hoteles, captura ${fechaCorta(competencia.capturedDate).toLowerCase()}`
             : "Sin captura de la competencia para esta fecha"}
         </dd>
         {rango && rango.piso !== null && (
@@ -364,7 +369,8 @@ export default function Copiloto({ objetivo }) {
               <p>
                 <b>Precio:</b> tu tarifa de Booking con IVA, que es lo que ve un huésped
                 colombiano, contra la mediana de los competidores directos. A ±10% está en
-                línea.
+                línea. Las fechas que no se consultaron se estiman (≈) con las dos fechas
+                consultadas más cercanas, solo si en las dos los precios coinciden.
               </p>
               <p>
                 <b>Qué recomienda:</b> subir si se esperan {objetivo}% o más de ocupación,

@@ -39,6 +39,12 @@ const VENTANA_ESPECIALES = 45;
 const TIPOS_ESPECIALES = new Set(["semana_santa", "puente", "fin_puente", "festivo"]);
 // Competencia: capturas de las últimas 5 semanas; para cada fecha manda la más reciente.
 const DIAS_CAPTURAS = 35;
+// Fechas sin captura: se estiman con las dos fechas capturadas más cercanas (antes y
+// después) solo si en las dos el precio propio y la mediana coinciden ±10 %. La
+// competencia casi no cambia precio por fecha; el precio propio sí (promo de Booking
+// en fechas cercanas), y ahí las vecinas no coinciden y no se estima.
+const TOLERANCIA_ESTIMADO = 0.1;
+const MIN_COMPARABLES_ESTIMADO = 2;
 // Piso y techo: lo cobrado por la doble el mismo mes del año pasado, sin el 10 % más
 // barato ni el 10 % más caro. Con menos noches que esto no hay rango confiable.
 const CLASE_REFERENCIA = "DB";
@@ -258,6 +264,39 @@ function competenciaPorDia(vistas) {
   return porDia;
 }
 
+const sirveDeAncla = (c) =>
+  c && c.precioPropio != null && c.mediana != null && (c.comparables || 0) >= MIN_COMPARABLES_ESTIMADO;
+const coinciden = (a, b) => Math.abs(a - b) <= Math.max(a, b) * TOLERANCIA_ESTIMADO;
+
+// Agrega a `competencia` un estimado para las fechas de `dias` sin captura utilizable.
+function completarCompetencia(competencia, dias) {
+  const anclas = [...competencia]
+    .filter(([, c]) => sirveDeAncla(c))
+    .sort(([a], [b]) => a.localeCompare(b));
+  const completa = new Map(competencia);
+  for (const dia of dias) {
+    if (sirveDeAncla(competencia.get(dia))) continue;
+    const antes = [...anclas].reverse().find(([fecha]) => fecha < dia);
+    const despues = anclas.find(([fecha]) => fecha > dia);
+    if (!antes || !despues) continue;
+    const [a, b] = [antes[1], despues[1]];
+    if (!coinciden(a.precioPropio, b.precioPropio) || !coinciden(a.mediana, b.mediana)) continue;
+    completa.set(dia, {
+      estimado: true,
+      entre: [antes[0], despues[0]],
+      capturedDate: a.capturedDate < b.capturedDate ? a.capturedDate : b.capturedDate,
+      precioPropio: Math.round((a.precioPropio + b.precioPropio) / 2),
+      propioComparable: true,
+      mediana: Math.round((a.mediana + b.mediana) / 2),
+      comparables: Math.min(a.comparables, b.comparables),
+      minimo: null,
+      maximo: null,
+      diferenciaPct: null,
+    });
+  }
+  return completa;
+}
+
 // Fechas del año pasado comparables con `dia`, de más antigua a más reciente.
 function diasEquivalentes(dia) {
   const tipo = tipoDia(dia);
@@ -362,6 +401,7 @@ function armarSenales({
   // Para hoy y el año pasado se usa la misma reconstrucción, para comparar parejo.
   const enLibros = (datos, dia, corte) => enLibrosAlCorte(datos.reservas, dia, corte);
   const reservasHoy = historico ? reservasAlCorte(actual.reservas, hoy) : actual.reservas;
+  const competenciaCompleta = completarCompetencia(competencia, dias);
   const tendencia = calcularTendencia({ hoy, dias, actual, anioAnterior });
   const grupoAA = codigosDeGrupo(anioAnterior.reservas);
   const individualAA = (r) => !grupoAA.has(r.codigo_reserva);
@@ -419,7 +459,7 @@ function armarSenales({
         ? null
         : Math.min(TOTAL_HABITACIONES, Math.max(0, Math.round(ritmoHoy + pickupEsperado)));
 
-    const comp = competencia.get(dia);
+    const comp = competenciaCompleta.get(dia);
     const eventosDia = eventosDelDia(eventos, dia);
     const resultado =
       historico && d?.fuente === "folio"
@@ -561,6 +601,7 @@ module.exports = {
   calcularTendencia,
   codigosDeGrupo,
   competenciaPorDia,
+  completarCompetencia,
   diasEquivalentes,
   enLibrosAlCorte,
   habitacionesCotizadas,

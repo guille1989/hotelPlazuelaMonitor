@@ -29,9 +29,30 @@ const competencia = (precioPropio, mediana, extras = {}) => ({
 test("compara el precio propio con IVA contra la mediana", () => {
   // 101.725 desde EE. UU. = 121.053 con IVA, contra 155.000.
   const precio = evaluarPrecio(senal({ competencia: competencia(101725, 155000) }));
-  assert.deepEqual(precio, { posicion: "barato", propio: 121053, mediana: 155000, diferenciaPct: -22, vieja: false });
+  assert.deepEqual(precio, {
+    posicion: "barato",
+    propio: 121053,
+    mediana: 155000,
+    diferenciaPct: -22,
+    vieja: false,
+    estimado: false,
+  });
   assert.equal(evaluarPrecio(senal({ competencia: competencia(101725, 155000, { comparables: 1 }) })).posicion, "sin_dato");
   assert.equal(evaluarPrecio(senal()).posicion, "sin_dato");
+});
+
+test("un precio estimado con fechas vecinas decide igual, pero baja la confianza", () => {
+  const r = recomendar(
+    senal({
+      ritmo: { actual: 9, anioAnterior: { fecha: "x", alCorte: 7, final: 22 }, diferencia: 2, pronostico: 24 },
+      competencia: competencia(101725, 155000, { estimado: true, entre: ["2026-10-10", "2026-10-17"] }),
+    })
+  );
+  assert.equal(r.pct, 10);
+  assert.equal(r.posicion, "barato");
+  assert.equal(r.confianza, "media");
+  assert.equal(r.datos.precioEstimado, true);
+  assert.match(r.motivo, /\(-22 %, estimado con fechas vecinas\)/);
 });
 
 test("demanda alta y precio barato: subir 10 %", () => {

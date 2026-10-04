@@ -68,6 +68,9 @@ const CATALOGO_HOTELES = Object.freeze(
       nombreCorto: "Los Portales Inn",
       googleHotelsToken: "ChoIv8H9ndPE6NHOARoNL2cvMTFoMG1zNXZ3cRAB",
       grupo: GRUPOS.DIRECTO,
+      // Fuera de la captura desde 2026-10-04: en Google casi nunca trae la tarifa de
+      // Booking y la que trae no es comparable (0 de 7 el 3-oct). Gastaba 7 búsquedas.
+      activo: false,
     },
     {
       id: "casa-loma-hotel-boutique",
