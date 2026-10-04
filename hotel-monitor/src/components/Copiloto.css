@@ -231,3 +231,57 @@
   font-size: 0.68rem;
   color: var(--color-red);
 }
+
+/* Computador: lista a la izquierda y el detalle de la fecha elegida en un panel fijo
+   a la derecha. */
+.cop-escritorio {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  gap: 32px;
+  align-items: start;
+}
+.cop-escritorio .cop-fila {
+  padding: 10px 12px;
+  margin: 0 -12px;
+  border-radius: 10px;
+  transition: background 0.15s ease;
+}
+.cop-escritorio .cop-fila:hover {
+  background: var(--color-surface);
+}
+.cop-escritorio .cop-fila.elegida {
+  background: var(--color-card);
+  box-shadow: inset 3px 0 0 var(--color-accent);
+}
+.cop-panel {
+  position: sticky;
+  top: 16px;
+  margin-top: 20px;
+  padding: 18px 20px 20px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+}
+.cop-panel-cabeza {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.cop-panel-cabeza .cop-fecha b {
+  font-size: 1.05rem;
+}
+.cop-panel .cop-resumen {
+  font-size: 0.72rem;
+}
+.cop-panel .cop-detalle {
+  margin-top: 14px;
+  background: var(--color-card);
+}
+.cop-panel .cop-motivo {
+  font-size: 0.82rem;
+}
+.cop-panel .cop-datos {
+  font-size: 0.74rem;
+  gap: 8px 16px;
+}

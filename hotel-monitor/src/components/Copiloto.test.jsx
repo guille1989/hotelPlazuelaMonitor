@@ -163,6 +163,32 @@ test("avisa si no se pudo guardar la marca", async () => {
   expect(await screen.findByText("No se pudo guardar. Intenta de nuevo.")).toBeInTheDocument();
 });
 
+test("en el computador el detalle va en un panel al lado de la lista", async () => {
+  const original = window.matchMedia;
+  window.matchMedia = jest.fn(() => ({
+    matches: true,
+    addEventListener: jest.fn(),
+    removeEventListener: jest.fn(),
+  }));
+  try {
+    axios.get.mockResolvedValue(respuesta);
+    render(<Copiloto objetivo={75} />);
+
+    // Sin tocar nada, el panel muestra la primera fecha para revisar.
+    const panel = await screen.findByRole("complementary", { name: "Detalle del Lun 5 oct" });
+    expect(within(panel).getByRole("button", { name: "Ya cambié el precio en Booking" })).toBeInTheDocument();
+
+    const sabado = screen.getByRole("button", { name: /Sáb 17 oct/ });
+    expect(sabado).not.toHaveAttribute("aria-expanded");
+    fireEvent.click(sabado);
+    expect(sabado).toHaveAttribute("aria-current", "true");
+    const nuevo = screen.getByRole("complementary", { name: "Detalle del Sáb 17 oct" });
+    expect(within(nuevo).getByText(/Booking 121k con IVA vs 154k/)).toBeInTheDocument();
+  } finally {
+    window.matchMedia = original;
+  }
+});
+
 test("sin cambios recomendados lo dice", async () => {
   axios.get.mockResolvedValue({
     data: { ...respuesta.data, recomendaciones: [rec("2026-10-12", 8, { accion: "mantener", pct: 0 })] },

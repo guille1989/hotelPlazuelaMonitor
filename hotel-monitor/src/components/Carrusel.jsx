@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from "react";
+import useEsEscritorio from "../lib/useEsEscritorio";
 import "./Carrusel.css";
 
-// slides: [{ titulo, contenido }]. Muestra uno a la vez (flechas, puntos, swipe).
+// slides: [{ titulo, contenido }]. En el celular muestra uno a la vez (flechas,
+// puntos, swipe); en el computador, todos a la vez en columnas.
 // `reinicioClave` — al cambiar, vuelve al primer slide (p.ej. al cambiar de vista).
-export default function Carrusel({ slides, reinicioClave }) {
+// `columnasEscritorio` — columnas fijas en el computador; si no, las que quepan.
+export default function Carrusel({ slides, reinicioClave, columnasEscritorio }) {
   const [i, setI] = useState(0);
   const [x0, setX0] = useState(null);
+  const esEscritorio = useEsEscritorio();
   const n = slides.length;
 
   useEffect(() => {
@@ -13,6 +17,22 @@ export default function Carrusel({ slides, reinicioClave }) {
   }, [reinicioClave]);
 
   const ir = (k) => setI(Math.max(0, Math.min(n - 1, k)));
+
+  if (esEscritorio) {
+    return (
+      <div
+        className={`carrusel carrusel-escritorio${columnasEscritorio ? " columnas-fijas" : ""}`}
+        style={columnasEscritorio ? { "--columnas": columnasEscritorio } : undefined}
+      >
+        {slides.map((s, k) => (
+          <section key={k} className="carrusel-panel">
+            <div className="carrusel-titulo">{s.titulo}</div>
+            {s.contenido}
+          </section>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="carrusel">

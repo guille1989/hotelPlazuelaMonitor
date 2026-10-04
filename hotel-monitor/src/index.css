@@ -26,6 +26,13 @@
   --app-max: 540px;
 }
 
+/* Computador: la app aprovecha el ancho. Mismo corte que lib/useEsEscritorio.js. */
+@media (min-width: 1024px) {
+  :root {
+    --app-max: 1200px;
+  }
+}
+
 body {
   margin: 0;
   background: var(--color-bg);

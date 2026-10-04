@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { TOTAL_HABITACIONES, fechaCorta, formatCOP } from "../config";
 import { apiUrl } from "../api";
+import useEsEscritorio from "../lib/useEsEscritorio";
 import "./Copiloto.css";
 
 // Copiloto de tarifas: qué hacer con la tarifa de cada noche de los próximos 60 días.
@@ -127,7 +128,27 @@ function Detalle({ rec, guardando, error, onAplicar, onDeshacer }) {
   );
 }
 
+function Cabeza({ rec }) {
+  const t = tarea(rec);
+  const tipo = TIPO_NOCHE[rec.senal.calendario.tipo];
+  return (
+    <>
+      <span className="cop-fecha">
+        <b>{fechaCorta(rec.dia)}</b>
+        {tipo && <em>{tipo}</em>}
+      </span>
+      <span className="cop-accion">
+        <span className={`cop-badge ${t}`}>{ETIQUETA_TAREA[t](rec)}</span>
+        <small className={`cop-confianza ${rec.confianza}`}>confianza {rec.confianza}</small>
+      </span>
+    </>
+  );
+}
+
 export default function Copiloto({ objetivo }) {
+  const esEscritorio = useEsEscritorio();
+  // En el computador el detalle va en un panel al lado de la lista.
+  const [seleccionada, setSeleccionada] = useState(null);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -207,6 +228,18 @@ export default function Copiloto({ objetivo }) {
       ? recomendaciones.filter((r) => porRevisar(r) || marcadasAhora.has(r.dia))
       : recomendaciones;
   const captura = data && data.capturas && data.capturas[0];
+  const enPanel = esEscritorio
+    ? visibles.find((r) => r.dia === seleccionada) || visibles[0] || null
+    : null;
+  const detalleDe = (rec) => (
+    <Detalle
+      rec={rec}
+      guardando={guardando === rec.dia}
+      error={errores[rec.dia]}
+      onAplicar={() => guardarMarca(rec, true)}
+      onDeshacer={() => guardarMarca(rec, false)}
+    />
+  );
 
   return (
     <>
@@ -266,56 +299,58 @@ export default function Copiloto({ objetivo }) {
             </div>
           )}
 
-          {TRAMOS.map((tramo, i) => {
-            const desde = i === 0 ? 0 : TRAMOS[i - 1].hasta + 1;
-            const delTramo = visibles.filter(
-              (r) => r.senal.diasHasta >= desde && r.senal.diasHasta <= tramo.hasta
-            );
-            if (delTramo.length === 0) return null;
-            return (
-              <section key={tramo.titulo} className="cop-tramo">
-                <h3>{tramo.titulo}</h3>
-                <ul className="cop-lista">
-                  {delTramo.map((rec) => {
-                    const t = tarea(rec);
-                    const abierta = abiertas.has(rec.dia);
-                    const tipo = TIPO_NOCHE[rec.senal.calendario.tipo];
-                    return (
-                      <li key={rec.dia} className={`cop-fila ${t}`}>
-                        <button
-                          type="button"
-                          className="cop-cabeza"
-                          aria-expanded={abierta}
-                          onClick={() => alternar(rec.dia)}
-                        >
-                          <span className="cop-fecha">
-                            <b>{fechaCorta(rec.dia)}</b>
-                            {tipo && <em>{tipo}</em>}
-                          </span>
-                          <span className="cop-accion">
-                            <span className={`cop-badge ${t}`}>{ETIQUETA_TAREA[t](rec)}</span>
-                            <small className={`cop-confianza ${rec.confianza}`}>
-                              confianza {rec.confianza}
-                            </small>
-                          </span>
-                        </button>
-                        <div className="cop-resumen">{resumenFila(rec)}</div>
-                        {abierta && (
-                          <Detalle
-                            rec={rec}
-                            guardando={guardando === rec.dia}
-                            error={errores[rec.dia]}
-                            onAplicar={() => guardarMarca(rec, true)}
-                            onDeshacer={() => guardarMarca(rec, false)}
-                          />
-                        )}
-                      </li>
-                    );
-                  })}
-                </ul>
-              </section>
-            );
-          })}
+          <div className={esEscritorio ? "cop-escritorio" : undefined}>
+            <div className="cop-columna-lista">
+              {TRAMOS.map((tramo, i) => {
+                const desde = i === 0 ? 0 : TRAMOS[i - 1].hasta + 1;
+                const delTramo = visibles.filter(
+                  (r) => r.senal.diasHasta >= desde && r.senal.diasHasta <= tramo.hasta
+                );
+                if (delTramo.length === 0) return null;
+                return (
+                  <section key={tramo.titulo} className="cop-tramo">
+                    <h3>{tramo.titulo}</h3>
+                    <ul className="cop-lista">
+                      {delTramo.map((rec) => {
+                        const elegida = enPanel && enPanel.dia === rec.dia;
+                        const abierta = !esEscritorio && abiertas.has(rec.dia);
+                        return (
+                          <li
+                            key={rec.dia}
+                            className={`cop-fila ${tarea(rec)}${elegida ? " elegida" : ""}`}
+                          >
+                            <button
+                              type="button"
+                              className="cop-cabeza"
+                              aria-expanded={esEscritorio ? undefined : abierta}
+                              aria-current={elegida ? "true" : undefined}
+                              onClick={() =>
+                                esEscritorio ? setSeleccionada(rec.dia) : alternar(rec.dia)
+                              }
+                            >
+                              <Cabeza rec={rec} />
+                            </button>
+                            <div className="cop-resumen">{resumenFila(rec)}</div>
+                            {abierta && detalleDe(rec)}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </section>
+                );
+              })}
+            </div>
+
+            {enPanel && (
+              <aside className="cop-panel" aria-label={`Detalle del ${fechaCorta(enPanel.dia)}`}>
+                <div className="cop-panel-cabeza">
+                  <Cabeza rec={enPanel} />
+                </div>
+                <div className="cop-resumen">{resumenFila(enPanel)}</div>
+                {detalleDe(enPanel)}
+              </aside>
+            )}
+          </div>
 
           <details className="tarifas-ayuda">
             <summary>¿Cómo decide el copiloto?</summary>

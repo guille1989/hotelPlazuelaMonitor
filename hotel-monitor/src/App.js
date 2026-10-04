@@ -287,6 +287,7 @@ function App() {
       {vista === "mes" && (
         <Carrusel
           reinicioClave="mes"
+          columnasEscritorio={2}
           slides={[
             {
               titulo: `Ocupación${mesData ? ` · ${mesData.titulo}` : ""}`,
@@ -421,6 +422,7 @@ function App() {
           return (
             <Carrusel
               reinicioClave="resumen"
+              columnasEscritorio={2}
               slides={[
                 {
                   titulo: `Reservas${

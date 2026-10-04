@@ -113,6 +113,16 @@
 .trasunto-rubro:first-child {
   grid-column: 1 / -1;
 }
+
+/* Computador: los siete rubros en una fila, la venta de habitaciones más ancha. */
+@media (min-width: 1024px) {
+  .trasunto-rubros {
+    grid-template-columns: 1.6fr repeat(6, minmax(0, 1fr));
+  }
+  .trasunto-rubro:first-child {
+    grid-column: auto;
+  }
+}
 .trasunto-rubro:first-child strong {
   color: var(--color-accent);
   font-size: 1.1rem;

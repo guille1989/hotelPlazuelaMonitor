@@ -71,3 +71,22 @@
   width: 18px;
   background: var(--color-accent);
 }
+
+/* Computador: todos los paneles a la vista, tantas columnas como quepan (o las fijas). */
+.carrusel-escritorio {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 22px 20px;
+  align-items: start;
+}
+.carrusel-escritorio.columnas-fijas {
+  grid-template-columns: repeat(var(--columnas), minmax(0, 1fr));
+}
+.carrusel-panel {
+  min-width: 0;
+}
+.carrusel-panel > .carrusel-titulo {
+  margin-bottom: 12px;
+  text-align: left;
+  padding-left: 2px;
+}

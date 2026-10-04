@@ -13,6 +13,7 @@ import {
 } from "recharts";
 import { TOTAL_HABITACIONES, MESES, formatCOP } from "../../config";
 import { apiUrl } from "../../api";
+import useEsEscritorio from "../../lib/useEsEscritorio";
 import "./OcupacionMes.css";
 
 const DIAS_SEMANA = [
@@ -57,6 +58,8 @@ export default function OcupacionMes({ onData, onDiaActivo }) {
   const [error, setError] = useState(null);
   const [activo, setActivoState] = useState(null); // día bajo el cursor/tap
   const scrollGraficaRef = useRef(null);
+  // En el computador cabe el mes entero: sin desplazamiento ni centrado en hoy.
+  const esEscritorio = useEsEscritorio();
 
   const setActivo = (dia) => {
     setActivoState(dia);
@@ -118,9 +121,10 @@ export default function OcupacionMes({ onData, onDiaActivo }) {
   const hoyEnEsteMes =
     data.hoy && data.dias.some((d) => d.dia === data.hoy) ? data.hoy : null;
   const anchoMin = Math.max(640, (data.dias.length || 30) * 26);
+  const centrarEnHoy = Boolean(hoyEnEsteMes) && !esEscritorio;
 
   useLayoutEffect(() => {
-    if (loading || error || !hoyEnEsteMes) return undefined;
+    if (loading || error || !centrarEnHoy) return undefined;
 
     const centrarHoy = () => {
       const contenedor = scrollGraficaRef.current;
@@ -158,7 +162,7 @@ export default function OcupacionMes({ onData, onDiaActivo }) {
       window.cancelAnimationFrame(frame);
       window.removeEventListener("resize", centrarHoy);
     };
-  }, [anchoMin, data.dias, error, hoyEnEsteMes, loading]);
+  }, [anchoMin, centrarEnHoy, data.dias, error, hoyEnEsteMes, loading]);
 
   return (
     <div className="om-card">
@@ -192,8 +196,8 @@ export default function OcupacionMes({ onData, onDiaActivo }) {
           </div>
           <div className="om-scroll" ref={scrollGraficaRef}>
             <div
-              className={hoyEnEsteMes ? "om-scroll-centrado" : ""}
-              style={{ minWidth: anchoMin }}
+              className={centrarEnHoy ? "om-scroll-centrado" : ""}
+              style={esEscritorio ? undefined : { minWidth: anchoMin }}
             >
               <ResponsiveContainer width="100%" height={240}>
                 <ComposedChart

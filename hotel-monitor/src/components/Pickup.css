@@ -287,6 +287,17 @@
 .pickup-list .carrusel-dots {
   margin-top: 9px;
 }
+/* Computador: los meses en columnas tipo mosaico. El mes en curso trae el ritmo
+   diario y es mucho más alto que los demás; en una grilla dejaría huecos. */
+.pickup-list .carrusel-escritorio {
+  display: block;
+  columns: 3 320px;
+  column-gap: 20px;
+}
+.pickup-list .carrusel-escritorio .carrusel-panel {
+  break-inside: avoid;
+  margin-bottom: 20px;
+}
 .pickup-row {
   padding: 10px 0 8px;
   border-bottom: 1px solid var(--color-border);

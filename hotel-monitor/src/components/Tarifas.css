@@ -32,6 +32,18 @@
   outline-offset: 2px;
 }
 
+/* Computador: las fechas de la competencia en dos columnas. */
+@media (min-width: 1024px) {
+  .tarifas-fechas {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 36px;
+  }
+  .tarifas-fecha:nth-last-child(-n + 2) {
+    border-bottom: 1px solid var(--color-border);
+  }
+}
+
 .tarifas-head {
   text-align: center;
   margin: 20px 0 4px;
